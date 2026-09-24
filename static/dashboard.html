@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BilisLikas 2.0 Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f4f7;
+    margin: 0;
+    padding: 0;
+    color: #1a1a1a;
+  }
+  header {
+    background: #1e3a5f;
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header .user-info { font-size: 13px; }
+  header button {
+    background: #d9534f;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 8px;
+  }
+  #status-badge.connected { background: #4caf50; color: white; }
+  #status-badge.disconnected { background: #999; color: white; }
+
+  #login-view {
+    max-width: 340px;
+    margin: 80px auto;
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  #login-view h2 { margin-top: 0; font-size: 18px; }
+  #login-view input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  #login-view button {
+    width: 100%;
+    padding: 9px;
+    background: #1e3a5f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #login-error { color: #d9534f; font-size: 13px; min-height: 18px; }
+
+  main { padding: 20px; }
+  .barangay-block { margin-bottom: 28px; }
+  .barangay-block h2 { font-size: 16px; border-bottom: 2px solid #1e3a5f; padding-bottom: 4px; }
+  .center-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .center-card {
+    background: white;
+    border-radius: 6px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .center-card h3 { margin: 0 0 6px 0; font-size: 15px; }
+  .occ-bar-track {
+    background: #e0e0e0;
+    border-radius: 4px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .occ-bar-fill { height: 100%; background: #1e3a5f; }
+  .occ-bar-fill.full { background: #d9534f; }
+  .occ-text { font-size: 12px; color: #555; margin-bottom: 8px; }
+  .evacuee-list { list-style: none; padding: 0; margin: 0; max-height: 160px; overflow-y: auto; }
+  .evacuee-list li {
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    color: white;
+  }
+  .badge.manual { background: #e0a800; }
+  .badge.facial_recognition { background: #2e7d32; }
+  .empty-note { color: #888; font-size: 13px; }
+
+  #tracker-section {
+    background: white;
+    border-radius: 6px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  #tracker-section h2 { font-size: 16px; margin-top: 0; }
+  .tracker-svg { width: 100%; max-width: 500px; background: #eef2f6; border-radius: 4px; }
+  .tracker-dot { fill: #1e3a5f; }
+  .tracker-label { font-size: 11px; fill: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<div id="login-view">
+  <h2>BilisLikas 2.0 Dashboard Login</h2>
+  <input id="login-username" type="text" placeholder="Username">
+  <input id="login-password" type="password" placeholder="Password">
+  <button onclick="handleLogin()">Log In</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="dashboard-view" style="display:none;">
+  <header>
+    <h1>BilisLikas 2.0 &mdash; Evacuation Dashboard <span id="status-badge" class="disconnected">offline</span></h1>
+    <div class="user-info">
+      <span id="user-label"></span>
+      <button onclick="handleLogout()">Log Out</button>
+    </div>
+  </header>
+  <main>
+    <div id="barangay-container"></div>
+    <div id="tracker-section">
+      <h2>Live Tracker Positions</h2>
+      <div id="tracker-plot"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+let token = localStorage.getItem('bilislikas_token') || null;
+let currentUser = null;
+let socket = null;
+let reconnectTimer = null;
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+async function handleLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorBox = document.getElementById('login-error');
+  errorBox.textContent = '';
+
+  if (!username || !password) {
+    errorBox.textContent = 'Enter both username and password.';
+    return;
+  }
+
+  try {
+    const body = new URLSearchParams();
+    body.append('username', username);
+    body.append('password', password);
+    const res = await fetch('/login', { method: 'POST', body });
+    if (!res.ok) {
+      errorBox.textContent = 'Incorrect username or password.';
+      return;
+    }
+    const data = await res.json();
+    token = data.access_token;
+    localStorage.setItem('bilislikas_token', token);
+    await afterLogin();
+  } catch (err) {
+    errorBox.textContent = 'Could not reach the server.';
+  }
+}
+
+async function afterLogin() {
+  const meRes = await fetch('/users/me', { headers: { 'Authorization': 'Bearer ' + token } });
+  if (!meRes.ok) {
+    handleLogout();
+    return;
+  }
+  currentUser = await meRes.json();
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('dashboard-view').style.display = 'block';
+  document.getElementById('user-label').textContent =
+    currentUser.username + ' (' + currentUser.role + ')';
+  await refreshDashboard();
+  connectSocket();
+}
+
+function handleLogout() {
+  token = null;
+  currentUser = null;
+  localStorage.removeItem('bilislikas_token');
+  if (socket) { socket.onclose = null; socket.close(); socket = null; }
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  document.getElementById('dashboard-view').style.display = 'none';
+  document.getElementById('login-view').style.display = 'block';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+async function refreshDashboard() {
+  const res = await fetch('/dashboard/summary', { headers: { 'Authorization': 'Bearer ' + token } });
+  if (!res.ok) {
+    if (res.status === 401) handleLogout();
+    return;
+  }
+  const data = await res.json();
+  renderBarangays(data.barangays);
+  renderTrackerPlot(data.trackers);
+}
+
+function renderBarangays(barangays) {
+  const container = document.getElementById('barangay-container');
+  if (!barangays.length) {
+    container.innerHTML = '<p class="empty-note">No barangays to show.</p>';
+    return;
+  }
+  let html = '';
+  barangays.forEach(b => {
+    html += '<div class="barangay-block"><h2>' + escapeHtml(b.name) + '</h2>';
+    if (!b.centers.length) {
+      html += '<p class="empty-note">No evacuation centers registered yet.</p>';
+    } else {
+      html += '<div class="center-grid">';
+      b.centers.forEach(c => {
+        const pct = c.capacity > 0 ? Math.min(100, Math.round((c.occupancy / c.capacity) * 100)) : 0;
+        const fullClass = pct >= 100 ? 'full' : '';
+        html += '<div class="center-card">';
+        html += '<h3>' + escapeHtml(c.name) + '</h3>';
+        html += '<div class="occ-bar-track"><div class="occ-bar-fill ' + fullClass + '" style="width:' + pct + '%"></div></div>';
+        html += '<div class="occ-text">' + c.occupancy + ' / ' + c.capacity + ' (' + pct + '%)</div>';
+        if (!c.evacuees.length) {
+          html += '<p class="empty-note">No one currently checked in.</p>';
+        } else {
+          html += '<ul class="evacuee-list">';
+          c.evacuees.forEach(e => {
+            const badgeClass = e.identification_method === 'facial_recognition' ? 'facial_recognition' : 'manual';
+            const badgeLabel = e.identification_method === 'facial_recognition' ? 'Face ID' : 'Manual';
+            html += '<li><span>' + escapeHtml(e.full_name) + '</span><span class="badge ' + badgeClass + '">' + badgeLabel + '</span></li>';
+          });
+          html += '</ul>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function renderTrackerPlot(trackers) {
+  const container = document.getElementById('tracker-plot');
+  if (!trackers.length) {
+    container.innerHTML = '<p class="empty-note">No active trackers right now.</p>';
+    return;
+  }
+
+  const lats = trackers.map(t => t.latitude);
+  const lons = trackers.map(t => t.longitude);
+  let minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  let minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  const latSpan = (maxLat - minLat) || 0.002;
+  const lonSpan = (maxLon - minLon) || 0.002;
+  minLat -= latSpan * 0.25; maxLat += latSpan * 0.25;
+  minLon -= lonSpan * 0.25; maxLon += lonSpan * 0.25;
+
+  const width = 480, height = 320, margin = 30;
+  function project(lat, lon) {
+    const x = margin + ((lon - minLon) / (maxLon - minLon)) * (width - 2 * margin);
+    const y = height - margin - ((lat - minLat) / (maxLat - minLat)) * (height - 2 * margin);
+    return [x, y];
+  }
+
+  let svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" class="tracker-svg">';
+  svg += '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="#eef2f6" />';
+  trackers.forEach(t => {
+    const [x, y] = project(t.latitude, t.longitude);
+    svg += '<circle cx="' + x + '" cy="' + y + '" r="6" class="tracker-dot" />';
+    svg += '<text x="' + (x + 9) + '" y="' + (y + 4) + '" class="tracker-label">' + escapeHtml(t.evacuee_name || t.device_id) + '</text>';
+  });
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+function connectSocket() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const url = proto + '://' + location.host + '/ws/dashboard?token=' + encodeURIComponent(token);
+  socket = new WebSocket(url);
+
+  socket.onopen = () => {
+    document.getElementById('status-badge').textContent = 'live';
+    document.getElementById('status-badge').className = 'connected';
+  };
+  socket.onmessage = () => {
+    refreshDashboard();
+  };
+  socket.onclose = () => {
+    document.getElementById('status-badge').textContent = 'offline';
+    document.getElementById('status-badge').className = 'disconnected';
+    if (token) {
+      reconnectTimer = setTimeout(connectSocket, 3000);
+    }
+  };
+  socket.onerror = () => {
+    socket.close();
+  };
+}
+
+if (token) {
+  afterLogin().catch(() => handleLogout());
+}
+</script>
+
+</body>
+</html>

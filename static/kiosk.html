@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BilisLikas Kiosk</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; background: #f4f6fb; margin: 0; padding: 0; color: #1c1c1c; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
+  .logo { display: block; margin: 0 auto 12px auto; max-width: 170px; height: auto; }
+  h1 { font-size: 24px; margin: 0 0 4px 0; color: #142c6e; }
+  h2 { font-size: 20px; color: #142c6e; }
+  p.sub { color: #55607a; margin-top: 0; }
+  p.tagline { color: #142c6e; font-style: italic; font-size: 14px; margin: 0 0 20px 0; }
+  input, select { width: 100%; padding: 14px; margin: 6px 0; font-size: 17px; border: 1px solid #d3d8e6; border-radius: 8px; }
+  button { padding: 16px 22px; font-size: 17px; border: none; border-radius: 10px; background: #142c6e; color: white; cursor: pointer; margin: 6px 6px 6px 0; }
+  button.secondary { background: #6b7280; }
+  button.big { display: block; width: 100%; padding: 26px; font-size: 22px; font-weight: bold; margin: 16px 0; background: #f7941d; color: #142c6e; }
+  button.link { background: none; color: #142c6e; padding: 8px 0; text-decoration: underline; font-size: 15px; }
+  button:hover { opacity: 0.9; }
+  .topbar { background: #142c6e; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .topbar .occ { font-size: 20px; font-weight: bold; color: #f7941d; }
+  .card { background: white; border-radius: 12px; padding: 18px; margin: 14px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .progress-bar { background: #e2e6f0; border-radius: 10px; height: 22px; overflow: hidden; margin: 10px 0; }
+  .progress-fill { background: #142c6e; height: 100%; }
+  .progress-fill.warn { background: #f7941d; }
+  .evacuee-list { list-style: none; padding: 0; margin: 0; }
+  .evacuee-list li { padding: 10px 0; border-bottom: 1px solid #eef0f6; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge { font-size: 12px; padding: 3px 10px; border-radius: 10px; background: #e2e6f0; }
+  .badge-face { background: #d1fae5; color: #065f46; }
+  .badge-manual { background: #fef0dc; color: #9a5b0f; }
+  .error { color: #b91c1c; margin-top: 8px; }
+  .success { color: #065f46; margin-top: 8px; font-weight: bold; }
+  .member-row { border: 1px solid #e2e6f0; border-radius: 10px; padding: 14px; margin: 10px 0; background: #fafbfd; }
+  .member-row-header { font-weight: bold; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .facial-placeholder { background: #f4f6fb; border: 2px dashed #aab2c8; border-radius: 10px; padding: 18px; text-align: center; color: #55607a; margin-bottom: 16px; }
+  .household-result { border: 1px solid #e2e6f0; border-radius: 10px; padding: 14px; margin: 10px 0; }
+  .center-text { text-align: center; padding: 60px 24px; }
+  .big-number { font-size: 56px; font-weight: bold; color: #142c6e; }
+  .choice-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .choice-row button { flex: 1; min-width: 200px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="screen-setup" class="screen active">
+    <div class="wrap center-text">
+      <img class="logo" src="/static/logo.png" alt="BilisLikas 2.0">
+      <h1>Kiosk Setup</h1>
+      <p class="sub">Which evacuation center is this kiosk assigned to? This is set once per device.</p>
+      <select id="setup-center-select"></select>
+      <button class="big" onclick="confirmSetup()">Assign This Kiosk</button>
+      <div id="setup-error" class="error"></div>
+    </div>
+  </div>
+
+  <div id="screen-login" class="screen">
+    <div class="wrap center-text">
+      <img class="logo" src="/static/logo.png" alt="BilisLikas 2.0">
+      <h1>Staff Login</h1>
+      <p class="sub" id="login-center-label"></p>
+      <form id="login-form">
+        <input type="text" id="login-username" placeholder="Username" required>
+        <input type="password" id="login-password" placeholder="Password" required>
+        <button class="big" type="submit">Log In</button>
+        <div id="login-error" class="error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="screen-home" class="screen">
+    <div class="topbar">
+      <div>
+        <div id="home-center-name" style="font-weight:bold;font-size:18px;"></div>
+        <div id="home-barangay-name" style="font-size:13px;opacity:0.85;"></div>
+      </div>
+      <div class="occ" id="home-occ-label"></div>
+    </div>
+    <div class="wrap">
+      <div class="progress-bar"><div class="progress-fill" id="home-progress" style="width:0%"></div></div>
+      <button class="big" onclick="openArrival()">Check In Arrival</button>
+      <div style="text-align:center;">
+        <button class="link" onclick="openOccupancy()">View Occupancy List</button>
+        &nbsp;&middot;&nbsp;
+        <button class="link" onclick="showScreen('staffmenu')">Staff Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-arrival" class="screen">
+    <div class="topbar">
+      <div id="arrival-center-label" style="font-weight:bold;"></div>
+      <button class="secondary" onclick="cancelArrival()">Cancel</button>
+    </div>
+    <div class="wrap">
+
+      <div id="panel-identify">
+        <div class="facial-placeholder">
+          Facial Recognition (Raspberry Pi Camera) &mdash; not yet connected.<br>
+          Search by name below, or use Walk-in for someone not registered.
+        </div>
+        <input type="text" id="arrival-search" placeholder="Search family by name" oninput="renderHouseholdSearch()">
+        <div id="arrival-search-results"></div>
+        <div class="choice-row">
+          <button onclick="openRegister()">New Family (not registered)</button>
+          <button onclick="openWalkin()">Single Person / Walk-in</button>
+        </div>
+      </div>
+
+      <div id="panel-confirm" style="display:none;">
+        <h2 id="confirm-household-title"></h2>
+        <p class="sub">Select who has arrived, then confirm.</p>
+        <ul class="evacuee-list" id="confirm-member-list"></ul>
+        <button class="big" onclick="confirmArrival()">Confirm Arrival</button>
+        <button class="secondary" onclick="backToIdentify()">Back</button>
+        <div id="confirm-error" class="error"></div>
+      </div>
+
+      <div id="panel-register" style="display:none;">
+        <h2>Register New Family</h2>
+        <form id="register-form">
+          <div id="member-rows"></div>
+          <button type="button" onclick="addMemberRow()">Add Family Member</button>
+          <button class="big" type="submit">Register and Check In</button>
+          <button class="secondary" type="button" onclick="backToIdentify()">Back</button>
+          <div id="register-message"></div>
+        </form>
+      </div>
+
+      <div id="panel-walkin" style="display:none;">
+        <h2>Single Person / Walk-in</h2>
+        <form id="walkin-form">
+          <input type="text" id="walkin-name" placeholder="Full name" required>
+          <input type="date" id="walkin-birth">
+          <select id="walkin-sex"><option value="">Sex</option><option value="male">Male</option><option value="female">Female</option></select>
+          <input type="text" id="walkin-address" placeholder="Address">
+          <input type="text" id="walkin-contact" placeholder="Contact number">
+          <button class="big" type="submit">Check In</button>
+          <button class="secondary" type="button" onclick="backToIdentify()">Back</button>
+          <div id="walkin-message"></div>
+        </form>
+      </div>
+
+      <div id="panel-done" style="display:none;">
+        <div class="center-text">
+          <div class="big-number" id="done-count"></div>
+          <p id="done-message" style="font-size:18px;"></p>
+          <button class="big" onclick="finishArrival()">Done</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="screen-occupancy" class="screen">
+    <div class="topbar">
+      <div style="font-weight:bold;">Occupancy</div>
+      <button class="secondary" onclick="showScreen('home')">Back</button>
+    </div>
+    <div class="wrap">
+      <button onclick="openOccupancy()">Refresh</button>
+      <div id="occupancy-content" class="card"></div>
+    </div>
+  </div>
+
+  <div id="screen-staffmenu" class="screen">
+    <div class="wrap">
+      <h1>Staff Menu</h1>
+      <p class="sub" id="staffmenu-user"></p>
+      <button onclick="showScreen('home')">Back to Home</button>
+      <button class="secondary" onclick="logout()">Log Out</button>
+      <div style="margin-top:24px;">
+        <button class="secondary" onclick="reassignKiosk()">Change Assigned Center</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const API = '';
+let kiosk = {
+  centerId: localStorage.getItem('bl_kiosk_center_id') ? parseInt(localStorage.getItem('bl_kiosk_center_id')) : null,
+  centerName: localStorage.getItem('bl_kiosk_center_name') || null,
+  barangayId: localStorage.getItem('bl_kiosk_barangay_id') ? parseInt(localStorage.getItem('bl_kiosk_barangay_id')) : null,
+  barangayName: localStorage.getItem('bl_kiosk_barangay_name') || null
+};
+let state = {
+  token: localStorage.getItem('bl_token') || null,
+  user: null,
+  summary: null,
+  households: [],
+  selectedHouseholdStatus: null,
+  memberRowCount: 0
+};
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+async function api(path, options) {
+  options = options || {};
+  options.headers = options.headers || {};
+  if (state.token) options.headers['Authorization'] = 'Bearer ' + state.token;
+  const res = await fetch(API + path, options);
+  if (res.status === 401) { logout(); throw new Error('Session expired, please log in again.'); }
+  if (!res.ok) {
+    let detail = '';
+    try { const j = await res.json(); detail = j.detail || JSON.stringify(j); } catch (e) {}
+    throw new Error(detail || ('Request failed: ' + res.status));
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function loadCenterOptions() {
+  const errEl = document.getElementById('setup-error');
+  errEl.textContent = '';
+  try {
+    const [centers, barangays] = await Promise.all([
+      api('/evacuation_centers'),
+      api('/barangays')
+    ]);
+    const brgyMap = {};
+    barangays.forEach(b => { brgyMap[b.id] = b.name; });
+    const select = document.getElementById('setup-center-select');
+    select.innerHTML = '';
+    centers.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.dataset.barangayId = c.barangay_id;
+      opt.dataset.barangayName = brgyMap[c.barangay_id] || ('Barangay ' + c.barangay_id);
+      opt.dataset.centerName = c.name;
+      opt.textContent = c.name + ' (' + (brgyMap[c.barangay_id] || 'Barangay ' + c.barangay_id) + ')';
+      select.appendChild(opt);
+    });
+  } catch (e) {
+    errEl.textContent = 'Could not load evacuation centers: ' + e.message;
+  }
+}
+
+function confirmSetup() {
+  const select = document.getElementById('setup-center-select');
+  const opt = select.options[select.selectedIndex];
+  if (!opt) { document.getElementById('setup-error').textContent = 'No center selected.'; return; }
+  kiosk.centerId = parseInt(opt.value);
+  kiosk.centerName = opt.dataset.centerName;
+  kiosk.barangayId = parseInt(opt.dataset.barangayId);
+  kiosk.barangayName = opt.dataset.barangayName;
+  localStorage.setItem('bl_kiosk_center_id', kiosk.centerId);
+  localStorage.setItem('bl_kiosk_center_name', kiosk.centerName);
+  localStorage.setItem('bl_kiosk_barangay_id', kiosk.barangayId);
+  localStorage.setItem('bl_kiosk_barangay_name', kiosk.barangayName);
+  document.getElementById('login-center-label').textContent = kiosk.centerName + ', ' + kiosk.barangayName;
+  showScreen('login');
+}
+
+function reassignKiosk() {
+  localStorage.removeItem('bl_kiosk_center_id');
+  localStorage.removeItem('bl_kiosk_center_name');
+  localStorage.removeItem('bl_kiosk_barangay_id');
+  localStorage.removeItem('bl_kiosk_barangay_name');
+  kiosk = { centerId: null, centerName: null, barangayId: null, barangayName: null };
+  loadCenterOptions();
+  showScreen('setup');
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  try {
+    const body = new URLSearchParams();
+    body.set('username', username);
+    body.set('password', password);
+    const res = await fetch(API + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body
+    });
+    if (!res.ok) throw new Error('Incorrect username or password.');
+    const data = await res.json();
+    state.token = data.access_token;
+    localStorage.setItem('bl_token', state.token);
+    await loadUser();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+}
+
+async function loadUser() {
+  const user = await api('/users/me');
+  state.user = user;
+  document.getElementById('staffmenu-user').textContent = 'Logged in as ' + user.username + ' (' + user.role + ')';
+  await openHome();
+}
+
+function logout() {
+  state.token = null;
+  state.user = null;
+  localStorage.removeItem('bl_token');
+  showScreen('login');
+}
+
+async function openHome() {
+  document.getElementById('home-center-name').textContent = kiosk.centerName;
+  document.getElementById('home-barangay-name').textContent = kiosk.barangayName;
+  document.getElementById('arrival-center-label').textContent = kiosk.centerName;
+  await refreshHomeSummary();
+  showScreen('home');
+}
+
+async function refreshHomeSummary() {
+  const summary = await api('/dashboard/summary');
+  state.summary = summary;
+  const c = getKioskCenter();
+  if (!c) return;
+  const pct = c.capacity > 0 ? Math.min(100, Math.round((c.occupancy / c.capacity) * 100)) : 0;
+  document.getElementById('home-occ-label').textContent = c.occupancy + ' / ' + c.capacity;
+  const fill = document.getElementById('home-progress');
+  fill.style.width = pct + '%';
+  fill.className = 'progress-fill' + (pct >= 90 ? ' warn' : '');
+}
+
+function getKioskCenter() {
+  if (!state.summary) return null;
+  const brgy = state.summary.barangays.find(b => b.id === kiosk.barangayId);
+  if (!brgy) return null;
+  return brgy.centers.find(c => c.id === kiosk.centerId) || null;
+}
+
+async function openOccupancy() {
+  await refreshHomeSummary();
+  const c = getKioskCenter();
+  const container = document.getElementById('occupancy-content');
+  if (!c) { container.innerHTML = '<p>No data available.</p>'; showScreen('occupancy'); return; }
+  const pct = c.capacity > 0 ? Math.min(100, Math.round((c.occupancy / c.capacity) * 100)) : 0;
+  let html = '<h3>' + c.name + '</h3>';
+  html += '<div class="progress-bar"><div class="progress-fill' + (pct >= 90 ? ' warn' : '') + '" style="width:' + pct + '%"></div></div>';
+  html += '<p>' + c.occupancy + ' / ' + c.capacity + ' currently checked in</p>';
+  html += '<ul class="evacuee-list">';
+  c.evacuees.forEach(e => {
+    const badge = e.identification_method === 'facial_recognition' ? 'face' : 'manual';
+    html += '<li>' + e.full_name + ' <span class="badge badge-' + badge + '">' + badge + '</span></li>';
+  });
+  html += '</ul>';
+  container.innerHTML = html;
+  showScreen('occupancy');
+}
+
+async function openArrival() {
+  resetArrivalPanels();
+  document.getElementById('arrival-search').value = '';
+  document.getElementById('arrival-search-results').innerHTML = '';
+  try {
+    state.households = await api('/barangays/' + kiosk.barangayId + '/households');
+  } catch (e) {
+    state.households = [];
+  }
+  showScreen('arrival');
+}
+
+function cancelArrival() {
+  resetArrivalPanels();
+  showScreen('home');
+}
+
+function resetArrivalPanels() {
+  document.getElementById('panel-identify').style.display = 'block';
+  document.getElementById('panel-confirm').style.display = 'none';
+  document.getElementById('panel-register').style.display = 'none';
+  document.getElementById('panel-walkin').style.display = 'none';
+  document.getElementById('panel-done').style.display = 'none';
+}
+
+function backToIdentify() {
+  resetArrivalPanels();
+}
+
+function renderHouseholdSearch() {
+  const q = document.getElementById('arrival-search').value.trim().toLowerCase();
+  const resultsEl = document.getElementById('arrival-search-results');
+  resultsEl.innerHTML = '';
+  if (!q) return;
+  const matches = state.households.filter(h =>
+    h.members.some(m => m.full_name.toLowerCase().includes(q))
+  );
+  if (matches.length === 0) {
+    resultsEl.innerHTML = '<p class="sub">No matching registered family. Use New Family or Walk-in below.</p>';
+    return;
+  }
+  matches.forEach(h => {
+    const div = document.createElement('div');
+    div.className = 'household-result';
+    const names = h.members.map(m => m.full_name + (m.is_head_of_family ? ' (head)' : '')).join(', ');
+    div.innerHTML = '<strong>Household #' + h.id + '</strong><br>' + names +
+      '<br><button onclick="selectHousehold(' + h.id + ')">Select This Family</button>';
+    resultsEl.appendChild(div);
+  });
+}
+
+async function selectHousehold(householdId) {
+  try {
+    const status = await api('/households/' + householdId + '/status');
+    state.selectedHouseholdStatus = status;
+    document.getElementById('confirm-household-title').textContent = 'Household #' + status.household_id;
+    const listEl = document.getElementById('confirm-member-list');
+    listEl.innerHTML = '';
+    status.members.forEach(m => {
+      const alreadyHere = m.current_center_id === kiosk.centerId;
+      const li = document.createElement('li');
+      if (alreadyHere) {
+        li.innerHTML = m.full_name + ' <span class="badge badge-face">already checked in here</span>';
+      } else {
+        li.innerHTML =
+          '<label><input type="checkbox" checked data-evacuee-id="' + m.evacuee_id + '"> ' + m.full_name +
+          (m.current_center_id ? ' <span class="badge badge-manual">was at ' + m.current_center_name + '</span>' : '') +
+          '</label>';
+      }
+      listEl.appendChild(li);
+    });
+    document.getElementById('panel-identify').style.display = 'none';
+    document.getElementById('panel-confirm').style.display = 'block';
+  } catch (e) {
+    document.getElementById('confirm-error').textContent = e.message;
+  }
+}
+
+async function confirmArrival() {
+  const errEl = document.getElementById('confirm-error');
+  errEl.textContent = '';
+  const boxes = document.querySelectorAll('#confirm-member-list input[type=checkbox]:checked');
+  if (boxes.length === 0) {
+    errEl.textContent = 'Select at least one member, or go back if no one is arriving.';
+    return;
+  }
+  try {
+    for (const box of boxes) {
+      await api('/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          evacuee_id: parseInt(box.dataset.evacueeId),
+          evacuation_center_id: kiosk.centerId,
+          event_type: 'check_in'
+        })
+      });
+    }
+    showDone(boxes.length, 'checked in at ' + kiosk.centerName + '.');
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+}
+
+function openRegister() {
+  document.getElementById('panel-identify').style.display = 'none';
+  document.getElementById('member-rows').innerHTML = '';
+  state.memberRowCount = 0;
+  addMemberRow();
+  document.getElementById('register-message').textContent = '';
+  document.getElementById('panel-register').style.display = 'block';
+}
+
+function addMemberRow() {
+  state.memberRowCount++;
+  const id = state.memberRowCount;
+  const wrap = document.createElement('div');
+  wrap.className = 'member-row';
+  wrap.id = 'member-row-' + id;
+  wrap.innerHTML =
+    '<div class="member-row-header">Member ' + id + '<button type="button" onclick="removeMemberRow(' + id + ')">Remove</button></div>' +
+    '<input type="text" placeholder="Full name" id="m-name-' + id + '" required>' +
+    '<input type="date" id="m-birth-' + id + '">' +
+    '<select id="m-sex-' + id + '"><option value="">Sex</option><option value="male">Male</option><option value="female">Female</option></select>' +
+    '<input type="text" placeholder="Address" id="m-address-' + id + '">' +
+    '<input type="text" placeholder="Contact number" id="m-contact-' + id + '">' +
+    '<label><input type="checkbox" id="m-head-' + id + '"> Head of family</label>';
+  document.getElementById('member-rows').appendChild(wrap);
+}
+
+function removeMemberRow(id) {
+  const el = document.getElementById('member-row-' + id);
+  if (el) el.remove();
+}
+
+async function submitHousehold(event) {
+  event.preventDefault();
+  const msgEl = document.getElementById('register-message');
+  msgEl.textContent = ''; msgEl.className = '';
+  const rows = document.querySelectorAll('#panel-register .member-row');
+  if (rows.length === 0) { msgEl.textContent = 'Add at least one family member.'; msgEl.className = 'error'; return; }
+  const members = [];
+  let headCount = 0;
+  for (const row of rows) {
+    const id = row.id.replace('member-row-', '');
+    const name = document.getElementById('m-name-' + id).value.trim();
+    if (!name) { msgEl.textContent = 'Every member needs a full name.'; msgEl.className = 'error'; return; }
+    const isHead = document.getElementById('m-head-' + id).checked;
+    if (isHead) headCount++;
+    members.push({
+      full_name: name,
+      birthdate: document.getElementById('m-birth-' + id).value || null,
+      sex: document.getElementById('m-sex-' + id).value || null,
+      address: document.getElementById('m-address-' + id).value || null,
+      contact_number: document.getElementById('m-contact-' + id).value || null,
+      is_head_of_family: isHead
+    });
+  }
+  if (headCount > 1) { msgEl.textContent = 'Only one member can be marked head of family.'; msgEl.className = 'error'; return; }
+  try {
+    const household = await api('/households', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registered_barangay_id: kiosk.barangayId, members: members })
+    });
+    for (const m of household.members) {
+      await api('/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evacuee_id: m.id, evacuation_center_id: kiosk.centerId, event_type: 'check_in' })
+      });
+    }
+    showDone(household.members.length, 'registered and checked in at ' + kiosk.centerName + '.');
+  } catch (e) {
+    msgEl.textContent = e.message; msgEl.className = 'error';
+  }
+}
+
+function openWalkin() {
+  document.getElementById('panel-identify').style.display = 'none';
+  document.getElementById('walkin-form').reset();
+  document.getElementById('walkin-message').textContent = '';
+  document.getElementById('panel-walkin').style.display = 'block';
+}
+
+async function submitWalkin(event) {
+  event.preventDefault();
+  const msgEl = document.getElementById('walkin-message');
+  msgEl.textContent = ''; msgEl.className = '';
+  const name = document.getElementById('walkin-name').value.trim();
+  if (!name) { msgEl.textContent = 'Full name is required.'; msgEl.className = 'error'; return; }
+  try {
+    await api('/checkin/walkin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: name,
+        birthdate: document.getElementById('walkin-birth').value || null,
+        sex: document.getElementById('walkin-sex').value || null,
+        address: document.getElementById('walkin-address').value || null,
+        contact_number: document.getElementById('walkin-contact').value || null,
+        registered_barangay_id: kiosk.barangayId,
+        evacuation_center_id: kiosk.centerId
+      })
+    });
+    showDone(1, 'checked in at ' + kiosk.centerName + '.');
+  } catch (e) {
+    msgEl.textContent = e.message; msgEl.className = 'error';
+  }
+}
+
+function showDone(count, message) {
+  resetArrivalPanels();
+  document.getElementById('done-count').textContent = count;
+  document.getElementById('done-message').textContent = count === 1 ? '1 member ' + message : count + ' members ' + message;
+  document.getElementById('panel-done').style.display = 'block';
+}
+
+async function finishArrival() {
+  resetArrivalPanels();
+  await openHome();
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('login-form').addEventListener('submit', handleLogin);
+  document.getElementById('register-form').addEventListener('submit', submitHousehold);
+  document.getElementById('walkin-form').addEventListener('submit', submitWalkin);
+
+  if (!kiosk.centerId) {
+    await loadCenterOptions();
+    showScreen('setup');
+    return;
+  }
+  document.getElementById('login-center-label').textContent = kiosk.centerName + ', ' + kiosk.barangayName;
+  if (state.token) {
+    try { await loadUser(); } catch (e) { showScreen('login'); }
+  } else {
+    showScreen('login');
+  }
+});
+</script>
+</body>
+</html>
