@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="app.css?v=4">
 <style>
 .groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .group { padding: 14px; border-radius: 12px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
@@ -46,7 +46,7 @@
       <section class="panel">
         <div class="panel-head"><h2>Vulnerable groups</h2><span class="note">Evacuated of registered</span></div>
         <div class="groups" id="groups"></div>
-        <p class="notice">Children and senior citizens are counted from each resident's birthdate. Pregnant and PWD counts will appear once these fields are added to pre-registration.</p>
+        <p class="notice">Children and senior citizens are counted from each resident's birthdate. Pregnant and PWD come from the special needs ticked during pre-registration.</p>
       </section>
       <section class="panel">
         <div class="panel-head"><h2>Evacuation center occupancy</h2><span class="note" id="occNote"></span></div>
@@ -68,7 +68,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'barangay_official' });
@@ -77,6 +77,7 @@
   let centerNames = {};
   let names = {};
   let prev = null;          // center id -> Set of evacuee ids, for live diffs
+  let details = null;       // evacuee id -> special needs list (null until batch 4 backend exists)
   const feed = [];          // { text, time, dot, fresh }
 
   try {
@@ -91,7 +92,9 @@
   async function load(live) {
     let summary, evacuees;
     try {
-      [summary, evacuees] = await Promise.all([BL.api('/dashboard/summary'), BL.api('/evacuees')]);
+      let det;
+      [summary, evacuees, det] = await Promise.all([BL.api('/dashboard/summary'), BL.api('/evacuees'), BL.api('/evacuee_details').catch(() => null)]);
+      details = null; if (det) { details = {}; det.forEach((x) => { details[x.id] = x.special_needs || []; }); }
       $('loadError').hidden = true;
     } catch (e) {
       $('loadError').textContent = e.message;
@@ -137,6 +140,10 @@
       ['Children (under 18)', (ev) => { const a = BL.age(ev.birthdate); return a !== null && a < 18; }],
       ['Senior citizens (60+)', (ev) => { const a = BL.age(ev.birthdate); return a !== null && a >= 60; }]
     ];
+    if (details) {
+      groups.push(['Pregnant', (ev) => (details[ev.id] || []).includes('Pregnant')]);
+      groups.push(['Persons with disability', (ev) => (details[ev.id] || []).includes('PWD')]);
+    }
     $('groups').innerHTML = groups.map(([label, test]) => {
       const reg = residents.filter(test);
       const ok = reg.filter((ev) => present.has(ev.id)).length;
@@ -145,7 +152,7 @@
       return '<div class="group"><div class="top"><span class="name">' + label + '</span><span class="' + (miss ? 'tone-red' : 'tone-green') + '" style="font-size:13px;font-weight:700">' + miss + ' not yet</span></div>' +
         '<div class="num">' + ok + ' <small>of ' + reg.length + '</small></div><div class="bar"><span style="width:' + p + '%"></span></div></div>';
     }).join('') +
-      ['Pregnant', 'Persons with disability'].map((l) => '<div class="group"><div class="top"><span class="name">' + l + '</span></div><div class="num" style="color:var(--muted);font-size:18px">Not recorded yet</div></div>').join('');
+      (details ? '' : ['Pregnant', 'Persons with disability'].map((l) => '<div class="group"><div class="top"><span class="name">' + l + '</span></div><div class="num" style="color:var(--muted);font-size:18px">Not recorded yet</div></div>').join(''));
 
     // Center occupancy
     $('occNote').textContent = centers.length + ' center(s)';

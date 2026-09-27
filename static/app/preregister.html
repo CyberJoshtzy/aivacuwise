@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pre-Registration · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=4">
+<style>
+.steps { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.steps li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--muted); }
+.steps .n { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--field); background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.steps li.cur { color: var(--navy); font-weight: 800; }
+.steps li.cur .n { background: var(--navy); border-color: var(--navy); color: #FFFFFF; }
+.steps li.done .n { background: var(--green); border-color: var(--green); color: #FFFFFF; }
+.steps .line { width: 48px; height: 2px; background: var(--field); }
+.cap { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+.stage { position: relative; aspect-ratio: 4 / 3; border-radius: 14px; background: #1B2233; overflow: hidden; }
+.stage video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+.stage .oval { position: absolute; left: 50%; top: 46%; width: 42%; height: 70%; transform: translate(-50%, -50%); border: 3px dashed var(--orange); border-radius: 50%; pointer-events: none; }
+.stage .say { position: absolute; left: 14px; right: 14px; bottom: 14px; padding: 12px 16px; border-radius: 12px; background: rgba(14,31,79,.85); color: #FFFFFF; font-size: 17px; font-weight: 700; text-align: center; }
+.stage .arrow { position: absolute; top: 46%; width: 60px; height: 60px; margin-top: -30px; border-radius: 50%; background: rgba(247,148,29,.2); display: flex; align-items: center; justify-content: center; }
+.stage .flash { position: absolute; inset: 0; background: #FFFFFF; animation: fl .45s ease-out forwards; }
+@keyframes fl { from { opacity: .85; } to { opacity: 0; } }
+.off { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 24px; text-align: center; color: #FFFFFF; }
+.guides { display: flex; gap: 22px; align-items: flex-end; }
+.guides div { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #D6DDF0; }
+.guides span { width: 88px; height: 88px; border-radius: 14px; background: #2A3450; display: flex; align-items: center; justify-content: center; }
+.guides .mid span { width: 104px; height: 104px; border: 2px solid var(--orange); }
+.slot { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; border: 2px solid var(--line-soft); background: #FFFFFF; }
+.slot.active { border-color: var(--orange); background: #FFF8EE; }
+.slot.ok { border-color: #BBE5C8; }
+.slot.bad { border-color: #F1C4C4; background: #FFF7F7; }
+.slot .thumb { width: 72px; height: 54px; border-radius: 8px; background: var(--bg); overflow: hidden; flex-shrink: 0; }
+.slot .thumb img { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.form-card { border: 1px solid var(--line); border-radius: 16px; background: #FFFFFF; padding: 20px; margin: 0; }
+.form-card legend { padding: 0 6px; font-size: 16px; font-weight: 800; color: var(--navy); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chipbox { min-height: 44px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--field); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; background: #FFFFFF; }
+.chipbox:has(input:checked) { border-color: var(--navy); background: var(--tint); }
+.chipbox input { width: 18px; height: 18px; accent-color: var(--navy); }
+.formlayout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+.side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
+@media (max-width: 1100px) { .cap, .formlayout { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1>Pre-Registration</h1>
+        <p>Register an evacuee before a disaster so the entrance camera can recognize them at any evacuation center.</p>
+      </div>
+      <select id="brgySel" class="input" style="width:240px;height:46px" hidden aria-label="Barangay"></select>
+    </div>
+
+    <ol class="steps" aria-label="Progress" id="steps"></ol>
+    <div id="insecure" class="form-error" hidden></div>
+
+    <!-- Step 1: face capture -->
+    <section id="step1" class="cap">
+      <div class="panel">
+        <div class="panel-head"><h2>Step 1: Capture face photos</h2><span class="live-badge" id="camBadge"><span class="dot"></span><span class="txt">Camera off</span></span></div>
+        <div class="stage" id="stage">
+          <video id="video" playsinline muted hidden></video>
+          <div class="oval" id="oval" hidden></div>
+          <div class="arrow" id="arrowL" hidden style="left:24px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F7941D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></div>
+          <div class="arrow" id="arrowR" hidden style="right:24px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F7941D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></div>
+          <div class="say" id="say" hidden></div>
+          <div class="off" id="off">
+            <div class="guides">
+              <div><span><svg width="60" height="60" viewBox="0 0 44 44"><g transform="translate(-3 0)"><ellipse cx="22" cy="18" rx="8" ry="10" fill="#8C9ACB"/><path d="M9 44c1-9 6-13 13-13s12 4 13 13z" fill="#8C9ACB"/></g></svg></span>1. Left side</div>
+              <div class="mid"><span><svg width="72" height="72" viewBox="0 0 44 44"><ellipse cx="22" cy="18" rx="8" ry="10" fill="#8C9ACB"/><path d="M9 44c1-9 6-13 13-13s12 4 13 13z" fill="#8C9ACB"/></svg></span>2. Front</div>
+              <div><span><svg width="60" height="60" viewBox="0 0 44 44"><g transform="translate(3 0)"><ellipse cx="22" cy="18" rx="8" ry="10" fill="#8C9ACB"/><path d="M9 44c1-9 6-13 13-13s12 4 13 13z" fill="#8C9ACB"/></g></svg></span>3. Right side</div>
+            </div>
+            <div style="max-width:520px"><div style="font-size:19px;font-weight:800">Three photos will be taken: left side, front, and right side</div>
+            <div style="font-size:14px;line-height:1.55;color:#C3CCE4;margin-top:6px">Ask the evacuee to remove caps, sunglasses, and face masks, and sit about an arm's length from the laptop. Your browser will ask permission to use the camera.</div></div>
+            <button type="button" class="btn btn-primary btn-lg" id="camOn">Turn On Camera</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center"><button type="button" class="btn btn-primary btn-lg" id="shoot" hidden>Capture Photo</button></div>
+      </div>
+      <div class="side">
+        <section class="panel">
+          <h3 style="font-size:16px;font-weight:800">Captured photos (<span id="count">0</span> of 3)</h3>
+          <div id="slots" style="display:flex;flex-direction:column;gap:10px"></div>
+          <div id="checkMsg" class="notice" hidden></div>
+        </section>
+        <p class="notice">For side photos, turn the head only about 30 to 45 degrees so both eyes stay visible. A full side view cannot be matched by the camera.</p>
+        <button type="button" class="btn btn-primary btn-lg" id="toStep2" disabled>Next: Evacuee Information</button>
+      </div>
+    </section>
+
+    <!-- Step 2: information -->
+    <section id="step2" class="formlayout" hidden>
+      <form id="form" novalidate style="display:flex;flex-direction:column;gap:16px">
+        <fieldset class="form-card"><legend>Personal information</legend>
+          <div class="form-grid">
+            <div class="field-group span2"><label for="first">First name *</label><input id="first" class="input req"></div>
+            <div class="field-group span2"><div style="display:flex;justify-content:space-between;align-items:center"><label for="middle">Middle name *</label><label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" id="noMiddle" style="width:16px;height:16px;accent-color:var(--navy)">No middle name</label></div><input id="middle" class="input"></div>
+            <div class="field-group span2"><label for="last">Last name *</label><input id="last" class="input req"></div>
+            <div class="field-group"><label for="suffix">Suffix *</label><select id="suffix" class="input req"><option value="">Select</option><option>None</option><option>Jr.</option><option>Sr.</option><option>II</option><option>III</option><option>IV</option></select></div>
+            <div class="field-group"><label for="sex">Sex *</label><select id="sex" class="input req"><option value="">Select</option><option>Male</option><option>Female</option></select></div>
+            <div class="field-group"><label for="bday">Birthday *</label><input id="bday" type="date" class="input req"></div>
+            <div class="field-group"><label for="age">Age</label><input id="age" class="input" readonly style="background:var(--bg)"></div>
+            <div class="field-group span2"><label for="civil">Civil status *</label><select id="civil" class="input req"><option value="">Select</option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option></select></div>
+          </div>
+        </fieldset>
+        <fieldset class="form-card"><legend>Address, household, and contact</legend>
+          <div class="form-grid">
+            <div class="field-group span4"><label for="addr">House no. and street *</label><input id="addr" class="input req"></div>
+            <div class="field-group span2"><label for="hhMode">Household *</label><select id="hhMode" class="input"><option value="new">Start a new household (this person is the head)</option><option value="join">Add to an existing household</option></select></div>
+            <div class="field-group span2" id="hhPick" hidden><label for="hhSel">Existing household *</label><select id="hhSel" class="input"></select></div>
+            <div class="field-group span2"><label for="phone">Mobile number (if any)</label><input id="phone" type="tel" class="input" placeholder="09XX XXX XXXX"></div>
+            <div class="field-group span2"><label for="ec">Emergency contact (name and number) *</label><input id="ec" class="input req" placeholder="e.g., Maria Dela Cruz, 0917 000 0000"></div>
+          </div>
+        </fieldset>
+        <fieldset class="form-card"><legend>Special needs (for evacuation priority)</legend>
+          <div class="chips" id="needs">
+            <label class="chipbox"><input type="checkbox" value="Senior citizen">Senior citizen</label>
+            <label class="chipbox"><input type="checkbox" value="Pregnant">Pregnant</label>
+            <label class="chipbox"><input type="checkbox" value="PWD">Person with Disability (PWD)</label>
+            <label class="chipbox"><input type="checkbox" value="Medical condition">Medical condition</label>
+          </div>
+        </fieldset>
+      </form>
+      <div class="side">
+        <section class="panel">
+          <div class="panel-head"><h3 style="font-size:16px;font-weight:800">Face photos</h3><button type="button" class="btn btn-ghost btn-sm" id="back1">Retake</button></div>
+          <div id="miniThumbs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+        </section>
+        <label class="check" style="align-items:flex-start;padding:14px;background:#FFFFFF;border:1.5px solid var(--line);border-radius:14px;font-size:13px;line-height:1.5"><input type="checkbox" id="consent" style="margin-top:2px">The evacuee (or their parent or guardian, if a minor) has given written consent to collect their photos and personal information under the Data Privacy Act of 2012.</label>
+        <div id="saveErr" class="form-error" hidden></div>
+        <button type="button" class="btn btn-primary btn-lg" id="register" disabled>Register Evacuee</button>
+        <p id="missing" style="font-size:13px;color:var(--muted);text-align:center"></p>
+      </div>
+    </section>
+
+    <!-- Step 3: done -->
+    <section id="step3" class="panel" hidden style="max-width:640px;align-self:center;align-items:center;text-align:center;padding:36px">
+      <div style="width:76px;height:76px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div>
+      <h2 id="doneTitle" style="font-size:26px;font-weight:800"></h2>
+      <p style="color:var(--muted);line-height:1.6">The information and face data are saved. The entrance camera loads new faces about once a minute, so this evacuee can be recognized at any evacuation center shortly.</p>
+      <div class="facts" style="width:100%;text-align:left" id="doneFacts"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center"><button type="button" class="btn btn-primary" id="again">Register Another Evacuee</button><a class="btn btn-outline" href="evacuees.html">View Evacuee List</a></div>
+    </section>
+  </main>
+</div>
+<script src="app.js?v=4"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const city = me.role === 'city_admin';
+  const $ = (id) => document.getElementById(id);
+  const ANGLES = [
+    { key: 'left', label: 'Left side', say: 'Turn your head slightly to your LEFT', arrow: 'L' },
+    { key: 'front', label: 'Front', say: 'Look straight at the camera', arrow: '' },
+    { key: 'right', label: 'Right side', say: 'Turn your head slightly to your RIGHT', arrow: 'R' }
+  ];
+  let brgys = [], brgyId = me.barangay_id, stream = null, shots = {}, embedding = null, checks = {}, step = 1, households = [];
+
+  try { brgys = await BL.api('/barangays') || []; } catch (e) {}
+  const bName = (id) => (brgys.find((b) => b.id === id) || {}).name || 'your barangay';
+  BL.renderSidebar(me, 'preregister.html', city ? null : bName(me.barangay_id));
+  if (city) {
+    brgyId = (brgys[0] || {}).id;
+    $('brgySel').hidden = false;
+    $('brgySel').innerHTML = brgys.map((b) => '<option value="' + b.id + '">' + BL.esc(b.name) + '</option>').join('');
+    $('brgySel').addEventListener('change', () => { brgyId = Number($('brgySel').value); loadHouseholds(); });
+  }
+
+  if (!window.isSecureContext || !navigator.mediaDevices) {
+    const url = 'http://127.0.0.1:' + (location.port || '8000') + '/static/app/preregister.html';
+    $('insecure').innerHTML = 'Browsers only allow the camera on the laptop itself. Open <a href="' + url + '">' + url + '</a> in Firefox on the server laptop and sign in there.';
+    $('insecure').hidden = false;
+    $('camOn').disabled = true;
+  }
+
+  function drawSteps() {
+    const names = ['Face capture', 'Evacuee information', 'Registered'];
+    $('steps').innerHTML = names.map((n, i) => {
+      const k = i + 1, cls = k < step ? 'done' : k === step ? 'cur' : '';
+      return '<li class="' + cls + '"><span class="n">' + (k < step ? '&#10003;' : k) + '</span>' + n + (k < 3 ? '<span class="line" aria-hidden="true"></span>' : '') + '</li>';
+    }).join('');
+    $('step1').hidden = step !== 1; $('step2').hidden = step !== 2; $('step3').hidden = step !== 3;
+  }
+
+  // ---------- Step 1: camera ----------
+  const target = () => ANGLES.find((a) => !shots[a.key]);
+  function drawCapture() {
+    const t = target();
+    const n = ANGLES.filter((a) => shots[a.key]).length;
+    $('count').textContent = n;
+    $('say').textContent = t ? t.say : 'All photos captured.';
+    $('arrowL').hidden = !stream || !t || t.arrow !== 'L';
+    $('arrowR').hidden = !stream || !t || t.arrow !== 'R';
+    $('shoot').hidden = !stream || !t;
+    if (t) $('shoot').textContent = 'Capture ' + t.label + ' Photo';
+    $('slots').innerHTML = ANGLES.map((a) => {
+      const c = checks[a.key];
+      const cls = c ? (c.ok ? 'ok' : 'bad') : (t && t.key === a.key && stream ? 'active' : '');
+      const status = c ? c.message : shots[a.key] ? 'Captured' : (t && t.key === a.key ? 'Capture now' : 'Waiting');
+      const color = c ? (c.ok ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
+      return '<div class="slot ' + cls + '"><div class="thumb">' + (shots[a.key] ? '<img alt="" src="' + shots[a.key] + '">' : '') + '</div>' +
+        '<div style="flex-grow:1;min-width:0"><div style="font-weight:700">' + a.label + '</div><div style="font-size:12px;font-weight:600;color:' + color + '">' + BL.esc(status) + '</div></div>' +
+        (shots[a.key] ? '<button type="button" class="btn btn-ghost btn-sm" data-retake="' + a.key + '" aria-label="Retake ' + a.label + ' photo">Retake</button>' : '') + '</div>';
+    }).join('');
+    $('toStep2').disabled = !embedding;
+  }
+
+  $('camOn').addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
+      const v = $('video');
+      v.srcObject = stream; v.hidden = false; await v.play();
+      $('off').hidden = true; $('oval').hidden = false; $('say').hidden = false;
+      $('camBadge').className = 'live-badge on'; $('camBadge').querySelector('.txt').textContent = 'Camera on';
+      drawCapture();
+    } catch (e) {
+      BL.toast(e.name === 'NotAllowedError' ? 'Camera permission was blocked. Allow it in the address bar and try again.' : 'No camera found. Check that the webcam is connected.');
+    }
+  });
+
+  function stopCamera() {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+    $('video').hidden = true; $('oval').hidden = true; $('say').hidden = true; $('off').hidden = false;
+    $('camBadge').className = 'live-badge'; $('camBadge').querySelector('.txt').textContent = 'Camera off';
+  }
+  window.addEventListener('beforeunload', stopCamera);
+
+  $('shoot').addEventListener('click', async () => {
+    const t = target(); if (!t) return;
+    const v = $('video');
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth || 640; c.height = v.videoHeight || 480;
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    shots[t.key] = c.toDataURL('image/jpeg', 0.9);
+    const f = document.createElement('div'); f.className = 'flash'; $('stage').appendChild(f); setTimeout(() => f.remove(), 500);
+    embedding = null; checks = {};
+    drawCapture();
+    if (!target()) await checkFaces();
+  });
+
+  $('slots').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-retake]'); if (!b) return;
+    delete shots[b.dataset.retake];
+    embedding = null; checks = {};
+    $('checkMsg').hidden = true;
+    drawCapture();
+  });
+
+  async function checkFaces() {
+    $('checkMsg').hidden = false; $('checkMsg').textContent = 'Checking the photos for a clear face...';
+    try {
+      const r = await BL.api('/faces/encode', { method: 'POST', json: { images: ANGLES.map((a) => shots[a.key]), angles: ANGLES.map((a) => a.key) } });
+      checks = {};
+      (r.photos || []).forEach((p) => { if (p.angle !== 'all') checks[p.angle] = p; });
+      const allMsg = (r.photos || []).find((p) => p.angle === 'all');
+      if (r.ok) {
+        embedding = r.embedding;
+        $('checkMsg').textContent = 'All three photos show a clear face of the same person.';
+        stopCamera();
+      } else {
+        $('checkMsg').textContent = allMsg ? allMsg.message : 'Retake the photos marked in red.';
+        if (allMsg) shots = {};
+      }
+    } catch (e) { $('checkMsg').textContent = e.message; }
+    drawCapture();
+  }
+
+  $('toStep2').addEventListener('click', () => {
+    step = 2; drawSteps();
+    $('miniThumbs').innerHTML = ANGLES.map((a) => '<div style="text-align:center"><div style="aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--bg)"><img alt="' + a.label + ' photo" src="' + shots[a.key] + '" style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></div><div style="font-size:12px;color:var(--muted);margin-top:4px">' + a.label + '</div></div>').join('');
+    $('first').focus();
+    syncForm();
+  });
+  $('back1').addEventListener('click', () => { step = 1; drawSteps(); drawCapture(); });
+
+  // ---------- Step 2: form ----------
+  async function loadHouseholds() {
+    try { households = await BL.api('/barangays/' + brgyId + '/households') || []; } catch (e) { households = []; }
+    $('hhSel').innerHTML = '<option value="">Select a household</option>' + households.map((h) => {
+      const head = (h.members || []).find((m) => m.is_head_of_family) || (h.members || [])[0] || {};
+      return '<option value="' + h.id + '">Household #' + h.id + (head.full_name ? ': ' + BL.esc(head.full_name) : '') + ' (' + (h.members || []).length + ' members)</option>';
+    }).join('');
+    syncForm();
+  }
+  $('hhMode').addEventListener('change', () => { $('hhPick').hidden = $('hhMode').value !== 'join'; syncForm(); });
+  $('noMiddle').addEventListener('change', () => { $('middle').disabled = $('noMiddle').checked; if ($('noMiddle').checked) $('middle').value = ''; syncForm(); });
+  $('bday').max = new Date().toISOString().slice(0, 10);
+  $('form').addEventListener('input', syncForm);
+  $('form').addEventListener('change', syncForm);
+  $('consent').addEventListener('change', syncForm);
+
+  function syncForm() {
+    const a = BL.age($('bday').value);
+    $('age').value = a === null ? '' : a + (a === 1 ? ' year old' : ' years old');
+    const req = [
+      ['First name', $('first').value.trim()], ['Middle name', $('noMiddle').checked || $('middle').value.trim()],
+      ['Last name', $('last').value.trim()], ['Suffix', $('suffix').value], ['Sex', $('sex').value],
+      ['Birthday', $('bday').value && a !== null && a >= 0], ['Civil status', $('civil').value],
+      ['House no. and street', $('addr').value.trim()],
+      ['Household', $('hhMode').value === 'new' || $('hhSel').value],
+      ['Emergency contact', $('ec').value.trim()], ['Consent', $('consent').checked]
+    ];
+    const miss = req.filter((r) => !r[1]).map((r) => r[0]);
+    $('register').disabled = miss.length > 0;
+    $('missing').textContent = miss.length ? 'Still needed: ' + miss.join(', ') + '.' : 'Ready to register.';
+  }
+
+  async function embeddingBody(vec) {
+    // Use the exact format the Raspberry Pi's enroll.py already uses, read from the API description.
+    try {
+      const spec = await fetch('/openapi.json').then((r) => r.json());
+      const path = Object.keys(spec.paths).find((p) => /^\/evacuees\/\{[^}]+\}\/facial_embedding$/.test(p));
+      let sch = spec.paths[path].post.requestBody.content['application/json'].schema;
+      if (sch.$ref) sch = spec.components.schemas[sch.$ref.split('/').pop()];
+      if (sch.type === 'array') return vec;
+      const props = sch.properties || {};
+      const key = Object.keys(props).find((k) => props[k].type === 'array' || (props[k].anyOf || []).some((x) => x.type === 'array'));
+      return { [key || 'embedding']: vec };
+    } catch (e) { return { embedding: vec }; }
+  }
+
+  $('register').addEventListener('click', async () => {
+    const btn = $('register');
+    btn.disabled = true; btn.textContent = 'Registering...';
+    $('saveErr').hidden = true;
+    const suffix = $('suffix').value === 'None' ? '' : $('suffix').value;
+    const fullName = [$('first').value.trim(), $('noMiddle').checked ? '' : $('middle').value.trim(), $('last').value.trim(), suffix].filter(Boolean).join(' ');
+    const needs = Array.from(document.querySelectorAll('#needs input:checked')).map((i) => i.value);
+    const base = { full_name: fullName, birthdate: $('bday').value, sex: $('sex').value, address: $('addr').value.trim(), contact_number: $('phone').value.trim() || null };
+    const extra = { civil_status: $('civil').value, special_needs: needs, emergency_contact: $('ec').value.trim() };
+    let id = null;
+    try {
+      if ($('hhMode').value === 'new') {
+        const h = await BL.api('/households', { method: 'POST', json: { registered_barangay_id: brgyId, members: [Object.assign({ is_head_of_family: true }, base)] } });
+        id = (h.members || [])[0].id;
+        await BL.api('/evacuees/' + id, { method: 'PUT', json: extra });
+      } else {
+        const m = await BL.api('/households/' + $('hhSel').value + '/members', { method: 'POST', json: Object.assign({}, base, extra) });
+        id = m.id;
+      }
+      await BL.api('/evacuees/' + id + '/facial_embedding', { method: 'POST', json: await embeddingBody(embedding) });
+    } catch (ex) {
+      $('saveErr').textContent = (id ? 'The evacuee was saved (ID ' + id + '), but the face data was not: ' : '') + ex.message;
+      $('saveErr').hidden = false;
+      btn.textContent = 'Register Evacuee'; btn.disabled = false;
+      return;
+    }
+    const a = BL.age($('bday').value);
+    $('doneTitle').textContent = fullName + ' is registered';
+    $('doneFacts').innerHTML =
+      '<div><div class="k">Sex</div><div class="v">' + BL.esc($('sex').value) + '</div></div>' +
+      '<div><div class="k">Age</div><div class="v">' + a + ' years old</div></div>' +
+      '<div><div class="k">Face data</div><div class="v" style="color:var(--green)">3 of 3 photos saved</div></div>' +
+      '<div><div class="k">Barangay</div><div class="v">' + BL.esc(bName(brgyId)) + '</div></div>' +
+      '<div><div class="k">Special needs</div><div class="v">' + (needs.length ? BL.esc(needs.join(', ')) : 'None') + '</div></div>' +
+      '<div><div class="k">Evacuee ID</div><div class="v">' + id + '</div></div>';
+    step = 3; drawSteps();
+    btn.textContent = 'Register Evacuee';
+  });
+
+  $('again').addEventListener('click', () => {
+    shots = {}; checks = {}; embedding = null;
+    $('form').reset(); $('consent').checked = false; $('middle').disabled = false; $('hhPick').hidden = true;
+    $('checkMsg').hidden = true;
+    step = 1; drawSteps(); drawCapture(); loadHouseholds();
+  });
+
+  drawSteps(); drawCapture(); loadHouseholds();
+})();
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Evacuees · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="app.css?v=4">
 </head>
 <body>
 <div class="shell">
@@ -41,13 +41,13 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
   const city = me.role === 'city_admin';
   const $ = (id) => document.getElementById(id);
-  let brgyNames = {}, centerNames = {}, where = {}, list = [];
+  let brgyNames = {}, centerNames = {}, where = {}, list = [], extra = {};
   let filter = 'all';
 
   try {
@@ -64,6 +64,8 @@
     ['out', 'Not yet', (e) => !where[e.id]],
     ['kids', 'Children', (e) => { const a = BL.age(e.birthdate); return a !== null && a < 18; }],
     ['seniors', 'Seniors', (e) => { const a = BL.age(e.birthdate); return a !== null && a >= 60; }],
+    ['pwd', 'PWD', (e) => ((extra[e.id] || {}).special_needs || []).includes('PWD')],
+    ['preg', 'Pregnant', (e) => ((extra[e.id] || {}).special_needs || []).includes('Pregnant')],
     ['face', 'Face ID', (e) => e.identification_method === 'facial_recognition'],
     ['manual', 'Manual', (e) => e.identification_method !== 'facial_recognition']
   ];
@@ -78,7 +80,8 @@
 
   async function load() {
     try {
-      const [evacuees, summary] = await Promise.all([BL.api('/evacuees'), BL.api('/dashboard/summary')]);
+      const [evacuees, summary, det] = await Promise.all([BL.api('/evacuees'), BL.api('/dashboard/summary'), BL.api('/evacuee_details').catch(() => [])]);
+      extra = {}; (det || []).forEach((d) => { extra[d.id] = d; });
       where = {};
       (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => (c.evacuees || []).forEach((ev) => { where[ev.id] = c.name; })));
       list = (evacuees || []).filter((e) => city || e.registered_barangay_id === me.barangay_id);
@@ -104,7 +107,7 @@
       const hh = e.household_id ? 'Household #' + e.household_id + (e.is_head_of_family ? ' <span class="chip navy">Head</span>' : '') : '<span style="color:var(--muted)">None</span>';
       return '<tr>' +
         '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(e.full_name) + '</strong> ' + face +
-        '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + BL.esc(e.sex || 'Sex not set') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + '</div></td>' +
+        '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + BL.esc(e.sex || 'Sex not set') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + ' ' + ((extra[e.id] || {}).special_needs || []).map((n) => '<span class="chip">' + BL.esc(n) + '</span>').join(' ') + '</div></td>' +
         (city ? '<td>' + BL.esc(brgyNames[e.registered_barangay_id] || '-') + '</td>' : '') +
         '<td>' + hh + '</td><td>' + status + '</td>' +
         '<td><div class="row-actions">' +
@@ -141,6 +144,9 @@
       '<div><div class="k">Identification</div><div class="v">' + (ev.identification_method === 'facial_recognition' ? 'Face ID' : 'Manual') + '</div></div>' +
       '<div><div class="k">Barangay</div><div class="v">' + BL.esc(brgyNames[ev.registered_barangay_id] || '-') + '</div></div>' +
       '<div><div class="k">Household</div><div class="v">' + (ev.household_id ? '#' + ev.household_id + (ev.is_head_of_family ? ' (head)' : '') : 'None') + '</div></div>' +
+      '<div><div class="k">Civil status</div><div class="v">' + BL.esc((extra[ev.id] || {}).civil_status || '-') + '</div></div>' +
+      '<div><div class="k">Emergency contact</div><div class="v">' + BL.esc((extra[ev.id] || {}).emergency_contact || '-') + '</div></div>' +
+      '<div><div class="k">Special needs</div><div class="v">' + BL.esc(((extra[ev.id] || {}).special_needs || []).join(', ') || 'None') + '</div></div>' +
       '</div>' +
       '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Movement history</h3><ul class="timeline" id="hist"><li style="color:var(--muted)">Loading history.</li></ul></div>' +
       '</div>' +
@@ -159,6 +165,7 @@
   }
 
   function edit(ev) {
+    const ex = extra[ev.id] || {};
     const sexes = ['Male', 'Female'];
     if (ev.sex && !sexes.includes(ev.sex)) sexes.unshift(ev.sex);
     const m = BL.modal(
@@ -171,6 +178,9 @@
       '<div class="field-group span2"><label for="fAge">Age</label><input id="fAge" class="input" readonly style="background:var(--bg)"></div>' +
       '<div class="field-group span4"><label for="fAddr">Address *</label><input id="fAddr" class="input" value="' + BL.esc(ev.address || '') + '"></div>' +
       '<div class="field-group span2"><label for="fPhone">Contact number</label><input id="fPhone" type="tel" class="input" value="' + BL.esc(ev.contact_number || '') + '"></div>' +
+      '<div class="field-group span2"><label for="fCivil">Civil status</label><select id="fCivil" class="input">' + ['', 'Single', 'Married', 'Widowed', 'Separated'].map((c) => '<option value="' + c + '"' + (c === (ex.civil_status || '') ? ' selected' : '') + '>' + (c || 'Not set') + '</option>').join('') + '</select></div>' +
+      '<div class="field-group span4"><label for="fEc">Emergency contact</label><input id="fEc" class="input" value="' + BL.esc(ex.emergency_contact || '') + '"></div>' +
+      '<div class="field-group span4"><span style="font-size:14px;font-weight:700">Special needs</span><div style="display:flex;flex-wrap:wrap;gap:8px" id="fNeeds">' + ['Senior citizen', 'Pregnant', 'PWD', 'Medical condition'].map((n) => '<label class="check" style="border:1.5px solid var(--field);border-radius:10px;padding:0 12px"><input type="checkbox" value="' + n + '"' + ((ex.special_needs || []).includes(n) ? ' checked' : '') + '>' + n + '</label>').join('') + '</div></div>' +
       '</div></div>' +
       '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)" id="eHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="eSave">Save Changes</button></div></div>' +
       '</form>', 720);
@@ -193,7 +203,9 @@
       try {
         await BL.api('/evacuees/' + ev.id, { method: 'PUT', json: {
           full_name: f('fName').value, sex: f('fSex').value, birthdate: f('fBday').value,
-          address: f('fAddr').value, contact_number: f('fPhone').value
+          address: f('fAddr').value, contact_number: f('fPhone').value,
+          civil_status: f('fCivil').value || null, emergency_contact: f('fEc').value.trim() || null,
+          special_needs: Array.from(m.el.querySelectorAll('#fNeeds input:checked')).map((i) => i.value)
         } });
         m.close();
         BL.toast('Evacuee information updated.');

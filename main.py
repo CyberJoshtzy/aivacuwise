@@ -574,6 +574,9 @@ class BLEvacueeUpdate(_BLBaseModel):
     sex: _BLOptional[str] = None
     address: _BLOptional[str] = None
     contact_number: _BLOptional[str] = None
+    civil_status: _BLOptional[str] = None
+    special_needs: _BLOptional[list] = None
+    emergency_contact: _BLOptional[str] = None
 
 
 class BLCenterUpdate(_BLBaseModel):
@@ -601,6 +604,9 @@ def _bl_evacuee_dict(e):
         'registered_barangay_id': e.registered_barangay_id,
         'identification_method': e.identification_method,
         'household_id': e.household_id, 'is_head_of_family': e.is_head_of_family,
+        'civil_status': getattr(e, 'civil_status', None),
+        'special_needs': [x for x in (getattr(e, 'special_needs', None) or '').split(',') if x],
+        'emergency_contact': getattr(e, 'emergency_contact', None),
     }
 
 
@@ -625,6 +631,8 @@ async def bl_update_evacuee(evacuee_id: int, payload: BLEvacueeUpdate,
     for key, value in data.items():
         if key == 'birthdate' and value is not None and birth_is_text:
             value = value.isoformat()
+        if key == 'special_needs':
+            value = ','.join(sorted({str(x).strip() for x in (value or []) if str(x).strip()})) or None
         if isinstance(value, str):
             value = value.strip()
         setattr(e, key, value)
@@ -849,3 +857,107 @@ async def bl_delete_barangay(barangay_id: int, db: _BLSession = _BLDepends(get_d
     db.delete(b)
     db.commit()
     return {'deleted': barangay_id}
+
+
+# ---- BilisLikas 2.0: pre-registration with webcam photos (batch 4) ----
+class BLFaceImages(_BLBaseModel):
+    images: list
+    angles: _BLOptional[list] = None
+
+
+class BLMemberCreate(_BLBaseModel):
+    full_name: str
+    birthdate: _BLDate
+    sex: str
+    address: str
+    contact_number: _BLOptional[str] = None
+    civil_status: _BLOptional[str] = None
+    special_needs: _BLOptional[list] = None
+    emergency_contact: _BLOptional[str] = None
+
+
+@app.post('/faces/encode')
+def bl_faces_encode(payload: BLFaceImages, user=_BLDepends(auth.get_current_user)):
+    """Checks each photo for exactly one face and returns their averaged face signature.
+    Plain def (not async), so FastAPI runs the slow face math in a worker thread."""
+    import base64
+    import io
+    import numpy as np
+    from PIL import Image
+    try:
+        import face_recognition
+    except ImportError:
+        raise _BLHTTPException(status_code=503, detail='Face recognition is not installed on the server.')
+    images = payload.images or []
+    if not 1 <= len(images) <= 5:
+        raise _BLHTTPException(status_code=422, detail='Send between 1 and 5 photos.')
+    angles = payload.angles or []
+    photos, encodings = [], []
+    for idx, data in enumerate(images):
+        label = str(angles[idx]) if idx < len(angles) else 'photo %d' % (idx + 1)
+        try:
+            raw = data.split(',', 1)[1] if str(data).startswith('data:') else data
+            img = Image.open(io.BytesIO(base64.b64decode(raw))).convert('RGB')
+        except Exception:
+            photos.append({'angle': label, 'ok': False, 'message': 'The ' + label + ' photo could not be read. Retake it.'})
+            continue
+        arr = np.array(img)
+        locs = face_recognition.face_locations(arr, number_of_times_to_upsample=1, model='hog')
+        if not locs:
+            photos.append({'angle': label, 'ok': False, 'message': 'No face found in the ' + label + ' photo. Face the light, remove caps or sunglasses, and turn the head a little less.'})
+            continue
+        if len(locs) > 1:
+            photos.append({'angle': label, 'ok': False, 'message': 'More than one face in the ' + label + ' photo. Only the evacuee should be in view.'})
+            continue
+        encodings.append(face_recognition.face_encodings(arr, known_face_locations=locs, num_jitters=1)[0])
+        photos.append({'angle': label, 'ok': True, 'message': 'Face found in the ' + label + ' photo.'})
+    ok = len(encodings) == len(images)
+    worst = 0.0
+    if ok and len(encodings) > 1:
+        worst = max(float(np.linalg.norm(a - b)) for i, a in enumerate(encodings) for b in encodings[i + 1:])
+        if worst > 0.6:
+            ok = False
+            photos.append({'angle': 'all', 'ok': False, 'message': 'The photos do not look like the same person. Retake all three.'})
+    return {
+        'ok': ok, 'photos': photos, 'max_distance': round(worst, 3),
+        'embedding': [float(x) for x in np.mean(encodings, axis=0)] if ok else None,
+    }
+
+
+@app.post('/households/{household_id}/members')
+async def bl_add_member(household_id: int, payload: BLMemberCreate, db: _BLSession = _BLDepends(get_db),
+                        user=_BLDepends(auth.get_current_user)):
+    Household = _bl_model('households')
+    Evacuee = _bl_model('evacuees')
+    h = db.query(Household).filter(Household.id == household_id).first()
+    if not h:
+        raise _BLHTTPException(status_code=404, detail='Household not found.')
+    if not _bl_can_edit(user, h.registered_barangay_id):
+        raise _BLHTTPException(status_code=403, detail='You can only add members to your own barangay\'s households.')
+    if not payload.full_name.strip() or not payload.address.strip() or not payload.sex.strip():
+        raise _BLHTTPException(status_code=422, detail='Full name, sex, and address are required.')
+    birth = payload.birthdate
+    if isinstance(Evacuee.birthdate.property.columns[0].type, _BLString):
+        birth = birth.isoformat()
+    needs = ','.join(sorted({str(x).strip() for x in (payload.special_needs or []) if str(x).strip()})) or None
+    e = Evacuee(full_name=payload.full_name.strip(), birthdate=birth, sex=payload.sex.strip(), address=payload.address.strip(),
+                contact_number=(payload.contact_number or '').strip() or None, registered_barangay_id=h.registered_barangay_id,
+                household_id=h.id, is_head_of_family=False, identification_method='facial_recognition',
+                civil_status=payload.civil_status, special_needs=needs, emergency_contact=payload.emergency_contact)
+    db.add(e)
+    db.commit()
+    db.refresh(e)
+    await _bl_notify(h.registered_barangay_id)
+    return _bl_evacuee_dict(e)
+
+
+@app.get('/evacuee_details')
+def bl_evacuee_details(db: _BLSession = _BLDepends(get_db), user=_BLDepends(auth.get_current_user)):
+    Evacuee = _bl_model('evacuees')
+    q = db.query(Evacuee)
+    if user.role != 'city_admin':
+        q = q.filter(Evacuee.registered_barangay_id == user.barangay_id)
+    return [{
+        'id': e.id, 'civil_status': e.civil_status, 'emergency_contact': e.emergency_contact,
+        'special_needs': [x for x in (e.special_needs or '').split(',') if x],
+    } for e in q.all()]

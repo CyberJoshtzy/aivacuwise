@@ -46,6 +46,9 @@ class Evacuee(Base):
     facial_embedding = Column(Text, nullable=True)
     registered_barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=True)
     identification_method = Column(String, nullable=True, default="manual")
+    civil_status = Column(String, nullable=True)
+    special_needs = Column(String, nullable=True)
+    emergency_contact = Column(String, nullable=True)
     household_id = Column(Integer, ForeignKey("households.id"), nullable=True)
     is_head_of_family = Column(Boolean, nullable=True, default=False)
 
