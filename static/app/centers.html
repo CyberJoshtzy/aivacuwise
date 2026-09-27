@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evacuation Centers · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css">
+<style>
+.ccard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.ccard h2 { font-size: 17px; font-weight: 800; }
+.ccard .addr { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.ccard .occ { display: flex; justify-content: space-between; align-items: baseline; }
+.ccard .occ .n { font-size: 26px; font-weight: 800; }
+.ccard .occ .n small { font-size: 15px; font-weight: 600; color: var(--muted); }
+.ccard .bar { height: 12px; border-radius: 6px; }
+.ccard .actions { display: flex; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line-soft); }
+.ccard .actions .btn-primary { flex-grow: 1; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stats .kpi .value { font-size: 28px; }
+@media (max-width: 1100px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1>Evacuation Centers</h1>
+        <p>Where evacuees can go, and how full each place is right now.</p>
+      </div>
+      <div class="toolbar">
+        <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
+        <select id="bFilter" class="input" style="width:220px;height:46px" hidden aria-label="Filter by barangay"></select>
+        <button type="button" class="btn btn-primary" id="add">Add Center</button>
+      </div>
+    </div>
+
+    <div id="loadError" class="form-error" role="alert" hidden></div>
+
+    <div class="stats">
+      <div class="kpi"><div class="label">Evacuees in centers</div><div class="value" id="sIn">0</div></div>
+      <div class="kpi"><div class="label">Spaces left</div><div class="value tone-green" id="sFree">0</div></div>
+      <div class="kpi"><div class="label">Centers</div><div class="value" id="sCount">0</div></div>
+      <div class="kpi"><div class="label">Fullest center</div><div class="value" id="sFull" style="font-size:18px;margin-top:10px">-</div></div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+    <div id="empty" class="empty" hidden>No evacuation centers yet. Add your barangay's first center.</div>
+    <p class="notice">Facilities, camera status, and barangays sharing a center from the design will appear on these cards once those records are added to the backend.</p>
+  </main>
+</div>
+<script src="app.js"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const city = me.role === 'city_admin';
+  const $ = (id) => document.getElementById(id);
+  let brgys = [], brgyNames = {}, centers = [], live = {};
+
+  try { brgys = await BL.api('/barangays') || []; } catch (e) { brgys = []; }
+  brgys.forEach((b) => { brgyNames[b.id] = b.name; });
+  BL.renderSidebar(me, 'centers.html', brgyNames[me.barangay_id]);
+  if (city) {
+    $('bFilter').hidden = false;
+    $('bFilter').innerHTML = '<option value="">All barangays</option>' + brgys.map((b) => '<option value="' + b.id + '">' + BL.esc(b.name) + '</option>').join('');
+    $('bFilter').addEventListener('change', render);
+  }
+
+  async function load() {
+    try {
+      const [list, summary] = await Promise.all([BL.api('/evacuation_centers'), BL.api('/dashboard/summary')]);
+      live = {};
+      (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => { live[c.id] = c; }));
+      centers = (list || []).filter((c) => city || c.barangay_id === me.barangay_id);
+      $('loadError').hidden = true;
+      render();
+    } catch (e) {
+      $('loadError').textContent = e.message; $('loadError').hidden = false;
+    }
+  }
+
+  function occOf(c) { return live[c.id] ? (live[c.id].occupancy || 0) : 0; }
+
+  function render() {
+    const bf = city ? Number($('bFilter').value) || null : null;
+    const shown = centers.filter((c) => !bf || c.barangay_id === bf)
+      .sort((a, b) => occOf(b) / (b.capacity || 1) - occOf(a) / (a.capacity || 1));
+    const inside = shown.reduce((a, c) => a + occOf(c), 0);
+    const free = shown.reduce((a, c) => a + Math.max(0, (c.capacity || 0) - occOf(c)), 0);
+    $('sIn').textContent = inside;
+    $('sFree').textContent = free;
+    $('sCount').textContent = shown.length;
+    const top = shown[0];
+    $('sFull').textContent = top && occOf(top) ? top.name + ' (' + Math.round(occOf(top) / top.capacity * 100) + '%)' : 'All centers are empty';
+    $('cards').innerHTML = shown.map((c) => {
+      const occ = occOf(c);
+      const p = c.capacity ? occ / c.capacity : 0;
+      const t = BL.tone(p);
+      const note = p >= 0.95 ? 'Full or almost full. Direct new arrivals to another center.' : p >= 0.8 ? 'Almost full.' : (c.capacity - occ) + ' spaces left.';
+      return '<article class="ccard">' +
+        '<div><h2>' + BL.esc(c.name) + '</h2><div class="addr">' + BL.esc(c.address || 'No address') + (city ? ' &#183; ' + BL.esc(brgyNames[c.barangay_id] || 'Barangay #' + c.barangay_id) : '') + '</div></div>' +
+        '<div><div class="occ"><span class="n">' + occ + '<small> / ' + c.capacity + '</small></span><strong class="tone-' + t + '">' + Math.round(p * 100) + '%</strong></div>' +
+        '<div class="bar" style="margin-top:6px"><span style="width:' + Math.min(100, Math.round(p * 100)) + '%;background:' + BL.TONE_HEX[t] + '"></span></div>' +
+        '<div style="font-size:12px;font-weight:600;margin-top:6px;color:' + (p >= 0.8 ? 'var(--orange-text)' : 'var(--muted)') + '">' + note + '</div></div>' +
+        '<div class="actions">' +
+        '<button type="button" class="btn btn-primary btn-sm" data-act="view" data-id="' + c.id + '">View Details</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + c.id + '" aria-label="Edit ' + BL.esc(c.name) + '">Edit</button>' +
+        '<button type="button" class="btn btn-del btn-sm" data-act="del" data-id="' + c.id + '" aria-label="Delete ' + BL.esc(c.name) + '">Delete</button>' +
+        '</div></article>';
+    }).join('');
+    $('empty').hidden = shown.length > 0;
+  }
+
+  $('cards').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const c = centers.find((x) => x.id === Number(b.dataset.id)); if (!c) return;
+    if (b.dataset.act === 'view') view(c);
+    if (b.dataset.act === 'edit') form(c);
+    if (b.dataset.act === 'del') del(c);
+  });
+  $('add').addEventListener('click', () => form(null));
+
+  const xBtn = '<button type="button" class="x-btn" data-close aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5368" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>';
+
+  function view(c) {
+    const people = live[c.id] ? (live[c.id].evacuees || []) : [];
+    const occ = occOf(c);
+    BL.modal(
+      '<div class="dialog-head"><div><h2>' + BL.esc(c.name) + '</h2><div style="font-size:14px;color:var(--muted)">' + BL.esc(c.address || '') + ' &#183; ' + occ + ' of ' + c.capacity + ' evacuees</div></div>' + xBtn + '</div>' +
+      '<div class="dialog-body"><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Evacuees inside now</h3>' +
+      (people.length ? '<div class="table-wrap"><table class="data"><thead><tr><th scope="col">Name</th><th scope="col">Identified by</th></tr></thead><tbody>' +
+        people.map((p) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(p.full_name) + '</strong></td><td>' + (p.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>') + '</td></tr>').join('') +
+        '</tbody></table></div>' : '<div class="empty">Nobody is checked in at this center right now.</div>') +
+      '</div><div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><a class="btn btn-outline" href="transfers.html">Transfer Evacuees</a><button type="button" class="btn btn-ghost" data-close>Close</button></div></div>', 720);
+  }
+
+  function form(c) {
+    const editing = !!c;
+    const brgySelect = city && !editing
+      ? '<div class="field-group span4"><label for="cB">Barangay *</label><select id="cB" class="input">' + brgys.map((b) => '<option value="' + b.id + '">' + BL.esc(b.name) + '</option>').join('') + '</select></div>'
+      : '';
+    const m = BL.modal(
+      '<form id="cf" novalidate style="display:contents">' +
+      '<div class="dialog-head"><h2>' + (editing ? 'Edit evacuation center' : 'Add evacuation center') + '</h2>' + xBtn + '</div>' +
+      '<div class="dialog-body"><div class="form-error" id="cErr" role="alert" hidden style="margin-bottom:14px"></div><div class="form-grid">' +
+      '<div class="field-group span4"><label for="cName">Center name *</label><input id="cName" class="input" placeholder="e.g., Barangay Covered Court" value="' + BL.esc(editing ? c.name : '') + '"></div>' +
+      '<div class="field-group span4"><label for="cAddr">Address *</label><input id="cAddr" class="input" value="' + BL.esc(editing ? (c.address || '') : '') + '"></div>' +
+      '<div class="field-group"><label for="cCap">Capacity *</label><input id="cCap" type="number" min="1" class="input" value="' + (editing ? c.capacity : '') + '"></div>' +
+      brgySelect +
+      '</div></div>' +
+      '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)" id="cHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="cSave">' + (editing ? 'Save Changes' : 'Add Center') + '</button></div></div>' +
+      '</form>', 640);
+    const f = (id) => m.el.querySelector('#' + id);
+    const sync = () => {
+      const miss = [];
+      if (!f('cName').value.trim()) miss.push('name');
+      if (!f('cAddr').value.trim()) miss.push('address');
+      if (!(Number(f('cCap').value) > 0)) miss.push('capacity');
+      f('cSave').disabled = miss.length > 0;
+      f('cHint').textContent = miss.length ? 'Required: ' + miss.join(', ') + '.' : 'Ready to save.';
+    };
+    ['cName', 'cAddr', 'cCap'].forEach((id) => f(id).addEventListener('input', sync));
+    sync();
+    f('cf').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      f('cSave').disabled = true;
+      const body = { name: f('cName').value.trim(), address: f('cAddr').value.trim(), capacity: Number(f('cCap').value) };
+      try {
+        if (editing) {
+          await BL.api('/evacuation_centers/' + c.id, { method: 'PUT', json: body });
+          BL.toast('Center information updated.');
+        } else {
+          body.barangay_id = city ? Number(f('cB').value) : me.barangay_id;
+          await BL.api('/evacuation_centers', { method: 'POST', json: body });
+          BL.toast(body.name + ' was added.');
+        }
+        m.close();
+        load();
+      } catch (ex) {
+        f('cErr').textContent = ex.message; f('cErr').hidden = false; f('cSave').disabled = false;
+      }
+    });
+  }
+
+  function del(c) {
+    BL.confirmBox({
+      title: 'Delete ' + c.name + '?',
+      text: 'This removes the center from the list. Centers with evacuees inside, or with past check-ins or transfers, are kept for the records and cannot be deleted.',
+      ok: 'Delete Center', danger: true,
+      action: () => BL.api('/evacuation_centers/' + c.id, { method: 'DELETE' })
+    }).then((done) => { if (done) { BL.toast(c.name + ' was deleted.'); load(); } });
+  }
+
+  await load();
+  BL.connectLive(() => load(), $('live'));
+})();
+</script>
+</body>
+</html>

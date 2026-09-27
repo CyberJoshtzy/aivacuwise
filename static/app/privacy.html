@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Privacy Notice · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css">
+<style>
+body { background: var(--bg); }
+.dialog header { padding: 26px 34px 18px; border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; }
+.dialog .icon { width: 52px; height: 52px; flex-shrink: 0; border-radius: 14px; background: var(--tint); display: flex; align-items: center; justify-content: center; }
+.dialog .body { padding: 22px 34px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; font-size: 15px; line-height: 1.6; color: #2B3345; }
+.dialog .body h2 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+.dialog .body ul { margin: 0; padding-left: 20px; }
+.dialog footer { padding: 18px 34px 26px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px; }
+.dialog .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.decline { color: var(--red); background: transparent; border: none; font: inherit; font-weight: 700; min-height: 44px; padding: 0 16px; border-radius: 12px; cursor: pointer; }
+.decline:hover { background: var(--red-bg); }
+</style>
+</head>
+<body>
+<div class="scrim" style="background: rgba(14,31,79,.62)">
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="title">
+    <header>
+      <div class="icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#142C6E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div>
+        <div id="welcome" style="font-size:14px;font-weight:800;color:var(--orange-text)">Welcome</div>
+        <h1 id="title" style="font-size:22px;font-weight:800">Data Privacy Notice and Confidentiality Agreement</h1>
+        <p style="font-size:14px;color:var(--muted)">Please read before continuing to the dashboard.</p>
+      </div>
+    </header>
+    <div class="body">
+      <p>BilisLikas 2.0 processes personal and sensitive personal information of evacuees, including facial recognition data, in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173).</p>
+      <div><h2>Information in this system</h2><p>Full name, birthdate, sex, address, contact number, household membership, facial recognition data, check-in and transfer records, and tracker locations.</p></div>
+      <div><h2>Why it is collected</h2><p>To identify evacuees at evacuation centers, monitor center occupancy, coordinate transfers between centers, and help reunite families during disasters.</p></div>
+      <div><h2>Your responsibilities as an authorized official</h2>
+        <ul>
+          <li>Access evacuee records only for disaster response duties.</li>
+          <li>Do not copy, photograph, print, or share evacuee data outside this system.</li>
+          <li>Collect each evacuee's written consent before registering their face.</li>
+          <li>Sign out whenever you leave the device.</li>
+          <li>Report any suspected data breach to the City Admin immediately.</li>
+        </ul>
+      </div>
+      <div><h2>Storage and retention</h2><p>Data is stored on the city's local server and is not sent to third-party cloud services. Records are kept for [RETENTION PERIOD, to be set by the City DRRM Office], then deleted.</p></div>
+    </div>
+    <footer>
+      <label class="check" style="font-size:15px;font-weight:600"><input type="checkbox" id="agree">I have read this notice and agree to comply with it.</label>
+      <div class="actions">
+        <button type="button" class="decline" id="decline">Decline and Sign Out</button>
+        <button type="button" class="btn btn-primary btn-lg" id="continue" disabled>Agree and Continue</button>
+      </div>
+    </footer>
+  </section>
+</div>
+<script src="app.js"></script>
+<script>
+  (async () => {
+    const me = await BL.requireAuth({ skipPrivacy: true });
+    let name = me.role === 'city_admin' ? 'City Admin' : 'your barangay';
+    if (me.barangay_id) {
+      try {
+        const list = await BL.api('/barangays');
+        const b = (list || []).find((x) => x.id === me.barangay_id);
+        if (b) name = b.name;
+      } catch (e) { /* keep default */ }
+    }
+    document.getElementById('welcome').textContent = 'Welcome, ' + name;
+    const agree = document.getElementById('agree');
+    const cont = document.getElementById('continue');
+    agree.addEventListener('change', () => { cont.disabled = !agree.checked; });
+    cont.addEventListener('click', () => { BL.acceptPrivacy(); location.href = BL.homeFor(me); });
+    document.getElementById('decline').addEventListener('click', () => BL.logout());
+  })();
+</script>
+</body>
+</html>

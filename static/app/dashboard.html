@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css">
+<style>
+.groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.group { padding: 14px; border-radius: 12px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
+.group .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.group .name { font-size: 14px; font-weight: 700; }
+.group .num { font-size: 26px; font-weight: 800; color: var(--navy); }
+.group .num small { font-size: 14px; font-weight: 600; color: var(--muted); }
+.group .bar > span { background: var(--navy); }
+.center-row { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+.center-row .top { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.center-row .bar { height: 12px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="kicker">Dashboard</div>
+        <h1 id="welcome">Welcome</h1>
+        <p>Here is today's evacuation overview, updated live from your evacuation centers.</p>
+      </div>
+      <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
+    </div>
+
+    <div id="loadError" class="form-error" role="alert" hidden></div>
+
+    <div class="grid grid-4">
+      <div class="kpi"><div class="label">Evacuated</div><div class="value tone-green" id="kEvac">0</div><div class="bar" style="margin-top:10px"><span id="kEvacBar" style="width:0"></span></div><div class="sub" id="kEvacSub">Loading</div></div>
+      <div class="kpi"><div class="label">Unaccounted for</div><div class="value tone-red" id="kMiss">0</div><div class="sub" id="kMissSub">Registered residents not yet checked in</div></div>
+      <div class="kpi"><div class="label">People in your centers</div><div class="value" id="kOcc">0</div><div class="sub" id="kOccSub">Loading</div></div>
+      <div class="kpi"><div class="label">Relief given</div><div class="value" style="color:var(--muted)">None yet</div><div class="sub">Relief records arrive with the relief module (next backend step)</div></div>
+    </div>
+
+    <div class="grid grid-2">
+      <section class="panel">
+        <div class="panel-head"><h2>Vulnerable groups</h2><span class="note">Evacuated of registered</span></div>
+        <div class="groups" id="groups"></div>
+        <p class="notice">Children and senior citizens are counted from each resident's birthdate. Pregnant and PWD counts will appear once these fields are added to pre-registration.</p>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Evacuation center occupancy</h2><span class="note" id="occNote"></span></div>
+        <div id="centers"></div>
+      </section>
+    </div>
+
+    <div class="grid grid-2">
+      <section class="panel">
+        <div class="panel-head"><h2>Residents not yet evacuated</h2><span class="note">Seniors and young children first</span></div>
+        <div class="table-wrap" id="missingTable"><table class="data"><thead><tr><th scope="col">Name</th><th scope="col">Age</th><th scope="col">Address</th></tr></thead><tbody id="missing"></tbody></table></div>
+        <div id="missingEmpty" class="empty" hidden>Everyone registered in your barangay is checked in at an evacuation center.</div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>History log</h2><span class="note">Live check-ins and recent transfers</span></div>
+        <ul class="feed" id="feed"></ul>
+        <div id="feedEmpty" class="empty" hidden>No activity yet. Check-ins appear here the moment they happen.</div>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="app.js"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth({ role: 'barangay_official' });
+  const $ = (id) => document.getElementById(id);
+  let brgyName = 'your barangay';
+  let centerNames = {};
+  let names = {};
+  let prev = null;          // center id -> Set of evacuee ids, for live diffs
+  const feed = [];          // { text, time, dot, fresh }
+
+  try {
+    const [brgys, centers] = await Promise.all([BL.api('/barangays'), BL.api('/evacuation_centers')]);
+    const b = (brgys || []).find((x) => x.id === me.barangay_id);
+    if (b) brgyName = b.name;
+    (centers || []).forEach((c) => { centerNames[c.id] = c.name; });
+  } catch (e) { /* page still works with defaults */ }
+  $('welcome').textContent = 'Welcome, ' + brgyName + '!';
+  BL.renderSidebar(me, 'dashboard.html', brgyName);
+
+  async function load(live) {
+    let summary, evacuees;
+    try {
+      [summary, evacuees] = await Promise.all([BL.api('/dashboard/summary'), BL.api('/evacuees')]);
+      $('loadError').hidden = true;
+    } catch (e) {
+      $('loadError').textContent = e.message;
+      $('loadError').hidden = false;
+      return;
+    }
+    const brgy = (summary.barangays || []).find((x) => x.id === me.barangay_id) || (summary.barangays || [])[0] || { centers: [] };
+    const centers = brgy.centers || [];
+    const present = new Set();
+    const now = {};
+    centers.forEach((c) => {
+      now[c.id] = new Set();
+      (c.evacuees || []).forEach((ev) => { present.add(ev.id); now[c.id].add(ev.id); names[ev.id] = ev.full_name; });
+    });
+    (evacuees || []).forEach((ev) => { names[ev.id] = ev.full_name; });
+
+    // Live diff: who arrived or left since the last update
+    if (live && prev) {
+      centers.forEach((c) => {
+        const before = prev[c.id] || new Set();
+        now[c.id].forEach((id) => { if (!before.has(id)) feed.unshift({ text: '<strong>' + BL.esc(names[id] || 'Evacuee #' + id) + '</strong> checked in at ' + BL.esc(c.name), time: BL.time(), dot: '#15803D', fresh: true }); });
+        before.forEach((id) => { if (!now[c.id].has(id)) feed.unshift({ text: '<strong>' + BL.esc(names[id] || 'Evacuee #' + id) + '</strong> left ' + BL.esc(c.name), time: BL.time(), dot: '#1D4ED8', fresh: true }); });
+      });
+    }
+    prev = now;
+
+    // KPIs
+    const residents = (evacuees || []).filter((ev) => ev.registered_barangay_id === me.barangay_id);
+    const evacuated = residents.filter((ev) => present.has(ev.id));
+    const missing = residents.filter((ev) => !present.has(ev.id));
+    const pct = residents.length ? evacuated.length / residents.length : 0;
+    $('kEvac').innerHTML = evacuated.length + ' <small>of ' + residents.length + '</small>';
+    $('kEvacBar').style.width = Math.round(pct * 100) + '%';
+    $('kEvacSub').textContent = residents.length ? Math.round(pct * 100) + '% of registered residents are safe' : 'No residents registered yet';
+    $('kMiss').textContent = missing.length;
+    const occ = centers.reduce((a, c) => a + (c.occupancy || 0), 0);
+    const cap = centers.reduce((a, c) => a + (c.capacity || 0), 0);
+    $('kOcc').innerHTML = occ + ' <small>of ' + cap + '</small>';
+    $('kOccSub').textContent = cap ? Math.round(occ / cap * 100) + '% of capacity used in ' + centers.length + ' center(s)' : 'No evacuation centers yet';
+
+    // Vulnerable groups from birthdates
+    const groups = [
+      ['Children (under 18)', (ev) => { const a = BL.age(ev.birthdate); return a !== null && a < 18; }],
+      ['Senior citizens (60+)', (ev) => { const a = BL.age(ev.birthdate); return a !== null && a >= 60; }]
+    ];
+    $('groups').innerHTML = groups.map(([label, test]) => {
+      const reg = residents.filter(test);
+      const ok = reg.filter((ev) => present.has(ev.id)).length;
+      const miss = reg.length - ok;
+      const p = reg.length ? Math.round(ok / reg.length * 100) : 0;
+      return '<div class="group"><div class="top"><span class="name">' + label + '</span><span class="' + (miss ? 'tone-red' : 'tone-green') + '" style="font-size:13px;font-weight:700">' + miss + ' not yet</span></div>' +
+        '<div class="num">' + ok + ' <small>of ' + reg.length + '</small></div><div class="bar"><span style="width:' + p + '%"></span></div></div>';
+    }).join('') +
+      ['Pregnant', 'Persons with disability'].map((l) => '<div class="group"><div class="top"><span class="name">' + l + '</span></div><div class="num" style="color:var(--muted);font-size:18px">Not recorded yet</div></div>').join('');
+
+    // Center occupancy
+    $('occNote').textContent = centers.length + ' center(s)';
+    $('centers').innerHTML = centers.length ? centers.map((c) => {
+      const p = c.capacity ? c.occupancy / c.capacity : 0;
+      const t = BL.tone(p);
+      const note = p >= 0.95 ? 'Full or almost full. Direct new arrivals to another center.' : p >= 0.8 ? 'Almost full.' : (c.capacity - c.occupancy) + ' spaces left.';
+      return '<div class="center-row"><div class="top"><strong>' + BL.esc(c.name) + '</strong><strong class="tone-' + t + '">' + c.occupancy + ' / ' + c.capacity + ' &#183; ' + Math.round(p * 100) + '%</strong></div>' +
+        '<div class="bar"><span style="width:' + Math.min(100, Math.round(p * 100)) + '%;background:' + BL.TONE_HEX[t] + '"></span></div><div style="font-size:12px;color:var(--muted)">' + note + '</div></div>';
+    }).join('') : '<div class="empty">No evacuation centers are assigned to your barangay yet.</div>';
+
+    // Not yet evacuated: seniors and children under 5 first
+    const prio = (ev) => { const a = BL.age(ev.birthdate); return a === null ? 2 : (a >= 60 || a < 5) ? 0 : 1; };
+    missing.sort((a, b) => prio(a) - prio(b) || String(a.full_name).localeCompare(String(b.full_name)));
+    $('missing').innerHTML = missing.slice(0, 12).map((ev) => {
+      const a = BL.age(ev.birthdate);
+      const tag = a !== null && a >= 60 ? ' <span class="chip">Senior</span>' : a !== null && a < 5 ? ' <span class="chip">Child under 5</span>' : '';
+      return '<tr><td><strong style="color:var(--navy)">' + BL.esc(ev.full_name) + '</strong>' + tag + '</td><td>' + (a === null ? '-' : a) + '</td><td>' + BL.esc(ev.address || '-') + '</td></tr>';
+    }).join('');
+    $('missingEmpty').hidden = missing.length > 0 || residents.length === 0;
+    $('missingTable').hidden = missing.length === 0;
+
+    renderFeed();
+  }
+
+  async function loadTransfers() {
+    try {
+      const list = await BL.api('/transfers');
+      (list || []).slice(0, 10).reverse().forEach((t) => {
+        feed.unshift({
+          text: '<strong>' + BL.esc(names[t.evacuee_id] || 'Evacuee #' + t.evacuee_id) + '</strong> transferred from ' + BL.esc(centerNames[t.from_center_id] || 'unknown center') + ' to ' + BL.esc(centerNames[t.to_center_id] || 'center #' + t.to_center_id),
+          time: t.timestamp ? BL.dateTime(t.timestamp) : '', dot: '#F7941D'
+        });
+      });
+    } catch (e) { /* transfers are optional for this panel */ }
+    renderFeed();
+  }
+
+  function renderFeed() {
+    $('feed').innerHTML = feed.slice(0, 40).map((f) => '<li class="' + (f.fresh ? 'new' : '') + '"><span class="dot" style="background:' + f.dot + '"></span><span>' + f.text + '</span><span class="time">' + BL.esc(f.time) + '</span></li>').join('');
+    feed.forEach((f) => { f.fresh = false; });
+    $('feedEmpty').hidden = feed.length > 0;
+  }
+
+  await load(false);
+  await loadTransfers();
+  BL.connectLive(() => load(true), $('live'));
+})();
+</script>
+</body>
+</html>

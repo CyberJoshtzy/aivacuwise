@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evacuees · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1>Registered Evacuees</h1>
+        <p id="count">Loading residents.</p>
+      </div>
+      <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <label for="q" class="sr-only">Search evacuees</label>
+        <input id="q" class="input" type="search" placeholder="Search by name or address">
+      </div>
+      <div class="pills" role="group" aria-label="Filter evacuees" id="pills"></div>
+    </div>
+
+    <div id="loadError" class="form-error" role="alert" hidden></div>
+
+    <section class="panel" style="padding:0;overflow:hidden">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th scope="col">Evacuee</th><th scope="col" id="brgyCol" hidden>Barangay</th><th scope="col">Household</th><th scope="col">Status</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div id="empty" class="empty" style="margin:16px" hidden></div>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const city = me.role === 'city_admin';
+  const $ = (id) => document.getElementById(id);
+  let brgyNames = {}, centerNames = {}, where = {}, list = [];
+  let filter = 'all';
+
+  try {
+    const [brgys, centers] = await Promise.all([BL.api('/barangays'), BL.api('/evacuation_centers')]);
+    (brgys || []).forEach((b) => { brgyNames[b.id] = b.name; });
+    (centers || []).forEach((c) => { centerNames[c.id] = c.name; });
+  } catch (e) { /* names fall back to ids */ }
+  BL.renderSidebar(me, 'evacuees.html', brgyNames[me.barangay_id]);
+  $('brgyCol').hidden = !city;
+
+  const FILTERS = [
+    ['all', 'All', () => true],
+    ['in', 'Evacuated', (e) => !!where[e.id]],
+    ['out', 'Not yet', (e) => !where[e.id]],
+    ['kids', 'Children', (e) => { const a = BL.age(e.birthdate); return a !== null && a < 18; }],
+    ['seniors', 'Seniors', (e) => { const a = BL.age(e.birthdate); return a !== null && a >= 60; }],
+    ['face', 'Face ID', (e) => e.identification_method === 'facial_recognition'],
+    ['manual', 'Manual', (e) => e.identification_method !== 'facial_recognition']
+  ];
+  $('pills').innerHTML = FILTERS.map(([k, label]) => '<button type="button" class="pill" data-f="' + k + '" aria-pressed="' + (k === filter) + '">' + label + '</button>').join('');
+  $('pills').addEventListener('click', (e) => {
+    const b = e.target.closest('.pill'); if (!b) return;
+    filter = b.dataset.f;
+    document.querySelectorAll('.pill').forEach((p) => p.setAttribute('aria-pressed', p.dataset.f === filter));
+    render();
+  });
+  $('q').addEventListener('input', render);
+
+  async function load() {
+    try {
+      const [evacuees, summary] = await Promise.all([BL.api('/evacuees'), BL.api('/dashboard/summary')]);
+      where = {};
+      (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => (c.evacuees || []).forEach((ev) => { where[ev.id] = c.name; })));
+      list = (evacuees || []).filter((e) => city || e.registered_barangay_id === me.barangay_id);
+      $('loadError').hidden = true;
+      render();
+    } catch (e) {
+      $('loadError').textContent = e.message;
+      $('loadError').hidden = false;
+    }
+  }
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const test = FILTERS.find((f) => f[0] === filter)[2];
+    const shown = list.filter((e) => test(e) && (!q || (String(e.full_name) + ' ' + String(e.address || '')).toLowerCase().includes(q)))
+      .sort((a, b) => String(a.full_name).localeCompare(String(b.full_name)));
+    const inCount = list.filter((e) => where[e.id]).length;
+    $('count').textContent = list.length + (list.length === 1 ? ' resident is' : ' residents are') + ' registered' + (city ? ' across all barangays' : ' in ' + (brgyNames[me.barangay_id] || 'your barangay')) + '. ' + inCount + ' are at an evacuation center now.';
+    $('rows').innerHTML = shown.map((e) => {
+      const a = BL.age(e.birthdate);
+      const face = e.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>';
+      const status = where[e.id] ? '<span class="chip green">At ' + BL.esc(where[e.id]) + '</span>' : '<span class="chip" style="background:var(--line-soft);color:var(--muted)">Not checked in</span>';
+      const hh = e.household_id ? 'Household #' + e.household_id + (e.is_head_of_family ? ' <span class="chip navy">Head</span>' : '') : '<span style="color:var(--muted)">None</span>';
+      return '<tr>' +
+        '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(e.full_name) + '</strong> ' + face +
+        '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + BL.esc(e.sex || 'Sex not set') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + '</div></td>' +
+        (city ? '<td>' + BL.esc(brgyNames[e.registered_barangay_id] || '-') + '</td>' : '') +
+        '<td>' + hh + '</td><td>' + status + '</td>' +
+        '<td><div class="row-actions">' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-act="view" data-id="' + e.id + '" aria-label="View ' + BL.esc(e.full_name) + '">View</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + e.id + '" aria-label="Edit ' + BL.esc(e.full_name) + '">Edit</button>' +
+        '<button type="button" class="btn btn-del btn-sm" data-act="del" data-id="' + e.id + '" aria-label="Delete ' + BL.esc(e.full_name) + '">Delete</button>' +
+        '</div></td></tr>';
+    }).join('');
+    $('empty').hidden = shown.length > 0;
+    $('empty').textContent = list.length ? 'No evacuees match your search or filter.' : 'No residents are registered yet. Households registered at the kiosk will appear here.';
+  }
+
+  $('rows').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const ev = list.find((x) => x.id === Number(b.dataset.id)); if (!ev) return;
+    if (b.dataset.act === 'view') view(ev);
+    if (b.dataset.act === 'edit') edit(ev);
+    if (b.dataset.act === 'del') del(ev);
+  });
+
+  const xBtn = '<button type="button" class="x-btn" data-close aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5368" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>';
+
+  async function view(ev) {
+    const a = BL.age(ev.birthdate);
+    const m = BL.modal(
+      '<div class="dialog-head"><div><h2>' + BL.esc(ev.full_name) + '</h2><div style="font-size:14px;color:var(--muted)">' + (where[ev.id] ? 'At ' + BL.esc(where[ev.id]) + ' now' : 'Not at an evacuation center') + '</div></div>' + xBtn + '</div>' +
+      '<div class="dialog-body" style="display:flex;flex-direction:column;gap:18px">' +
+      '<div class="facts">' +
+      '<div><div class="k">Sex</div><div class="v">' + BL.esc(ev.sex || '-') + '</div></div>' +
+      '<div><div class="k">Birthday</div><div class="v">' + BL.esc(ev.birthdate || '-') + '</div></div>' +
+      '<div><div class="k">Age</div><div class="v">' + (a === null ? '-' : a + ' years old') + '</div></div>' +
+      '<div><div class="k">Address</div><div class="v">' + BL.esc(ev.address || '-') + '</div></div>' +
+      '<div><div class="k">Contact number</div><div class="v">' + BL.esc(ev.contact_number || 'None') + '</div></div>' +
+      '<div><div class="k">Identification</div><div class="v">' + (ev.identification_method === 'facial_recognition' ? 'Face ID' : 'Manual') + '</div></div>' +
+      '<div><div class="k">Barangay</div><div class="v">' + BL.esc(brgyNames[ev.registered_barangay_id] || '-') + '</div></div>' +
+      '<div><div class="k">Household</div><div class="v">' + (ev.household_id ? '#' + ev.household_id + (ev.is_head_of_family ? ' (head)' : '') : 'None') + '</div></div>' +
+      '</div>' +
+      '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Movement history</h3><ul class="timeline" id="hist"><li style="color:var(--muted)">Loading history.</li></ul></div>' +
+      '</div>' +
+      '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)">Every check-in and check-out, newest first.</span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Close</button><button type="button" class="btn btn-primary" id="toEdit">Edit Information</button></div></div>', 820);
+    m.el.querySelector('#toEdit').addEventListener('click', () => { m.close(); edit(ev); });
+    try {
+      const hist = await BL.api('/evacuees/' + ev.id + '/history');
+      const labels = { check_in: ['Checked in at', '#15803D'], check_out: ['Left', '#1D4ED8'] };
+      m.el.querySelector('#hist').innerHTML = (hist || []).length ? hist.map((h) => {
+        const l = labels[h.event_type] || [h.event_type, '#4A5368'];
+        return '<li><span class="dot" style="background:' + l[1] + '"></span><span style="flex-grow:1"><strong>' + l[0] + '</strong> ' + BL.esc(centerNames[h.evacuation_center_id] || 'center #' + h.evacuation_center_id) + '</span><span style="color:var(--muted);white-space:nowrap">' + (h.timestamp ? BL.dateTime(h.timestamp) : '') + '</span></li>';
+      }).join('') : '<li class="empty" style="display:block;width:100%">No check-ins yet. This evacuee has not been to an evacuation center.</li>';
+    } catch (e) {
+      m.el.querySelector('#hist').innerHTML = '<li class="form-error" style="display:block;width:100%">' + BL.esc(e.message) + '</li>';
+    }
+  }
+
+  function edit(ev) {
+    const sexes = ['Male', 'Female'];
+    if (ev.sex && !sexes.includes(ev.sex)) sexes.unshift(ev.sex);
+    const m = BL.modal(
+      '<form id="ef" novalidate style="display:contents">' +
+      '<div class="dialog-head"><h2>Edit evacuee information</h2>' + xBtn + '</div>' +
+      '<div class="dialog-body"><div class="form-error" id="eErr" role="alert" hidden style="margin-bottom:14px"></div><div class="form-grid">' +
+      '<div class="field-group span4"><label for="fName">Full name *</label><input id="fName" class="input" value="' + BL.esc(ev.full_name) + '" required></div>' +
+      '<div class="field-group"><label for="fSex">Sex *</label><select id="fSex" class="input">' + sexes.map((s) => '<option' + (s === ev.sex ? ' selected' : '') + '>' + BL.esc(s) + '</option>').join('') + '</select></div>' +
+      '<div class="field-group"><label for="fBday">Birthday *</label><input id="fBday" type="date" class="input" value="' + BL.esc(String(ev.birthdate || '').slice(0, 10)) + '"></div>' +
+      '<div class="field-group span2"><label for="fAge">Age</label><input id="fAge" class="input" readonly style="background:var(--bg)"></div>' +
+      '<div class="field-group span4"><label for="fAddr">Address *</label><input id="fAddr" class="input" value="' + BL.esc(ev.address || '') + '"></div>' +
+      '<div class="field-group span2"><label for="fPhone">Contact number</label><input id="fPhone" type="tel" class="input" value="' + BL.esc(ev.contact_number || '') + '"></div>' +
+      '</div></div>' +
+      '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)" id="eHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="eSave">Save Changes</button></div></div>' +
+      '</form>', 720);
+    const f = (id) => m.el.querySelector('#' + id);
+    const sync = () => {
+      const a = BL.age(f('fBday').value);
+      f('fAge').value = a === null ? '' : a + ' years old';
+      const miss = [];
+      if (!f('fName').value.trim()) miss.push('full name');
+      if (!f('fBday').value) miss.push('birthday');
+      if (!f('fAddr').value.trim()) miss.push('address');
+      f('eSave').disabled = miss.length > 0;
+      f('eHint').textContent = miss.length ? 'Required: ' + miss.join(', ') + '.' : 'All required fields are filled in.';
+    };
+    ['fName', 'fBday', 'fAddr'].forEach((id) => f(id).addEventListener('input', sync));
+    sync();
+    f('ef').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      f('eSave').disabled = true;
+      try {
+        await BL.api('/evacuees/' + ev.id, { method: 'PUT', json: {
+          full_name: f('fName').value, sex: f('fSex').value, birthdate: f('fBday').value,
+          address: f('fAddr').value, contact_number: f('fPhone').value
+        } });
+        m.close();
+        BL.toast('Evacuee information updated.');
+        load();
+      } catch (ex) {
+        f('eErr').textContent = ex.message; f('eErr').hidden = false; f('eSave').disabled = false;
+      }
+    });
+  }
+
+  function del(ev) {
+    BL.confirmBox({
+      title: 'Delete ' + ev.full_name + '?',
+      text: 'This removes the evacuee\'s information, saved face data, and check-in history. The camera at evacuation centers will no longer recognize this person. This cannot be undone.',
+      ok: 'Delete Evacuee', danger: true,
+      action: () => BL.api('/evacuees/' + ev.id, { method: 'DELETE' })
+    }).then((done) => { if (done) { BL.toast(ev.full_name + ' was deleted.'); load(); } });
+  }
+
+  await load();
+  BL.connectLive(() => load(), $('live'));
+})();
+</script>
+</body>
+</html>

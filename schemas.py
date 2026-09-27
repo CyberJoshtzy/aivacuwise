@@ -46,6 +46,7 @@ class CheckinOut(CheckinCreate):
 
 class UserCreate(BaseModel):
     username: str
+    email: Optional[str] = None
     password: str
     role: UserRole
     barangay_id: Optional[int] = None
@@ -53,6 +54,7 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
+    email: Optional[str] = None
     role: UserRole
     barangay_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)

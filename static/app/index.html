@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css">
+<style>
+.home { min-height: 100vh; display: flex; flex-direction: column; }
+.home-main { flex-grow: 1; display: flex; }
+.home-logo { width: 47%; background: #FFFFFF; border-right: 1px solid var(--line); display: flex; align-items: center; justify-content: center; padding: 40px; }
+.home-logo img { width: min(540px, 100%); height: auto; animation: pop .5s ease-out; }
+.home-copy { flex-grow: 1; padding: 64px 80px; display: flex; flex-direction: column; justify-content: center; gap: 24px; max-width: 760px; }
+.home-copy h1 { font-size: 46px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.home-copy .lead { font-size: 18px; line-height: 1.6; color: #3D4659; }
+.divider { display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.divider::before, .divider::after { content: ""; flex-grow: 1; height: 1px; background: var(--line); }
+.reg-card { padding: 20px 22px; background: #FFFFFF; border: 1px solid var(--line); border-radius: 14px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.reg-card strong { color: var(--navy); font-size: 16px; }
+.reg-card p { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.home-foot { height: 56px; padding: 0 64px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); gap: 20px; }
+@media (max-width: 900px) {
+  .home-main { flex-direction: column; }
+  .home-logo { width: 100%; border-right: none; border-bottom: 1px solid var(--line); }
+  .home-copy { padding: 32px 24px; }
+  .home-copy h1 { font-size: 34px; }
+  .reg-card { flex-direction: column; align-items: flex-start; }
+  .home-foot { flex-direction: column; justify-content: center; height: auto; padding: 16px 24px; }
+}
+</style>
+</head>
+<body>
+<div class="home">
+<main class="home-main">
+  <section class="home-logo" aria-label="BilisLikas 2.0 logo">
+    <img src="/static/logo.png" alt="BilisLikas 2.0, Kasama mo sa Paglikas">
+  </section>
+  <section class="home-copy">
+    <div style="font-size:13px;font-weight:800;color:var(--muted)">Overview</div>
+    <h1>Quick, smart evacuation tracking for every barangay.</h1>
+    <p class="lead">BilisLikas 2.0 helps barangay and city officials pre-register households, check evacuees in automatically through walk-through facial recognition, and monitor every evacuation center's occupancy live, even without internet.</p>
+    <a class="btn btn-primary btn-lg" href="signin.html" id="signinBtn">Sign In</a>
+    <div class="divider">or</div>
+    <div class="reg-card">
+      <div>
+        <strong>Is your barangay not yet in BilisLikas?</strong>
+        <p>Barangay self-registration opens in the next update. For now, ask the City DRRMO to create your barangay's account.</p>
+      </div>
+      <span class="btn btn-ghost" aria-disabled="true">Register Barangay</span>
+    </div>
+  </section>
+</main>
+<footer class="home-foot">
+  <span>BilisLikas 2.0: Quick Smart Evacuation Tracking and Management System</span>
+  <span>Personal data is protected under the Data Privacy Act of 2012 (RA 10173).</span>
+</footer>
+</div>
+<script src="app.js"></script>
+<script>
+  // Already signed in? Go straight to the right dashboard.
+  const me = BL.cachedMe();
+  if (BL.token() && me) {
+    const b = document.getElementById('signinBtn');
+    b.textContent = 'Continue to Dashboard';
+    b.href = BL.homeFor(me);
+  }
+</script>
+</body>
+</html>
