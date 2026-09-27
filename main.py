@@ -715,3 +715,137 @@ async def bl_delete_center(center_id: int,
     db.commit()
     await _bl_notify(barangay_id)
     return {'deleted': center_id}
+
+
+# ---- BilisLikas 2.0: incidents and barangay edit/delete (batch 3) ----
+from datetime import datetime as _BL3dt
+from sqlalchemy import func as _BL3func
+
+BL_DISASTERS = ['Fire', 'Earthquake', 'Flood', 'Typhoon', 'Landslide', 'Other']
+
+
+class BLIncidentStart(_BLBaseModel):
+    disaster_type: str
+    evacuation_center_id: _BLOptional[int] = None
+    barangay_id: _BLOptional[int] = None
+
+
+class BLBarangayUpdate(_BLBaseModel):
+    name: str
+
+
+def _bl_iso(dt):
+    return dt.isoformat() if dt is not None else None
+
+
+def _bl_incident_dict(i):
+    return {
+        'id': i.id, 'barangay_id': i.barangay_id, 'evacuation_center_id': i.evacuation_center_id,
+        'disaster_type': i.disaster_type, 'started_at': _bl_iso(i.started_at), 'ended_at': _bl_iso(i.ended_at),
+        'started_by': i.started_by, 'ended_by': i.ended_by, 'active': i.ended_at is None,
+    }
+
+
+@app.get('/incidents')
+def bl_list_incidents(active: bool = False, db: _BLSession = _BLDepends(get_db),
+                      user=_BLDepends(auth.get_current_user)):
+    Incident = _bl_model('incidents')
+    q = db.query(Incident)
+    if user.role != 'city_admin':
+        q = q.filter(Incident.barangay_id == user.barangay_id)
+    if active:
+        q = q.filter(Incident.ended_at.is_(None))
+    return [_bl_incident_dict(i) for i in q.order_by(Incident.id.desc()).limit(50).all()]
+
+
+@app.post('/incidents')
+async def bl_start_incident(payload: BLIncidentStart, db: _BLSession = _BLDepends(get_db),
+                            user=_BLDepends(auth.get_current_user)):
+    Incident = _bl_model('incidents')
+    brgy_id = payload.barangay_id if user.role == 'city_admin' else user.barangay_id
+    if brgy_id is None:
+        raise _BLHTTPException(status_code=422, detail='Choose which barangay is evacuating.')
+    if db.query(_bl_model('barangays')).filter_by(id=brgy_id).first() is None:
+        raise _BLHTTPException(status_code=404, detail='Barangay not found.')
+    kind = (payload.disaster_type or '').strip().capitalize()
+    if kind not in BL_DISASTERS:
+        raise _BLHTTPException(status_code=422, detail='Disaster type must be one of: ' + ', '.join(BL_DISASTERS) + '.')
+    if payload.evacuation_center_id is not None and db.query(_bl_model('evacuation_centers')).filter_by(id=payload.evacuation_center_id).first() is None:
+        raise _BLHTTPException(status_code=404, detail='Evacuation center not found.')
+    if db.query(Incident).filter(Incident.barangay_id == brgy_id, Incident.ended_at.is_(None)).first():
+        raise _BLHTTPException(status_code=409, detail='An evacuation is already active for this barangay. End it before starting a new one.')
+    i = Incident(barangay_id=brgy_id, evacuation_center_id=payload.evacuation_center_id, disaster_type=kind,
+                 started_at=_BL3dt.utcnow(), started_by=user.id)
+    db.add(i)
+    db.commit()
+    db.refresh(i)
+    await _bl_notify(brgy_id)
+    return _bl_incident_dict(i)
+
+
+@app.post('/incidents/{incident_id}/end')
+async def bl_end_incident(incident_id: int, db: _BLSession = _BLDepends(get_db),
+                          user=_BLDepends(auth.get_current_user)):
+    Incident = _bl_model('incidents')
+    i = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not i:
+        raise _BLHTTPException(status_code=404, detail='Evacuation not found.')
+    if not _bl_can_edit(user, i.barangay_id):
+        raise _BLHTTPException(status_code=403, detail='You can only end your own barangay\'s evacuation.')
+    if i.ended_at is not None:
+        raise _BLHTTPException(status_code=409, detail='This evacuation has already ended.')
+    i.ended_at = _BL3dt.utcnow()
+    i.ended_by = user.id
+    db.commit()
+    db.refresh(i)
+    await _bl_notify(i.barangay_id)
+    return _bl_incident_dict(i)
+
+
+@app.put('/barangays/{barangay_id}')
+async def bl_update_barangay(barangay_id: int, payload: BLBarangayUpdate, db: _BLSession = _BLDepends(get_db),
+                             user=_BLDepends(auth.get_current_user)):
+    Barangay = _bl_model('barangays')
+    b = db.query(Barangay).filter(Barangay.id == barangay_id).first()
+    if not b:
+        raise _BLHTTPException(status_code=404, detail='Barangay not found.')
+    if not _bl_can_edit(user, barangay_id):
+        raise _BLHTTPException(status_code=403, detail='You can only edit your own barangay.')
+    name = (payload.name or '').strip()
+    if not name:
+        raise _BLHTTPException(status_code=422, detail='Barangay name cannot be empty.')
+    clash = db.query(Barangay).filter(_BL3func.lower(Barangay.name) == name.lower(), Barangay.id != barangay_id).first()
+    if clash:
+        raise _BLHTTPException(status_code=409, detail='Another barangay already uses this name.')
+    b.name = name
+    db.commit()
+    await _bl_notify(barangay_id)
+    return {'id': b.id, 'name': b.name}
+
+
+@app.delete('/barangays/{barangay_id}')
+async def bl_delete_barangay(barangay_id: int, db: _BLSession = _BLDepends(get_db),
+                             user=_BLDepends(auth.get_current_user)):
+    if user.role != 'city_admin':
+        raise _BLHTTPException(status_code=403, detail='Only the City Admin can delete a barangay.')
+    Barangay = _bl_model('barangays')
+    b = db.query(Barangay).filter(Barangay.id == barangay_id).first()
+    if not b:
+        raise _BLHTTPException(status_code=404, detail='Barangay not found.')
+    links = [
+        ('evacuation centers', _bl_model('evacuation_centers'), 'barangay_id'),
+        ('registered evacuees', _bl_model('evacuees'), 'registered_barangay_id'),
+        ('user accounts', _bl_model('users'), 'barangay_id'),
+        ('households', _bl_model('households'), 'registered_barangay_id'),
+        ('evacuation records', _bl_model('incidents'), 'barangay_id'),
+    ]
+    found = []
+    for label, M, col in links:
+        n = db.query(M).filter(getattr(M, col) == barangay_id).count()
+        if n:
+            found.append('%d %s' % (n, label))
+    if found:
+        raise _BLHTTPException(status_code=409, detail='This barangay still has ' + ', '.join(found) + '. Remove or move them first.')
+    db.delete(b)
+    db.commit()
+    return {'deleted': barangay_id}

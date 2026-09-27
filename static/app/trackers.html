@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trackers · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=3">
+<style>
+.layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
+.tlist { list-style: none; margin: 0; padding: 0; max-height: 720px; overflow-y: auto; }
+.tlist button { width: 100%; display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: none; border-left: 4px solid transparent; border-bottom: 1px solid var(--line-soft); background: #FFFFFF; font: inherit; text-align: left; cursor: pointer; }
+.tlist button:hover { background: #F8F9FC; }
+.tlist button[aria-pressed="true"] { background: #F1F4FA; border-left-color: var(--orange); }
+.sdot { width: 14px; height: 14px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.map { position: relative; width: 100%; aspect-ratio: 5 / 3; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #EEF1F6; }
+.map svg { width: 100%; height: 100%; display: block; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; font-weight: 700; color: var(--text); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1>Trackers</h1>
+        <p>Last known GPS location of residents wearing a tracker. People without a recent signal are listed first.</p>
+      </div>
+      <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
+    </div>
+    <div id="loadError" class="form-error" role="alert" hidden></div>
+
+    <div class="pills" role="group" aria-label="Filter trackers" id="pills"></div>
+
+    <div class="layout" id="layout">
+      <section class="panel" style="padding:0;overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--line-soft);font-size:13px;font-weight:700;color:var(--muted)" id="listNote"></div>
+        <ul class="tlist" id="list"></ul>
+      </section>
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+        <section class="panel">
+          <div class="panel-head"><h2>Location plot</h2><span class="note">Offline plot, north is up. Not a street map.</span></div>
+          <div class="map" id="map"></div>
+          <div class="legend">
+            <span><i style="background:#B91C1C"></i>Signal lost (over 60 min)</span>
+            <span><i style="background:#B45309"></i>Not seen for 10 to 60 min</span>
+            <span><i style="background:#1D4ED8"></i>Recent signal</span>
+            <span><i style="background:#15803D"></i>Safe at a center</span>
+          </div>
+        </section>
+        <section class="panel" id="details"></section>
+      </div>
+    </div>
+    <div id="none" class="empty" hidden style="padding:40px">No trackers are assigned to residents yet. Once a GPS tracker is assigned and starts sending positions to <code>POST /gps_pings</code>, it appears here.</div>
+  </main>
+</div>
+<script src="app.js?v=3"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const city = me.role === 'city_admin';
+  const $ = (id) => document.getElementById(id);
+  let brgyNames = {};
+  try { (await BL.api('/barangays') || []).forEach((b) => { brgyNames[b.id] = b.name; }); } catch (e) {}
+  BL.renderSidebar(me, 'trackers.html', brgyNames[me.barangay_id]);
+
+  const ST = {
+    lost: { label: 'Signal lost', color: '#B91C1C', order: 0 },
+    stale: { label: 'Not seen recently', color: '#B45309', order: 1 },
+    recent: { label: 'Recent signal', color: '#1D4ED8', order: 2 },
+    safe: { label: 'Safe at a center', color: '#15803D', order: 3 }
+  };
+  let items = [], selId = null, filter = 'all', trail = [];
+
+  const FILTERS = [['all', 'All'], ['attention', 'Needs attention'], ['safe', 'Safe at a center']];
+  $('pills').innerHTML = FILTERS.map(([k, l]) => '<button type="button" class="pill" data-f="' + k + '" aria-pressed="' + (k === filter) + '">' + l + '</button>').join('');
+  $('pills').addEventListener('click', (e) => {
+    const b = e.target.closest('.pill'); if (!b) return;
+    filter = b.dataset.f;
+    document.querySelectorAll('.pill').forEach((p) => p.setAttribute('aria-pressed', p.dataset.f === filter));
+    render();
+  });
+
+  async function load() {
+    try {
+      const [summary, devices, evacuees] = await Promise.all([BL.api('/dashboard/summary'), BL.api('/trackers').catch(() => []), BL.api('/evacuees')]);
+      const ev = {}; (evacuees || []).forEach((e) => { ev[e.id] = e; });
+      const dev = {}; (devices || []).forEach((d) => { dev[d.id] = d; });
+      const where = {};
+      (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => (c.evacuees || []).forEach((p) => { where[p.id] = c.name; })));
+      items = (summary.trackers || []).filter((t) => {
+        const e = ev[t.evacuee_id];
+        return city || (e && e.registered_barangay_id === me.barangay_id);
+      }).map((t) => {
+        const mins = t.timestamp ? (Date.now() - BL.parseT(t.timestamp).getTime()) / 60000 : Infinity;
+        const status = where[t.evacuee_id] ? 'safe' : mins <= 10 ? 'recent' : mins <= 60 ? 'stale' : 'lost';
+        return Object.assign({}, t, { ev: ev[t.evacuee_id] || {}, dev: dev[t.tracker_id] || {}, center: where[t.evacuee_id], status: status });
+      }).sort((a, b) => ST[a.status].order - ST[b.status].order);
+      $('loadError').hidden = true;
+      if (!selId && items.length) selId = items[0].tracker_id;
+      await loadTrail();
+      render();
+    } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
+  }
+
+  async function loadTrail() {
+    trail = [];
+    if (!selId) return;
+    try {
+      const h = await BL.api('/gps_pings/' + selId + '/history');
+      trail = (h || []).filter((p) => p.latitude != null && p.longitude != null)
+        .sort((a, b) => BL.parseT(a.timestamp) - BL.parseT(b.timestamp)).slice(-12);
+    } catch (e) { trail = []; }
+  }
+
+  function render() {
+    const shown = items.filter((t) => filter === 'all' || (filter === 'safe' ? t.status === 'safe' : t.status !== 'safe'));
+    $('none').hidden = items.length > 0;
+    $('layout').hidden = items.length === 0;
+    $('pills').hidden = items.length === 0;
+    const attention = items.filter((t) => t.status === 'lost' || t.status === 'stale').length;
+    $('listNote').textContent = items.length + ' tracker(s)' + (attention ? ', ' + attention + ' need attention' : ', all reporting');
+    $('list').innerHTML = shown.map((t) => {
+      const s = ST[t.status];
+      const batt = t.dev.battery_level;
+      return '<li><button type="button" data-id="' + t.tracker_id + '" aria-pressed="' + (t.tracker_id === selId) + '">' +
+        '<span class="sdot" style="background:' + s.color + '"></span><span style="flex-grow:1;min-width:0">' +
+        '<span style="display:block;font-size:15px;font-weight:800;color:var(--navy)">' + BL.esc(t.evacuee_name || 'Unassigned') + '</span>' +
+        '<span style="display:block;font-size:13px;font-weight:700;color:' + s.color + '">' + (t.status === 'safe' ? 'Safe at ' + BL.esc(t.center) : s.label) + '</span>' +
+        '<span style="display:block;font-size:12px;color:var(--muted)">' + (t.timestamp ? 'Last signal ' + BL.ago(t.timestamp) : 'No position received yet') + ' &#183; ' + BL.esc(t.device_id || '') + '</span></span>' +
+        (batt != null && batt <= 20 ? '<span class="chip red">' + batt + '%</span>' : '') + '</button></li>';
+    }).join('');
+    drawMap();
+    drawDetails();
+  }
+
+  $('list').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-id]'); if (!b) return;
+    selId = Number(b.dataset.id);
+    await loadTrail();
+    render();
+  });
+
+  function drawMap() {
+    const W = 800, H = 480, pad = 60;
+    const pts = items.filter((t) => t.latitude != null).map((t) => [t.latitude, t.longitude]).concat(trail.map((p) => [p.latitude, p.longitude]));
+    if (!pts.length) { $('map').innerHTML = '<div class="empty" style="height:100%;display:flex;align-items:center;justify-content:center;border-radius:0">No GPS positions received yet.</div>'; return; }
+    let minLat = Math.min(...pts.map((p) => p[0])), maxLat = Math.max(...pts.map((p) => p[0]));
+    let minLon = Math.min(...pts.map((p) => p[1])), maxLon = Math.max(...pts.map((p) => p[1]));
+    const lat0 = (minLat + maxLat) / 2, k = Math.cos(lat0 * Math.PI / 180);
+    const MIN = 0.0015; // at least about 170 m across
+    if (maxLat - minLat < MIN) { minLat = lat0 - MIN / 2; maxLat = lat0 + MIN / 2; }
+    const lonMid = (minLon + maxLon) / 2;
+    if ((maxLon - minLon) * k < MIN) { minLon = lonMid - MIN / 2 / k; maxLon = lonMid + MIN / 2 / k; }
+    const spanX = (maxLon - minLon) * k, spanY = maxLat - minLat;
+    const scale = Math.min((W - 2 * pad) / spanX, (H - 2 * pad) / spanY);
+    const ox = (W - spanX * scale) / 2, oy = (H - spanY * scale) / 2;
+    const X = (lon) => ox + (lon - minLon) * k * scale;
+    const Y = (lat) => H - oy - (lat - minLat) * scale;
+    const mPerPx = 111320 / scale;
+    const nice = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+    const meters = nice.find((m) => m / mPerPx >= 90) || 10000;
+    const barPx = meters / mPerPx;
+    let g = '';
+    for (let i = 1; i < 8; i++) g += '<line x1="' + (W * i / 8) + '" y1="0" x2="' + (W * i / 8) + '" y2="' + H + '" stroke="#DCE1EA"/>';
+    for (let i = 1; i < 5; i++) g += '<line x1="0" y1="' + (H * i / 5) + '" x2="' + W + '" y2="' + (H * i / 5) + '" stroke="#DCE1EA"/>';
+    const sel = items.find((t) => t.tracker_id === selId);
+    let tr = '';
+    if (trail.length > 1) {
+      tr += '<polyline fill="none" stroke="' + (sel ? ST[sel.status].color : '#142C6E') + '" stroke-width="3" stroke-dasharray="6 6" points="' + trail.map((p) => X(p.longitude).toFixed(1) + ',' + Y(p.latitude).toFixed(1)).join(' ') + '"/>';
+      trail.slice(0, -1).forEach((p) => {
+        tr += '<circle cx="' + X(p.longitude).toFixed(1) + '" cy="' + Y(p.latitude).toFixed(1) + '" r="5" fill="#FFFFFF" stroke="#142C6E" stroke-width="2.5"/>' +
+          '<text x="' + (X(p.longitude) + 8).toFixed(1) + '" y="' + (Y(p.latitude) - 8).toFixed(1) + '" font-size="12" font-weight="700" fill="#1B2233">' + BL.time(p.timestamp) + '</text>';
+      });
+    }
+    const marks = items.filter((t) => t.latitude != null).map((t) => {
+      const isSel = t.tracker_id === selId;
+      const r = isSel ? 18 : 13;
+      const x = X(t.longitude).toFixed(1), y = Y(t.latitude).toFixed(1);
+      const ini = String(t.evacuee_name || '?').split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+      return '<g role="button" tabindex="0" data-id="' + t.tracker_id + '" style="cursor:pointer" aria-label="' + BL.esc(t.evacuee_name) + '">' +
+        (isSel ? '<circle cx="' + x + '" cy="' + y + '" r="' + (r + 9) + '" fill="' + ST[t.status].color + '" opacity=".18"/>' : '') +
+        '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + ST[t.status].color + '" stroke="#FFFFFF" stroke-width="3"/>' +
+        '<text x="' + x + '" y="' + (Number(y) + 4) + '" text-anchor="middle" font-size="' + (isSel ? 12 : 10) + '" font-weight="800" fill="#FFFFFF">' + BL.esc(ini) + '</text></g>';
+    }).join('');
+    const scaleBar = '<g transform="translate(20,' + (H - 24) + ')"><rect x="-8" y="-22" width="' + (barPx + 70) + '" height="36" rx="8" fill="#FFFFFF" opacity=".92"/><line x1="0" y1="0" x2="' + barPx.toFixed(1) + '" y2="0" stroke="#1B2233" stroke-width="3"/><line x1="0" y1="-6" x2="0" y2="6" stroke="#1B2233" stroke-width="3"/><line x1="' + barPx.toFixed(1) + '" y1="-6" x2="' + barPx.toFixed(1) + '" y2="6" stroke="#1B2233" stroke-width="3"/><text x="' + (barPx + 8).toFixed(1) + '" y="5" font-size="13" font-weight="800" fill="#1B2233">' + (meters >= 1000 ? meters / 1000 + ' km' : meters + ' m') + '</text></g>';
+    const north = '<g transform="translate(' + (W - 34) + ',34)"><circle r="20" fill="#FFFFFF" opacity=".92"/><path d="M0,-12 L7,8 L0,3 L-7,8 Z" fill="#142C6E"/><text y="-14" text-anchor="middle" font-size="10" font-weight="800" fill="#142C6E" dy="-2">N</text></g>';
+    $('map').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Plot of tracker positions">' + g + tr + marks + scaleBar + north + '</svg>';
+    $('map').querySelectorAll('g[data-id]').forEach((el) => {
+      const pick = async () => { selId = Number(el.dataset.id); await loadTrail(); render(); };
+      el.addEventListener('click', pick);
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+  }
+
+  function drawDetails() {
+    const t = items.find((x) => x.tracker_id === selId);
+    if (!t) { $('details').innerHTML = '<div class="empty">Select a person to see their details.</div>'; return; }
+    const s = ST[t.status];
+    const a = BL.age(t.ev.birthdate);
+    const phone = (t.ev.contact_number || '').replace(/[^0-9+]/g, '');
+    const osm = t.latitude != null ? 'https://www.openstreetmap.org/?mlat=' + t.latitude + '&mlon=' + t.longitude + '#map=18/' + t.latitude + '/' + t.longitude : null;
+    $('details').innerHTML =
+      '<div class="panel-head" style="align-items:flex-start"><div><h2 style="font-size:20px">' + BL.esc(t.evacuee_name || 'Unassigned') + '</h2>' +
+      '<div style="font-size:13px;color:var(--muted);margin-top:3px">' + BL.esc(t.ev.sex || '-') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + ' &#183; ' + BL.esc(t.ev.address || 'No address') + '</div></div>' +
+      '<span class="chip" style="background:' + s.color + ';color:#FFFFFF">' + (t.status === 'safe' ? 'Safe at ' + BL.esc(t.center) : s.label) + '</span></div>' +
+      '<div class="facts">' +
+      '<div><div class="k">Last known position</div><div class="v">' + (t.latitude != null ? Number(t.latitude).toFixed(6) + ', ' + Number(t.longitude).toFixed(6) : 'None yet') + '</div></div>' +
+      '<div><div class="k">Last signal</div><div class="v" style="color:' + (t.status === 'lost' ? 'var(--red)' : 'inherit') + '">' + (t.timestamp ? BL.dateTime(t.timestamp) + ' (' + BL.ago(t.timestamp) + ')' : 'Never') + '</div></div>' +
+      '<div><div class="k">Tracker</div><div class="v">' + BL.esc(t.device_id || '-') + (t.dev.tracking_method ? ' &#183; ' + BL.esc(t.dev.tracking_method) : '') + '</div></div>' +
+      '<div><div class="k">Battery</div><div class="v" style="color:' + (t.dev.battery_level != null && t.dev.battery_level <= 20 ? 'var(--red)' : 'inherit') + '">' + (t.dev.battery_level != null ? t.dev.battery_level + '%' : 'Unknown') + '</div></div>' +
+      '<div><div class="k">Contact number</div><div class="v">' + BL.esc(t.ev.contact_number || 'None') + '</div></div>' +
+      '<div><div class="k">Positions shown</div><div class="v">' + trail.length + ' most recent</div></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+      (phone ? '<a class="btn btn-outline btn-sm" href="tel:' + BL.esc(phone) + '">Call ' + BL.esc(t.ev.contact_number) + '</a>' : '') +
+      (osm ? '<a class="btn btn-ghost btn-sm" href="' + osm + '" target="_blank" rel="noopener">Open in OpenStreetMap (needs internet)</a>' : '') +
+      '</div>' +
+      '<p class="notice">Rescue dispatch (assign a team, mark as rescued) and emergency contact details from the design will be added with the next backend update.</p>';
+  }
+
+  await load();
+  BL.connectLive(() => load(), $('live'));
+})();
+</script>
+</body>
+</html>

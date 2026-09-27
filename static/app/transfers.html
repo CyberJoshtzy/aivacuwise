@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Transfers · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=3">
 <style>
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .stats .kpi .value { font-size: 28px; }
@@ -55,7 +55,7 @@
     <p class="notice">Transfer reasons and automatic arrival confirmation by the destination camera, shown in the design, come with the next backend update.</p>
   </main>
 </div>
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -86,7 +86,7 @@
 
   function render() {
     const today = new Date().toDateString();
-    $('sToday').textContent = transfers.filter((x) => x.timestamp && new Date(x.timestamp).toDateString() === today).length;
+    $('sToday').textContent = transfers.filter((x) => x.timestamp && BL.parseT(x.timestamp).toDateString() === today).length;
     $('sAll').textContent = transfers.length;
     const counts = {};
     transfers.forEach((x) => { counts[x.to_center_id] = (counts[x.to_center_id] || 0) + 1; });

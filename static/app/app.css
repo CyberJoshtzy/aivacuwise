@@ -197,3 +197,6 @@ table.data tr.selected td { background: #FFF8EE; }
 .timeline .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
 @media (max-width: 700px) { .form-grid { grid-template-columns: minmax(0, 1fr); } .form-grid .span2, .form-grid .span4 { grid-column: auto; } .search .input { width: 100%; } .facts { grid-template-columns: minmax(0, 1fr); } }
+
+/* Make the hidden attribute always win over display styles */
+[hidden] { display: none !important; }

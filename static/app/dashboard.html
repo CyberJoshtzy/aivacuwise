@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=3">
 <style>
 .groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .group { padding: 14px; border-radius: 12px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
@@ -32,6 +32,7 @@
       <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
     </div>
 
+    <a id="incident" href="live.html" hidden style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;background:var(--red);color:#FFFFFF;text-decoration:none;font-weight:800"><span class="live-badge on" style="background:rgba(255,255,255,.18);color:#FFFFFF;height:28px"><span class="dot"></span><span class="txt">Active</span></span><span id="incidentText">Evacuation active</span><span style="margin-left:auto;font-weight:700">Open Live Evacuation</span></a>
     <div id="loadError" class="form-error" role="alert" hidden></div>
 
     <div class="grid grid-4">
@@ -67,7 +68,7 @@
     </div>
   </main>
 </div>
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'barangay_official' });
@@ -189,9 +190,21 @@
     $('feedEmpty').hidden = feed.length > 0;
   }
 
+  async function loadIncident() {
+    try {
+      const act = await BL.api('/incidents?active=true');
+      const i = (act || [])[0];
+      const el = $('incident');
+      if (i) {
+        $('incidentText').textContent = 'Evacuation active: ' + i.disaster_type + ', since ' + BL.time(i.started_at);
+        el.hidden = false;
+      } else { el.hidden = true; }
+    } catch (e) { /* incidents endpoint not installed yet */ }
+  }
   await load(false);
   await loadTransfers();
-  BL.connectLive(() => load(true), $('live'));
+  await loadIncident();
+  BL.connectLive(() => { load(true); loadIncident(); }, $('live'));
 })();
 </script>
 </body>

@@ -99,3 +99,14 @@ class Household(Base):
     registered_barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=False)
     head_of_family_evacuee_id = Column(Integer, ForeignKey("evacuees.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Incident(Base):
+    __tablename__ = "incidents"
+    id = Column(Integer, primary_key=True, index=True)
+    barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=False)
+    evacuation_center_id = Column(Integer, ForeignKey("evacuation_centers.id"), nullable=True)
+    disaster_type = Column(String, nullable=False)
+    started_at = Column(DateTime, nullable=False)
+    ended_at = Column(DateTime, nullable=True)
+    started_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    ended_by = Column(Integer, ForeignKey("users.id"), nullable=True)

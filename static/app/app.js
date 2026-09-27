@@ -109,21 +109,23 @@ const BL = (() => {
   // Pages that exist now link normally; the rest show "Soon" until the next batch.
   const NAV = {
     barangay_official: [
-      ['live', 'Live Evacuation', null],
+      ['live', 'Live Evacuation', 'live.html'],
       ['dash', 'Dashboard', 'dashboard.html'],
       ['people', 'Evacuees', 'evacuees.html'],
       ['face', 'Pre-Registration', null],
       ['center', 'Evacuation Centers', 'centers.html'],
       ['transfer', 'Transfers', 'transfers.html'],
-      ['tracker', 'Trackers', null],
-      ['pin', 'Barangays', null]
+      ['tracker', 'Trackers', 'trackers.html'],
+      ['pin', 'Barangays', 'barangays.html']
     ],
     city_admin: [
       ['globe', 'City Overview', 'city.html'],
       ['center', 'Evacuation Centers', 'centers.html'],
       ['people', 'Evacuees', 'evacuees.html'],
       ['transfer', 'Transfers', 'transfers.html'],
-      ['pin', 'Barangays', null],
+      ['live', 'Live Evacuation', 'live.html'],
+      ['tracker', 'Trackers', 'trackers.html'],
+      ['pin', 'Barangays', 'barangays.html'],
       ['report', 'Situation Reports', null],
       ['users', 'User Accounts', null]
     ]
@@ -193,12 +195,23 @@ const BL = (() => {
     if (t.getMonth() < b.getMonth() || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) a--;
     return a;
   }
+  function parseT(d) {
+    if (typeof d === 'string' && /T\d/.test(d) && !/(Z|[+-]\d\d:?\d\d)$/.test(d)) return new Date(d + 'Z');
+    return new Date(d);
+  }
+  function ago(d) {
+    const s = Math.max(0, Math.round((Date.now() - parseT(d).getTime()) / 1000));
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' hr ago';
+    return Math.round(s / 86400) + ' day(s) ago';
+  }
   function time(d) {
-    const x = d ? new Date(d) : new Date();
+    const x = d ? parseT(d) : new Date();
     return x.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
   function dateTime(d) {
-    const x = new Date(d);
+    const x = parseT(d);
     return x.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' + time(x);
   }
   function tone(p) { return p >= 0.95 ? 'red' : p >= 0.8 ? 'amber' : 'green'; }
@@ -255,5 +268,5 @@ const BL = (() => {
     });
   }
 
-  return { modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
+  return { parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
 })();
