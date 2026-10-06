@@ -1,0 +1,11 @@
+venv/
+data/
+sim/logs/
+.env
+.env.*
+*.bak_*
+__pycache__/
+.pytest_cache/
+tests/
+entrance_client/
+.git/

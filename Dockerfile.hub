@@ -1,0 +1,9 @@
+# BilisLikas 2.0 cloud hub (Railway). Lightweight: no face recognition libraries are needed on the hub.
+FROM python:3.12-slim
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1
+COPY deploy/requirements-hub.txt /app/requirements-hub.txt
+RUN pip install --no-cache-dir -r requirements-hub.txt
+COPY . /app
+# Create any missing tables in the cloud database, then start the API on Railway's port.
+CMD python sim/init_db.py && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips="*"

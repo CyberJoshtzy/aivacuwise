@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrance Display · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=8">
+<style>
+html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; display: flex; flex-direction: column; font-family: var(--font); }
+.hd { height: 128px; flex-shrink: 0; padding: 0 40px; display: flex; align-items: center; gap: 28px; background: #142C6E; }
+.hd .logo { padding: 8px 14px; background: #FFFFFF; border-radius: 14px; }
+.hd .logo img { height: 88px; width: auto; display: block; }
+.hd .title { font-size: 40px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.01em; }
+.hd .status { margin-top: 4px; display: inline-flex; align-items: center; gap: 10px; padding: 4px 14px; border-radius: 999px; font-size: 22px; font-weight: 700; }
+.hd .status.on { background: #B91C1C; color: #FFFFFF; }
+.hd .status.off { background: rgba(255,255,255,.12); color: #D6DDF0; }
+.hd .dot { width: 12px; height: 12px; border-radius: 50%; background: currentColor; }
+.hd .status.on .dot { animation: pulse 1.4s ease-in-out infinite; }
+.hd .label { font-size: 20px; font-weight: 700; color: #D6DDF0; text-align: right; }
+.hd .big { font-size: 56px; font-weight: 800; color: #FFFFFF; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; }
+.hd .big small { font-size: 30px; color: #AEB9D6; }
+.hd .clock { font-size: 52px; font-weight: 800; color: #F7941D; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; }
+.bd { flex-grow: 1; min-height: 0; display: flex; gap: 20px; padding: 20px 40px 0; }
+.col { display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #FFFFFF; min-width: 0; }
+.col .colbar { height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; }
+.col .colbar b { font-size: 34px; font-weight: 800; }
+.col .colbar span { font-size: 24px; font-weight: 800; }
+.grid { flex-grow: 1; min-height: 0; padding: 18px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: 164px; gap: 14px; align-content: start; overflow: hidden; }
+.tile { position: relative; border-radius: 14px; background: #F4F6FA; border: 2px solid #E6EAF1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px; animation: fade .5s ease-out both; }
+.tile.prio { border-color: #F7C98B; }
+.tile .tag { position: absolute; top: 10px; right: 10px; padding: 3px 10px; border-radius: 999px; background: #FFF1DE; font-size: 14px; font-weight: 800; color: #7A4504; }
+.face { border-radius: 50%; background: #DDE3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; color: #142C6E; }
+.face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile .face { width: 88px; height: 88px; font-size: 32px; }
+.tile .nm { font-size: 24px; font-weight: 800; color: #142C6E; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.pager { height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.pager i { width: 12px; height: 12px; border-radius: 50%; background: #DCE1EA; }
+.pager i.on { background: #F7941D; }
+.list { flex-grow: 1; min-height: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.arr { height: 104px; flex-shrink: 0; border-radius: 14px; border: 2px solid #BBE5C8; display: flex; align-items: center; gap: 18px; padding: 0 18px; background: #FFFFFF; }
+.arr.new { animation: arrive .9s ease-out both; }
+.arr .face { width: 76px; height: 76px; font-size: 28px; }
+.arr .nm { font-size: 30px; font-weight: 800; color: #142C6E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arr .tm { font-size: 18px; font-weight: 600; color: #4A5368; }
+.arr .ok { width: 52px; height: 52px; flex-shrink: 0; border-radius: 50%; background: #15803D; display: flex; align-items: center; justify-content: center; margin-left: auto; }
+.empty-big { flex-grow: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 30px; font-size: 26px; font-weight: 600; color: #4A5368; }
+.ft { height: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 24px; font-size: 20px; font-weight: 600; color: #C3CCE4; }
+.ft .conn { font-weight: 700; }
+@keyframes arrive { 0% { opacity: 0; transform: translateX(-40px) scale(.92); background: #DCFCE7; } 60% { opacity: 1; transform: none; } 100% { background: #FFFFFF; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+#picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #F4F6FA; }
+</style>
+</head>
+<body>
+<div id="picker" hidden>
+  <section class="panel" style="width:min(520px,92vw)">
+    <h1 style="font-size:24px">Entrance Display</h1>
+    <p style="color:var(--muted)">Choose which evacuation center this monitor is for. The address will remember it, so bookmark it or use it for the mini PC's startup page.</p>
+    <select id="centerSel" class="input"></select>
+    <button type="button" class="btn btn-primary btn-lg" id="go">Open Display</button>
+  </section>
+</div>
+
+<div id="stage" hidden>
+  <header class="hd">
+    <div class="logo"><img src="/static/logo.png" alt="BilisLikas 2.0"></div>
+    <div style="flex-grow:1;min-width:0">
+      <div class="title" id="cName">Evacuation Center</div>
+      <div class="status off" id="status"><span class="dot"></span><span id="statusText">Evacuation mode is off</span></div>
+    </div>
+    <div><div class="label">Arrived</div><div class="big" id="count">0<small> / 0</small></div></div>
+    <div style="width:2px;height:80px;background:rgba(255,255,255,.2)"></div>
+    <div style="min-width:190px"><div class="label" id="date"></div><div class="clock" id="clock"></div></div>
+  </header>
+  <div class="bd">
+    <section class="col" style="flex-grow:1">
+      <div class="colbar" style="background:#F7941D;color:#142C6E"><b>Not yet here</b><span id="waitCount"></span></div>
+      <div class="grid" id="grid"></div>
+      <div class="pager" id="pager"></div>
+    </section>
+    <section class="col" style="width:560px;flex-shrink:0">
+      <div class="colbar" style="background:#15803D;color:#FFFFFF"><b>Just arrived</b><span style="display:inline-flex;align-items:center;gap:8px;font-size:20px;color:#DCFCE7"><span id="liveDot" style="width:10px;height:10px;border-radius:50%;background:#DCFCE7"></span><span id="liveText">Connecting</span></span></div>
+      <div class="list" id="list"></div>
+    </section>
+  </div>
+  <footer class="ft"><span>Photos shown with consent under the Data Privacy Act of 2012 (RA 10173).</span></footer>
+</div>
+
+<script src="app.js?v=8"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const centerId = Number(params.get('center'));
+  const PER_PAGE = 24, PAGE_SECONDS = 8;
+
+  if (!centerId) {
+    let centers = [];
+    try { centers = (await BL.api('/evacuation_centers') || []).filter((c) => me.role === 'city_admin' || c.barangay_id === me.barangay_id); } catch (e) {}
+    $('centerSel').innerHTML = centers.map((c) => '<option value="' + c.id + '">' + BL.esc(c.name) + '</option>').join('') || '<option value="">No centers found</option>';
+    $('picker').hidden = false;
+    $('go').addEventListener('click', () => { if ($('centerSel').value) location.search = '?center=' + $('centerSel').value; });
+    return;
+  }
+
+  // Draw at 1920 x 1080 and scale to fit whatever monitor this is.
+  const stage = $('stage');
+  stage.hidden = false;
+  const fit = () => {
+    const k = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = 'translate(' + ((window.innerWidth - 1920 * k) / 2) + 'px,' + ((window.innerHeight - 1080 * k) / 2) + 'px) scale(' + k + ')';
+  };
+  window.addEventListener('resize', fit); fit();
+
+  const tick = () => {
+    const d = new Date();
+    $('clock').textContent = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    $('date').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  tick(); setInterval(tick, 1000);
+
+  // Photos come from a signed-in-only endpoint, so fetch them with the token and cache them.
+  const photos = {};
+  function faceHTML(p) {
+    const initials = p.name.split(/\s+/).map((w) => w[0]).join('').replace('.', '').slice(0, 2).toUpperCase();
+    if (p.has_photo && photos[p.id]) return '<img alt="" src="' + photos[p.id] + '">';
+    return BL.esc(initials);
+  }
+  async function loadPhotos(list) {
+    const need = list.filter((p) => p.has_photo && !photos[p.id]);
+    await Promise.all(need.map(async (p) => {
+      try {
+        const r = await fetch('/evacuees/' + p.id + '/photo', { headers: { Authorization: 'Bearer ' + BL.token() } });
+        if (r.ok) photos[p.id] = URL.createObjectURL(await r.blob());
+      } catch (e) {}
+    }));
+  }
+
+  let data = null, page = 0, seen = null;
+
+  async function load() {
+    try {
+      const d = await BL.api('/display/' + centerId);
+      await loadPhotos(d.waiting.concat(d.arrived));
+      const fresh = new Set();
+      if (seen) d.arrived.forEach((a) => { if (!seen.has(a.id)) fresh.add(a.id); });
+      seen = new Set(d.arrived.map((a) => a.id));
+      data = d;
+      drawHeader();
+      drawArrived(fresh);
+      drawGrid();
+    } catch (e) {
+      $('liveText').textContent = 'Reconnecting';
+    }
+  }
+
+  function drawHeader() {
+    $('cName').textContent = data.center.name;
+    const i = data.incident;
+    $('status').className = 'status ' + (i ? 'on' : 'off');
+    $('statusText').textContent = i ? 'EVACUATION ACTIVE · ' + String(i.disaster_type).toUpperCase() : 'Evacuation mode is off';
+    $('count').innerHTML = data.safe_total + '<small> / ' + data.expected_total + '</small>';
+    $('waitCount').textContent = data.waiting.length + ' still expected';
+  }
+
+  function drawGrid() {
+    const pages = Math.max(1, Math.ceil(data.waiting.length / PER_PAGE));
+    if (page >= pages) page = 0;
+    const slice = data.waiting.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
+    $('grid').innerHTML = slice.length ? slice.map((p) =>
+      '<div class="tile' + (p.tags.length ? ' prio' : '') + '">' + (p.tags.length ? '<span class="tag">' + BL.esc(p.tags[0]) + '</span>' : '') +
+      '<div class="face">' + faceHTML(p) + '</div><div class="nm">' + BL.esc(p.name) + '</div></div>').join('')
+      : '<div class="empty-big" style="grid-column:1/-1">Everyone registered has arrived or is safe at an evacuation center.</div>';
+    $('pager').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, k) => '<i class="' + (k === page ? 'on' : '') + '"></i>').join('') : '';
+  }
+
+  function drawArrived(fresh) {
+    const list = data.arrived.slice(0, 7);
+    const check = '<span class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>';
+    $('list').innerHTML = list.length ? list.map((a) =>
+      '<div class="arr' + (fresh.has(a.id) ? ' new' : '') + '"><div class="face">' + faceHTML(a) + '</div>' +
+      '<div style="min-width:0"><div class="nm">' + BL.esc(a.name) + '</div><div class="tm">Arrived ' + BL.time(a.time) + '</div></div>' + check + '</div>').join('')
+      : '<div class="empty-big">Arrivals will appear here as the camera identifies them.</div>';
+  }
+
+  setInterval(() => { if (data) { page++; drawGrid(); } }, PAGE_SECONDS * 1000);
+  setInterval(load, 30000); // safety refresh in case a live update is missed
+
+  await load();
+  const badge = { className: '', querySelector: () => ({ set textContent(v) { $('liveText').textContent = v === 'Live' ? 'Camera live' : 'Reconnecting'; $('liveDot').style.background = v === 'Live' ? '#DCFCE7' : '#FCA5A5'; } }) };
+  BL.connectLive(() => load(), badge);
+})();
+</script>
+</body>
+</html>

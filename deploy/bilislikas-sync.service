@@ -1,0 +1,14 @@
+[Unit]
+Description=BilisLikas 2.0 cloud sync agent
+After=network-online.target bilislikas.service
+Wants=network-online.target
+
+[Service]
+User=ian
+WorkingDirectory=/home/ian/bilislikas2.0
+ExecStart=/home/ian/bilislikas2.0/venv/bin/python sync_agent.py server-a
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

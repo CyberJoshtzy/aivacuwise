@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Evacuation · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=8">
 <style>
 .banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-radius: 14px; color: #FFFFFF; background: #4A5368; flex-wrap: wrap; }
 .banner.on { background: var(--red); }
@@ -36,6 +36,10 @@
 .types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .type { min-height: 56px; border: 2px solid var(--field); border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 15px; font-weight: 800; color: var(--navy); cursor: pointer; }
 .type[aria-checked="true"] { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+/* TV mode for the officials' monitor: live.html?tv=1 */
+body.tv .sidebar, body.tv #openDisplay, body.tv #openTv, body.tv #startBtn, body.tv #endBtn, body.tv [data-manual], body.tv .page-head p, body.tv #brgySel, body.tv .field-group { display: none !important; }
+body.tv .main { zoom: 1.25; padding: 20px 28px; }
+body.tv .res { max-height: none; }
 @media (max-width: 1100px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
@@ -50,6 +54,8 @@
       </div>
       <div class="toolbar">
         <select id="brgySel" class="input" style="width:220px;height:46px" hidden aria-label="Barangay"></select>
+        <a class="btn btn-ghost btn-sm" id="openDisplay" href="display.html" target="_blank" rel="noopener">Open Entrance Display</a>
+        <a class="btn btn-ghost btn-sm" id="openTv" href="live.html?tv=1" target="_blank" rel="noopener">Open TV Mode</a>
         <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
       </div>
     </div>
@@ -106,11 +112,13 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=8"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
   const city = me.role === 'city_admin';
+  const tv = new URLSearchParams(location.search).get('tv') === '1';
+  if (tv) document.body.classList.add('tv');
   const $ = (id) => document.getElementById(id);
   const TYPES = ['Fire', 'Earthquake', 'Flood', 'Typhoon', 'Landslide', 'Other'];
   let brgys = [], brgyId = me.barangay_id, incident = null, residents = [], where = {}, centers = [];
@@ -207,6 +215,7 @@
     const keep = sel.value || (incident && incident.evacuation_center_id ? String(incident.evacuation_center_id) : '');
     sel.innerHTML = centers.map((c) => '<option value="' + c.id + '">' + BL.esc(c.name) + ' (' + (c.capacity - c.occupancy) + ' spaces left)</option>').join('') || '<option value="">No evacuation centers yet</option>';
     if (keep && sel.querySelector('option[value="' + keep + '"]')) sel.value = keep;
+    if (sel.value) $('openDisplay').href = 'display.html?center=' + sel.value;
 
     // Counters
     const inN = residents.filter((r) => where[r.id]).length;

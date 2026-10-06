@@ -30,6 +30,9 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=True)
+    full_name = Column(String, nullable=True)
+    designation = Column(String, nullable=True)
+    mobile_number = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False)
     barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=True)
@@ -113,3 +116,89 @@ class Incident(Base):
     ended_at = Column(DateTime, nullable=True)
     started_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     ended_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+# ---- BilisLikas 2.0: cloud sync phase 1 (sync-ready records) ----
+import os as _sync_os
+import uuid as _sync_uuid
+from sqlalchemy import event as _sync_event
+from sqlalchemy.orm import Session as _SyncSession
+from sqlalchemy.orm import object_session as _sync_object_session
+
+SERVER_ID = _sync_os.getenv('BILISLIKAS_SERVER_ID', 'local')
+
+SYNCED_MODELS = [Barangay, EvacuationCenter, User, Household, Evacuee, CheckinRecord,
+                 Transfer, Tracker, TrackerPing, GpsPing, Incident]
+
+for _cls in SYNCED_MODELS:
+    _cls.uuid = Column(String(36), unique=True, index=True, nullable=True)
+    _cls.updated_at = Column(DateTime, nullable=True, index=True)
+    _cls.origin = Column(String, nullable=True)
+    _cls.sync_dirty = Column(Boolean, nullable=True, default=False, index=True)
+
+Barangay.district = Column(String, nullable=True)
+
+
+class SyncTombstone(Base):
+    __tablename__ = "sync_tombstones"
+    id = Column(Integer, primary_key=True)
+    table_name = Column(String, nullable=False)
+    record_uuid = Column(String(36), nullable=False, index=True)
+    deleted_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    origin = Column(String, nullable=True)
+
+
+class SyncState(Base):
+    __tablename__ = "sync_state"
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=True)
+
+
+def _sync_importing(target):
+    s = _sync_object_session(target)
+    return bool(s is not None and s.info.get('sync_import'))
+
+
+def _sync_on_insert(mapper, connection, target):
+    if _sync_importing(target):
+        return
+    target.sync_dirty = True
+    if not getattr(target, 'uuid', None):
+        target.uuid = str(_sync_uuid.uuid4())
+    if not getattr(target, 'origin', None):
+        target.origin = SERVER_ID
+    target.updated_at = datetime.utcnow()
+
+
+def _sync_on_update(mapper, connection, target):
+    if _sync_importing(target):
+        return
+    target.updated_at = datetime.utcnow()
+    target.sync_dirty = True
+
+
+for _cls in SYNCED_MODELS:
+    _sync_event.listen(_cls, 'before_insert', _sync_on_insert)
+    _sync_event.listen(_cls, 'before_update', _sync_on_update)
+
+
+@_sync_event.listens_for(_SyncSession, 'before_flush')
+def _sync_record_deletions(session, flush_context, instances):
+    if session.info.get('sync_import'):
+        return
+    for obj in list(session.deleted):
+        if type(obj) in SYNCED_MODELS and getattr(obj, 'uuid', None):
+            session.add(SyncTombstone(table_name=obj.__tablename__, record_uuid=obj.uuid,
+                                      deleted_at=datetime.utcnow(), origin=SERVER_ID))
+
+
+# ---- BilisLikas 2.0: cloud sync phase 3 (push, pull, notify) ----
+class SyncLog(Base):
+    """On the cloud hub: every change received, in order, so each server can pull what it has not seen."""
+    __tablename__ = "sync_log"
+    seq = Column(Integer, primary_key=True)
+    table_name = Column(String, nullable=False)
+    record_uuid = Column(String(36), nullable=False, index=True)
+    is_tombstone = Column(Boolean, nullable=False, default=False)
+    origin = Column(String, nullable=False, index=True)
+    received_at = Column(DateTime, nullable=False, default=datetime.utcnow)

@@ -75,12 +75,13 @@ const BL = (() => {
   }
 
   async function requireAuth(opts = {}) {
-    if (!token()) { location.href = 'signin.html'; return new Promise(() => {}); }
+    const here = location.pathname.split('/').pop() + location.search;
+    if (!token()) { sessionStorage.setItem('bl_next', here); location.href = 'signin.html'; return new Promise(() => {}); }
     let me;
-    try { me = await api('/users/me'); } catch (e) { location.href = 'signin.html'; return new Promise(() => {}); }
+    try { me = await api('/users/me'); } catch (e) { sessionStorage.setItem('bl_next', here); location.href = 'signin.html'; return new Promise(() => {}); }
     store().setItem(ME, JSON.stringify(me));
     if (!opts.skipPrivacy && sessionStorage.getItem(PRIVACY) !== '1') {
-      location.href = 'privacy.html'; return new Promise(() => {});
+      sessionStorage.setItem('bl_next', here); location.href = 'privacy.html'; return new Promise(() => {});
     }
     if (opts.role && me.role !== opts.role) {
       location.href = homeFor(me); return new Promise(() => {});
@@ -89,6 +90,12 @@ const BL = (() => {
   }
 
   function acceptPrivacy() { sessionStorage.setItem(PRIVACY, '1'); }
+  // After sign-in and the privacy notice, go back to the page that was asked for (e.g. the Entrance Display).
+  function nextPage(me) {
+    const n = sessionStorage.getItem('bl_next');
+    sessionStorage.removeItem('bl_next');
+    return n && /^[a-z]+\.html/.test(n) && !/^(signin|privacy)\.html/.test(n) ? n : homeFor(me);
+  }
 
   const ICONS = {
     live: '<path d="M7 18v-6a5 5 0 0 1 10 0v6"/><path d="M4 18h16v3H4z"/><path d="M12 3v2"/><path d="M4.5 6.5l1.4 1.4"/><path d="M19.5 6.5l-1.4 1.4"/>',
@@ -102,7 +109,8 @@ const BL = (() => {
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/>',
     report: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7"/><path d="M9 17h5"/>',
     users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5"/><path d="M17 8v6"/><path d="M14 11h6"/>',
-    out: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/>'
+    out: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/>',
+    tv: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>'
   };
   const svg = (k) => '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS[k] + '</svg>';
 
@@ -110,6 +118,7 @@ const BL = (() => {
   const NAV = {
     barangay_official: [
       ['live', 'Live Evacuation', 'live.html'],
+      ['tv', 'Entrance Display', 'entrance.html'],
       ['dash', 'Dashboard', 'dashboard.html'],
       ['people', 'Evacuees', 'evacuees.html'],
       ['face', 'Pre-Registration', 'preregister.html'],
@@ -125,6 +134,7 @@ const BL = (() => {
       ['face', 'Pre-Registration', 'preregister.html'],
       ['transfer', 'Transfers', 'transfers.html'],
       ['live', 'Live Evacuation', 'live.html'],
+      ['tv', 'Entrance Display', 'entrance.html'],
       ['tracker', 'Trackers', 'trackers.html'],
       ['pin', 'Barangays', 'barangays.html'],
       ['report', 'Situation Reports', null],
@@ -148,8 +158,41 @@ const BL = (() => {
     el.innerHTML =
       '<div class="logo-tile"><img src="/static/logo.png" alt="BilisLikas 2.0"></div>' + badge +
       '<nav class="nav" aria-label="Main">' + items + '</nav>' +
+      '<div class="sync-badge" id="syncBadge" role="status" hidden><span class="sdot"></span><span><strong id="syncTitle"></strong><span id="syncSub"></span></span></div>' +
       '<nav class="nav signout" aria-label="Account"><a href="#" id="signout">' + svg('out') + 'Sign Out</a></nav>';
     document.getElementById('signout').addEventListener('click', (e) => { e.preventDefault(); logout(); });
+    startSyncBadge();
+  }
+
+  // Cloud sync badge: shows whether this server's data has reached the city's cloud hub.
+  let syncTimer = null;
+  function startSyncBadge() {
+    const box = document.getElementById('syncBadge');
+    if (!box) return;
+    const show = (state, title, sub) => {
+      box.hidden = false;
+      box.className = 'sync-badge ' + state;
+      document.getElementById('syncTitle').textContent = title;
+      document.getElementById('syncSub').textContent = sub || '';
+    };
+    const tick = async () => {
+      let d;
+      try { d = await api('/sync/info'); } catch (e) { box.hidden = true; return; }
+      if (d.role === 'hub') {
+        const n = (d.servers || []).length;
+        const last = (d.servers || []).map((x) => x.last_received_at).filter(Boolean).sort().pop();
+        show('ok', 'Cloud hub', n + (n === 1 ? ' server' : ' servers') + ' connected' + (last ? ', last update ' + ago(last) : ''));
+        return;
+      }
+      if (!d.configured) { box.hidden = true; return; }
+      const fresh = d.last_pull_at && (Date.now() - parseT(d.last_pull_at).getTime()) < 120000;
+      const waiting = d.waiting ? d.waiting + (d.waiting === 1 ? ' change' : ' changes') + ' waiting' : '';
+      if (fresh) show('ok', 'Synced with cloud', ago(d.last_pull_at) + (waiting ? ', ' + waiting : ''));
+      else show('off', 'Offline from cloud', (waiting || 'No changes waiting') + '. Last sync ' + (d.last_pull_at ? ago(d.last_pull_at) : 'never') + '.');
+    };
+    clearInterval(syncTimer);
+    tick();
+    syncTimer = setInterval(tick, 30000);
   }
 
   let toastTimer;
@@ -269,5 +312,5 @@ const BL = (() => {
     });
   }
 
-  return { parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
+  return { nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
 })();

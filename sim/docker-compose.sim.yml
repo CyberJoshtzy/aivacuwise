@@ -1,0 +1,28 @@
+# BilisLikas 2.0 sync simulation: a second barangay database (Server B) and the cloud hub database.
+# Uses the same database name, user and password as .env. Reachable from this laptop only.
+services:
+  postgres_b:
+    image: postgres:16
+    container_name: bilislikas_postgres_b
+    restart: "no"
+    env_file:
+      - ../.env
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_b_data:/var/lib/postgresql/data
+
+  postgres_hub:
+    image: postgres:16
+    container_name: bilislikas_postgres_hub
+    restart: "no"
+    env_file:
+      - ../.env
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - postgres_hub_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_b_data:
+  postgres_hub_data:

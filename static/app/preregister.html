@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pre-Registration · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=8">
 <style>
 .steps { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .steps li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--muted); }
@@ -131,7 +131,6 @@
           <div class="panel-head"><h3 style="font-size:16px;font-weight:800">Face photos</h3><button type="button" class="btn btn-ghost btn-sm" id="back1">Retake</button></div>
           <div id="miniThumbs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
         </section>
-        <label class="check" style="align-items:flex-start;padding:14px;background:#FFFFFF;border:1.5px solid var(--line);border-radius:14px;font-size:13px;line-height:1.5"><input type="checkbox" id="consent" style="margin-top:2px">The evacuee (or their parent or guardian, if a minor) has given written consent to collect their photos and personal information under the Data Privacy Act of 2012.</label>
         <div id="saveErr" class="form-error" hidden></div>
         <button type="button" class="btn btn-primary btn-lg" id="register" disabled>Register Evacuee</button>
         <p id="missing" style="font-size:13px;color:var(--muted);text-align:center"></p>
@@ -148,7 +147,7 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=8"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -293,7 +292,6 @@
   $('bday').max = new Date().toISOString().slice(0, 10);
   $('form').addEventListener('input', syncForm);
   $('form').addEventListener('change', syncForm);
-  $('consent').addEventListener('change', syncForm);
 
   function syncForm() {
     const a = BL.age($('bday').value);
@@ -304,7 +302,7 @@
       ['Birthday', $('bday').value && a !== null && a >= 0], ['Civil status', $('civil').value],
       ['House no. and street', $('addr').value.trim()],
       ['Household', $('hhMode').value === 'new' || $('hhSel').value],
-      ['Emergency contact', $('ec').value.trim()], ['Consent', $('consent').checked]
+      ['Emergency contact', $('ec').value.trim()]
     ];
     const miss = req.filter((r) => !r[1]).map((r) => r[0]);
     $('register').disabled = miss.length > 0;
@@ -345,6 +343,7 @@
         id = m.id;
       }
       await BL.api('/evacuees/' + id + '/facial_embedding', { method: 'POST', json: await embeddingBody(embedding) });
+      try { await BL.api('/evacuees/' + id + '/photo', { method: 'POST', json: { image: shots.front } }); } catch (e) { /* photo is optional; recognition does not need it */ }
     } catch (ex) {
       $('saveErr').textContent = (id ? 'The evacuee was saved (ID ' + id + '), but the face data was not: ' : '') + ex.message;
       $('saveErr').hidden = false;
@@ -366,7 +365,7 @@
 
   $('again').addEventListener('click', () => {
     shots = {}; checks = {}; embedding = null;
-    $('form').reset(); $('consent').checked = false; $('middle').disabled = false; $('hhPick').hidden = true;
+    $('form').reset(); $('middle').disabled = false; $('hhPick').hidden = true;
     $('checkMsg').hidden = true;
     step = 1; drawSteps(); drawCapture(); loadHouseholds();
   });

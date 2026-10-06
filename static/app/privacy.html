@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Data Privacy Notice · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=8">
 <style>
 body { background: var(--bg); }
 .dialog header { padding: 26px 34px 18px; border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; }
@@ -54,7 +54,7 @@ body { background: var(--bg); }
     </footer>
   </section>
 </div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=8"></script>
 <script>
   (async () => {
     const me = await BL.requireAuth({ skipPrivacy: true });
@@ -70,7 +70,7 @@ body { background: var(--bg); }
     const agree = document.getElementById('agree');
     const cont = document.getElementById('continue');
     agree.addEventListener('change', () => { cont.disabled = !agree.checked; });
-    cont.addEventListener('click', () => { BL.acceptPrivacy(); location.href = BL.homeFor(me); });
+    cont.addEventListener('click', () => { BL.acceptPrivacy(); location.href = BL.nextPage(me); });
     document.getElementById('decline').addEventListener('click', () => BL.logout());
   })();
 </script>

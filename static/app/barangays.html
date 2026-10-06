@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Barangays · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=8">
 </head>
 <body>
 <div class="shell">
@@ -26,7 +26,7 @@
     <section class="panel" style="padding:0;overflow:hidden">
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th scope="col">Barangay</th><th scope="col">Residents</th><th scope="col">Evacuated now</th><th scope="col">Centers</th><th scope="col">Evacuation</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+          <thead><tr><th scope="col">Barangay</th><th scope="col">District</th><th scope="col">Residents</th><th scope="col">Evacuated now</th><th scope="col">Centers</th><th scope="col">Evacuation</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -35,13 +35,15 @@
     <p class="notice" id="note"></p>
   </main>
 </div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=8"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
   const city = me.role === 'city_admin';
   const $ = (id) => document.getElementById(id);
   let rows = [];
+  let districts = [];
+  try { districts = await BL.api('/districts') || []; } catch (e) { districts = []; }
 
   async function load() {
     try {
@@ -54,7 +56,7 @@
       rows = (brgys || []).filter((b) => city || b.id === me.barangay_id).map((b) => {
         const res = (evacuees || []).filter((e) => e.registered_barangay_id === b.id);
         return {
-          id: b.id, name: b.name, residents: res.length,
+          id: b.id, name: b.name, district: b.district || '', residents: res.length,
           evac: res.filter((e) => present.has(e.id)).length,
           centers: (centers || []).filter((c) => c.barangay_id === b.id).length,
           incident: (act || []).find((i) => i.barangay_id === b.id)
@@ -68,9 +70,10 @@
 
   function render() {
     const q = $('q').value.trim().toLowerCase();
-    const shown = rows.filter((r) => !q || r.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+    const shown = rows.filter((r) => !q || (r.name + ' ' + r.district).toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
     $('rows').innerHTML = shown.map((r) =>
       '<tr><td><strong style="color:var(--navy);font-size:15px">' + BL.esc(r.name) + '</strong></td>' +
+      '<td>' + (r.district ? BL.esc(r.district) : '<span style="color:var(--muted)">Not set</span>') + '</td>' +
       '<td>' + r.residents + '</td>' +
       '<td>' + r.evac + (r.residents ? ' <span style="color:var(--muted)">(' + Math.round(r.evac / r.residents * 100) + '%)</span>' : '') + '</td>' +
       '<td>' + r.centers + '</td>' +
@@ -90,7 +93,10 @@
     const m = BL.modal(
       '<form id="bf" novalidate style="display:contents"><div class="dialog-head"><h2>' + (editing ? 'Edit barangay' : 'Add barangay') + '</h2>' + xBtn + '</div>' +
       '<div class="dialog-body"><div class="form-error" id="bErr" hidden style="margin-bottom:14px"></div>' +
-      '<div class="field-group"><label for="bName">Barangay name *</label><input id="bName" class="input" placeholder="e.g., Barangay 200, Zone 18" value="' + BL.esc(editing ? r.name : '') + '"></div></div>' +
+      '<div class="field-group"><label for="bName">Barangay name *</label><input id="bName" class="input" placeholder="e.g., Barangay 200, Zone 18" value="' + BL.esc(editing ? r.name : '') + '"></div>' +
+      (city ? '<div class="field-group" style="margin-top:14px"><label for="bDist">District (City of Manila)</label><select id="bDist" class="input"><option value="">Not set</option>' +
+        districts.map((d) => '<option' + (editing && r.district === d ? ' selected' : '') + '>' + BL.esc(d) + '</option>').join('') + '</select></div>' : '') +
+      '</div>' +
       '<div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="bSave">' + (editing ? 'Save Changes' : 'Add Barangay') + '</button></div></div></form>', 540);
     const f = (id) => m.el.querySelector('#' + id);
     const sync = () => { f('bSave').disabled = !f('bName').value.trim(); };
@@ -100,8 +106,12 @@
       f('bSave').disabled = true;
       const name = f('bName').value.trim();
       try {
+        let id = editing ? r.id : null;
         if (editing) await BL.api('/barangays/' + r.id, { method: 'PUT', json: { name } });
-        else await BL.api('/barangays', { method: 'POST', json: { name } });
+        else id = (await BL.api('/barangays', { method: 'POST', json: { name } })).id;
+        if (city && f('bDist') && id && f('bDist').value !== (editing ? r.district : '')) {
+          await BL.api('/barangays/' + id + '/district', { method: 'PUT', json: { district: f('bDist').value || null } });
+        }
         m.close();
         BL.toast(editing ? 'Barangay name updated.' : name + ' was added.');
         load();

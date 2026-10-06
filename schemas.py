@@ -8,6 +8,7 @@ class BarangayCreate(BaseModel):
 
 class BarangayOut(BarangayCreate):
     id: int
+    district: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class EvacuationCenterCreate(BaseModel):
@@ -32,6 +33,8 @@ class EvacueeCreate(BaseModel):
 
 class EvacueeOut(EvacueeCreate):
     id: int
+    household_id: Optional[int] = None
+    is_head_of_family: Optional[bool] = False
     model_config = ConfigDict(from_attributes=True)
 
 class CheckinCreate(BaseModel):

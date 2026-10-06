@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrance Display · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=8">
+<style>
+.preview { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #0E1F4F; border: 1px solid var(--line); }
+.preview iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stats .kpi .value { font-size: 28px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+.link-box { display: flex; gap: 8px; }
+.link-box input { flex-grow: 1; min-width: 0; height: 44px; font-size: 13px; background: var(--bg); }
+.steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.55; }
+.nophoto { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+.nophoto li { padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 14px; display: flex; justify-content: space-between; gap: 8px; }
+@media (max-width: 1200px) { .layout { grid-template-columns: minmax(0, 1fr); } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1>Entrance Display</h1>
+        <p>What evacuees see on the monitor at the evacuation center entrance. Faces move from "Not yet here" to "Just arrived" as the camera identifies them.</p>
+      </div>
+      <div class="toolbar">
+        <label for="centerSel" class="sr-only">Evacuation center</label>
+        <select id="centerSel" class="input" style="width:260px;height:46px"></select>
+        <button type="button" class="btn btn-primary" id="openFull">Open Full Screen</button>
+      </div>
+    </div>
+    <div id="loadError" class="form-error" role="alert" hidden></div>
+
+    <div class="stats">
+      <div class="kpi"><div class="label">Still expected</div><div class="value" id="sWait">0</div><div class="sub">Shown under "Not yet here"</div></div>
+      <div class="kpi"><div class="label">Arrived or safe</div><div class="value tone-green" id="sSafe">0</div><div class="sub" id="sSafeSub"></div></div>
+      <div class="kpi"><div class="label">Priority still expected</div><div class="value tone-amber" id="sPrio">0</div><div class="sub">Seniors, PWD, pregnant</div></div>
+      <div class="kpi"><div class="label">Without a photo</div><div class="value" id="sNoPhoto">0</div><div class="sub">Shown with initials</div></div>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head"><h2>Live preview</h2><span class="note">Exactly what the monitor shows, updating live</span></div>
+        <div class="preview"><iframe id="frame" title="Entrance Display preview"></iframe></div>
+      </section>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <section class="panel">
+          <h2 style="font-size:17px">Put it on the entrance monitor</h2>
+          <p style="font-size:14px;color:var(--muted)">Open this link on the mini PC connected to the entrance monitor, then press F11 for full screen.</p>
+          <div class="link-box"><input id="link" class="input" readonly aria-label="Monitor link"><button type="button" class="btn btn-ghost btn-sm" id="copy">Copy</button></div>
+          <ol class="steps-list">
+            <li>Connect the mini PC to the same network as the server laptop.</li>
+            <li>Sign in with "Keep me signed in on this device" ticked, so the display stays signed in after restarts.</li>
+            <li>Monitor 1 (facing evacuees): open the link above, then press F11.</li>
+            <li>Monitor 2 (facing officials): open Live Evacuation in TV mode: <a id="tvLink" href="live.html?tv=1" target="_blank" rel="noopener">live.html?tv=1</a></li>
+          </ol>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2 style="font-size:17px">Residents without a photo</h2><span class="note" id="npCount"></span></div>
+          <ul class="nophoto" id="noPhoto"></ul>
+          <p class="notice">They were registered before photos were saved, so the display shows their initials. Recognition still works for anyone with saved face data.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="app.js?v=8"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const $ = (id) => document.getElementById(id);
+  let brgyNames = {};
+  try { (await BL.api('/barangays') || []).forEach((b) => { brgyNames[b.id] = b.name; }); } catch (e) {}
+  BL.renderSidebar(me, 'entrance.html', brgyNames[me.barangay_id]);
+
+  let centers = [];
+  try { centers = (await BL.api('/evacuation_centers') || []).filter((c) => me.role === 'city_admin' || c.barangay_id === me.barangay_id); } catch (e) {}
+  if (!centers.length) {
+    $('loadError').textContent = 'No evacuation centers yet. Add one on the Evacuation Centers page first.';
+    $('loadError').hidden = false;
+    return;
+  }
+  const saved = Number(localStorage.getItem('bl_display_center'));
+  $('centerSel').innerHTML = centers.map((c) => '<option value="' + c.id + '"' + (c.id === saved ? ' selected' : '') + '>' + BL.esc(c.name) + '</option>').join('');
+
+  // The mini PC reaches the server by its network address, not 127.0.0.1.
+  const lanHost = (location.hostname === '127.0.0.1' || location.hostname === 'localhost') ? '192.168.100.200' : location.hostname;
+  const base = location.protocol + '//' + lanHost + (location.port ? ':' + location.port : '') + '/static/app/';
+
+  function applyCenter() {
+    const id = $('centerSel').value;
+    localStorage.setItem('bl_display_center', id);
+    $('frame').src = 'display.html?center=' + id;
+    $('link').value = base + 'display.html?center=' + id;
+    $('tvLink').href = 'live.html?tv=1';
+    load();
+  }
+  $('centerSel').addEventListener('change', applyCenter);
+  $('openFull').addEventListener('click', () => window.open('display.html?center=' + $('centerSel').value, '_blank'));
+  $('copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('link').value); BL.toast('Monitor link copied.'); }
+    catch (e) { $('link').select(); BL.toast('Press Ctrl+C to copy the selected link.'); }
+  });
+
+  async function load() {
+    try {
+      const d = await BL.api('/display/' + $('centerSel').value);
+      const prio = d.waiting.filter((w) => w.tags.length).length;
+      const noPhoto = d.waiting.concat(d.arrived).filter((p) => !p.has_photo);
+      $('sWait').textContent = d.waiting.length;
+      $('sSafe').innerHTML = d.safe_total + ' <small>of ' + d.expected_total + '</small>';
+      $('sSafeSub').textContent = d.expected_total ? Math.round(d.safe_total / d.expected_total * 100) + '% of registered residents' : 'No residents registered yet';
+      $('sPrio').textContent = prio;
+      $('sNoPhoto').textContent = noPhoto.length;
+      $('npCount').textContent = noPhoto.length + ' resident(s)';
+      $('noPhoto').innerHTML = noPhoto.length
+        ? noPhoto.map((p) => '<li><strong style="color:var(--navy)">' + BL.esc(p.name) + '</strong><span style="color:var(--muted)">' + (p.time ? 'Arrived' : 'Not yet here') + '</span></li>').join('')
+        : '<li style="color:var(--muted)">Everyone shown on the display has a photo.</li>';
+      $('loadError').hidden = true;
+    } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
+  }
+
+  applyCenter();
+  BL.connectLive(() => load(), null);
+})();
+</script>
+</body>
+</html>

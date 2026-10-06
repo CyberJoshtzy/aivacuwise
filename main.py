@@ -663,6 +663,7 @@ async def bl_delete_evacuee(evacuee_id: int,
     barangay_id = e.registered_barangay_id
     db.delete(e)
     db.commit()
+    _bl_remove_photo(evacuee_id)
     await _bl_notify(barangay_id)
     return {'deleted': evacuee_id}
 
@@ -961,3 +962,365 @@ def bl_evacuee_details(db: _BLSession = _BLDepends(get_db), user=_BLDepends(auth
         'id': e.id, 'civil_status': e.civil_status, 'emergency_contact': e.emergency_contact,
         'special_needs': [x for x in (e.special_needs or '').split(',') if x],
     } for e in q.all()]
+
+
+# ---- BilisLikas 2.0: evacuee photos and entrance display (batch 5) ----
+import os as _bl_os
+from fastapi.responses import FileResponse as _BLFileResponse
+
+
+class BLPhoto(_BLBaseModel):
+    image: str
+
+
+def _bl_photo_dir():
+    d = _bl_os.environ.get('BL_PHOTO_DIR') or _bl_os.path.join(_bl_os.getcwd(), 'data', 'photos')
+    _bl_os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _bl_photo_path(evacuee_id):
+    return _bl_os.path.join(_bl_photo_dir(), '%d.jpg' % int(evacuee_id))
+
+
+def _bl_remove_photo(evacuee_id):
+    try:
+        _bl_os.remove(_bl_photo_path(evacuee_id))
+    except OSError:
+        pass
+
+
+def _bl_short_name(full_name):
+    parts = [p for p in (full_name or '').replace(',', ' ').split() if p]
+    suffixes = {'jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v'}
+    while len(parts) > 1 and parts[-1].lower() in suffixes:
+        parts.pop()
+    if not parts:
+        return 'Evacuee'
+    if len(parts) == 1:
+        return parts[0]
+    return parts[0] + ' ' + parts[-1][0].upper() + '.'
+
+
+def _bl_age(birthdate):
+    try:
+        y, m, d = [int(x) for x in str(birthdate)[:10].split('-')]
+        t = _BL3dt.utcnow()
+        return t.year - y - ((t.month, t.day) < (m, d))
+    except Exception:
+        return None
+
+
+@app.post('/evacuees/{evacuee_id}/photo')
+def bl_save_photo(evacuee_id: int, payload: BLPhoto, db: _BLSession = _BLDepends(get_db),
+                  user=_BLDepends(auth.get_current_user)):
+    import base64
+    import io
+    from PIL import Image
+    Evacuee = _bl_model('evacuees')
+    e = db.query(Evacuee).filter(Evacuee.id == evacuee_id).first()
+    if not e:
+        raise _BLHTTPException(status_code=404, detail='Evacuee not found.')
+    if not _bl_can_edit(user, e.registered_barangay_id):
+        raise _BLHTTPException(status_code=403, detail='You can only add photos for your own barangay.')
+    try:
+        raw = payload.image.split(',', 1)[1] if payload.image.startswith('data:') else payload.image
+        img = Image.open(io.BytesIO(base64.b64decode(raw))).convert('RGB')
+    except Exception:
+        raise _BLHTTPException(status_code=422, detail='The photo could not be read.')
+    w, h = img.size
+    side = min(w, h)
+    img = img.crop(((w - side) // 2, (h - side) // 2, (w - side) // 2 + side, (h - side) // 2 + side)).resize((240, 240))
+    img.save(_bl_photo_path(e.id), format='JPEG', quality=80)
+    return {'saved': True, 'evacuee_id': e.id}
+
+
+@app.get('/evacuees/{evacuee_id}/photo')
+def bl_get_photo(evacuee_id: int, db: _BLSession = _BLDepends(get_db), user=_BLDepends(auth.get_current_user)):
+    Evacuee = _bl_model('evacuees')
+    e = db.query(Evacuee).filter(Evacuee.id == evacuee_id).first()
+    if not e:
+        raise _BLHTTPException(status_code=404, detail='Evacuee not found.')
+    if not _bl_can_edit(user, e.registered_barangay_id):
+        raise _BLHTTPException(status_code=403, detail='Not allowed.')
+    path = _bl_photo_path(e.id)
+    if not _bl_os.path.exists(path):
+        raise _BLHTTPException(status_code=404, detail='No photo saved for this evacuee.')
+    return _BLFileResponse(path, media_type='image/jpeg', headers={'Cache-Control': 'private, max-age=300'})
+
+
+@app.get('/display/{center_id}')
+def bl_display(center_id: int, db: _BLSession = _BLDepends(get_db), user=_BLDepends(auth.get_current_user)):
+    Center = _bl_model('evacuation_centers')
+    Evacuee = _bl_model('evacuees')
+    Checkin = _bl_model('checkin_records')
+    Barangay = _bl_model('barangays')
+    Incident = _bl_model('incidents')
+    c = db.query(Center).filter(Center.id == center_id).first()
+    if not c:
+        raise _BLHTTPException(status_code=404, detail='Evacuation center not found.')
+    if not _bl_can_edit(user, c.barangay_id):
+        raise _BLHTTPException(status_code=403, detail='You can only open the display for your own barangay\'s centers.')
+    b = db.query(Barangay).filter(Barangay.id == c.barangay_id).first()
+    residents = db.query(Evacuee).filter(Evacuee.registered_barangay_id == c.barangay_id).all()
+
+    def latest(ev_id):
+        return db.query(Checkin).filter(Checkin.evacuee_id == ev_id).order_by(Checkin.timestamp.desc(), Checkin.id.desc()).first()
+
+    waiting, safe = [], 0
+    for e in residents:
+        r = latest(e.id)
+        inside = r is not None and r.event_type == 'check_in'
+        if inside:
+            safe += 1
+            continue
+        tags = []
+        needs = [x for x in (getattr(e, 'special_needs', None) or '').split(',') if x]
+        age = _bl_age(e.birthdate)
+        if 'Senior citizen' in needs or (age is not None and age >= 60):
+            tags.append('Senior')
+        if 'PWD' in needs:
+            tags.append('PWD')
+        if 'Pregnant' in needs:
+            tags.append('Pregnant')
+        waiting.append({'id': e.id, 'name': _bl_short_name(e.full_name), 'tags': tags,
+                        'has_photo': _bl_os.path.exists(_bl_photo_path(e.id))})
+    waiting.sort(key=lambda w: (0 if w['tags'] else 1, w['name'].lower()))
+
+    arrived = []
+    here_ids = set()
+    for r in db.query(Checkin).filter(Checkin.evacuation_center_id == c.id, Checkin.event_type == 'check_in').order_by(Checkin.timestamp.desc(), Checkin.id.desc()).limit(200).all():
+        if r.evacuee_id in here_ids:
+            continue
+        cur = latest(r.evacuee_id)
+        if cur is None or cur.id != r.id:
+            continue
+        here_ids.add(r.evacuee_id)
+        e = db.query(Evacuee).filter(Evacuee.id == r.evacuee_id).first()
+        if e is None:
+            continue
+        arrived.append({'id': e.id, 'name': _bl_short_name(e.full_name), 'time': _bl_iso(r.timestamp),
+                        'has_photo': _bl_os.path.exists(_bl_photo_path(e.id))})
+        if len(arrived) >= 12:
+            break
+    inc = db.query(Incident).filter(Incident.barangay_id == c.barangay_id, Incident.ended_at.is_(None)).first()
+    return {
+        'center': {'id': c.id, 'name': c.name, 'capacity': c.capacity},
+        'barangay': b.name if b else None,
+        'incident': _bl_incident_dict(inc) if inc else None,
+        'expected_total': len(residents), 'safe_total': safe,
+        'waiting': waiting, 'arrived': arrived,
+    }
+
+
+# ---- BilisLikas 2.0: barangay self-registration (batch 6) ----
+import re as _bl_re
+
+BL_DESIGNATIONS = ['Barangay Chairman', 'Barangay Kagawad', 'SK Chairman', 'Barangay Secretary']
+
+
+class BLRegister(_BLBaseModel):
+    barangay_name: str
+    designation: str
+    designation_other: _BLOptional[str] = None
+    full_name: str
+    email: str
+    mobile_number: str
+    password: str
+    registration_code: _BLOptional[str] = None
+    district: _BLOptional[str] = None
+
+
+def _bl_required_code():
+    return (_bl_os.environ.get('REGISTRATION_CODE') or '').strip()
+
+
+@app.get('/register/config')
+def bl_register_config():
+    return {'code_required': bool(_bl_required_code()), 'designations': BL_DESIGNATIONS}
+
+
+@app.post('/register', status_code=201)
+async def bl_register(payload: BLRegister, db: _BLSession = _BLDepends(get_db)):
+    code = _bl_required_code()
+    if code and (payload.registration_code or '').strip() != code:
+        raise _BLHTTPException(status_code=403, detail='The registration code is not correct. Ask the City DRRMO for it.')
+    name = ' '.join((payload.barangay_name or '').split())
+    person = ' '.join((payload.full_name or '').split())
+    email = (payload.email or '').strip().lower()
+    if not name:
+        raise _BLHTTPException(status_code=422, detail='Enter the barangay name.')
+    if not person:
+        raise _BLHTTPException(status_code=422, detail='Enter your full name.')
+    if not _bl_re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', email):
+        raise _BLHTTPException(status_code=422, detail='Enter a valid email address.')
+    designation = (payload.designation or '').strip()
+    if designation not in BL_DESIGNATIONS:
+        designation = ' '.join((payload.designation_other or '').split())
+        if not designation:
+            raise _BLHTTPException(status_code=422, detail='Choose your designation, or type it under Others.')
+    digits = _bl_re.sub(r'\D', '', payload.mobile_number or '')
+    if digits.startswith('63'):
+        digits = '0' + digits[2:]
+    if len(digits) == 10 and digits.startswith('9'):
+        digits = '0' + digits
+    if not _bl_re.fullmatch(r'09\d{9}', digits):
+        raise _BLHTTPException(status_code=422, detail='Enter a valid Philippine mobile number, such as 0917 123 4567.')
+    pw = payload.password or ''
+    if len(pw) < 8 or not _bl_re.search(r'[A-Za-z]', pw) or not _bl_re.search(r'\d', pw):
+        raise _BLHTTPException(status_code=422, detail='Use a password with at least 8 characters, including letters and a number.')
+    User = models.User
+    Barangay = _bl_model('barangays')
+    taken = db.query(User).filter(_BL3func.lower(User.email) == email).first() or db.query(User).filter(_BL3func.lower(User.username) == email).first()
+    if taken:
+        raise _BLHTTPException(status_code=409, detail='An account with this email already exists. Sign in instead.')
+    b = db.query(Barangay).filter(_BL3func.lower(Barangay.name) == name.lower()).first()
+    created = False
+    if b is None:
+        b = Barangay(name=name, district=payload.district if payload.district in MANILA_DISTRICTS else None)
+        db.add(b)
+        db.flush()
+        created = True
+    u = User(username=email, email=email, password_hash=auth.get_password_hash(pw), role='barangay_official',
+             barangay_id=b.id, full_name=person, designation=designation, mobile_number=digits)
+    db.add(u)
+    db.commit()
+    return {'id': u.id, 'email': email, 'barangay_id': b.id, 'barangay': b.name, 'new_barangay': created}
+
+# ---- BilisLikas 2.0: cloud sync phase 1 (sync-ready records) ----
+@app.get('/sync/status')
+def sync_status(db: Session = Depends(get_db), current_user=Depends(auth.get_current_user)):
+    counts = {}
+    for cls in models.SYNCED_MODELS:
+        counts[cls.__tablename__] = {
+            'records': db.query(cls).count(),
+            'missing_uuid': db.query(cls).filter(cls.uuid.is_(None)).count(),
+        }
+    state = {r.key: r.value for r in db.query(models.SyncState).all()}
+    return {
+        'server_id': models.SERVER_ID,
+        'tables': counts,
+        'tombstones': db.query(models.SyncTombstone).count(),
+        'sync_state': state,
+    }
+
+
+# ---- BilisLikas 2.0: cloud sync phase 3 (push, pull, notify) ----
+import os as _sync_os
+from fastapi import Header as _SyncHeader
+from pydantic import BaseModel as _SyncBase
+import sync_core
+
+
+class SyncPushIn(_SyncBase):
+    server_id: str
+    rows: list = []
+    tombstones: list = []
+
+
+def _sync_check_key(key):
+    expected = (_sync_os.getenv('SYNC_KEY') or '').strip()
+    if not expected:
+        raise HTTPException(status_code=503, detail='Sync is not configured on this server (SYNC_KEY missing).')
+    if (key or '').strip() != expected:
+        raise HTTPException(status_code=401, detail='Invalid sync key.')
+
+
+@app.post('/sync/push')
+def sync_push(payload: SyncPushIn, db: Session = Depends(get_db), x_sync_key: str = _SyncHeader(None)):
+    """Cloud hub: receive changes from one barangay server."""
+    _sync_check_key(x_sync_key)
+    applied, skipped, aliased, waiting = sync_core.apply_rows(db, payload.rows)
+    removed = sync_core.apply_tombstones(db, payload.tombstones)
+    for table, uuid in applied:
+        db.add(models.SyncLog(table_name=table, record_uuid=uuid, is_tombstone=False, origin=payload.server_id))
+    for t in payload.tombstones:
+        if t.get('table') in sync_core.BY_TABLE and t.get('uuid'):
+            db.add(models.SyncLog(table_name=t['table'], record_uuid=t['uuid'], is_tombstone=True, origin=payload.server_id))
+    db.commit()
+    db.info.pop('sync_import', None)
+    return {'applied': [u for _t, u in applied], 'skipped': skipped, 'aliased': aliased,
+            'waiting': waiting, 'removed': [u for _t, u in removed]}
+
+
+@app.get('/sync/pull')
+def sync_pull(since: int = 0, exclude_origin: str = '', limit: int = 300,
+              db: Session = Depends(get_db), x_sync_key: str = _SyncHeader(None)):
+    """Cloud hub: changes from all other servers since the given position."""
+    _sync_check_key(x_sync_key)
+    q = db.query(models.SyncLog).filter(models.SyncLog.seq > since)
+    if exclude_origin:
+        q = q.filter(models.SyncLog.origin != exclude_origin)
+    entries = q.order_by(models.SyncLog.seq).limit(max(1, min(limit, 1000))).all()
+    latest = {}
+    for e in entries:  # keep only the newest entry for each record (a deletion beats an older update)
+        latest[e.record_uuid] = e
+    rows, tombstones, cache = [], [], {}
+    for e in sorted(latest.values(), key=lambda x: x.seq):
+        if e.is_tombstone:
+            tombstones.append({'table': e.table_name, 'uuid': e.record_uuid})
+            continue
+        cls = sync_core.BY_TABLE.get(e.table_name, (None,))[0]
+        obj = db.query(cls).filter(cls.uuid == e.record_uuid).first() if cls else None
+        if obj is not None:
+            rows.append(sync_core.serialize(db, obj, cache))
+    last = db.query(func.max(models.SyncLog.seq)).scalar() or 0
+    nxt = entries[-1].seq if entries else since
+    return {'rows': rows, 'tombstones': tombstones, 'next': nxt, 'more': nxt < last and len(entries) > 0}
+
+
+@app.post('/sync/notify')
+async def sync_notify(x_sync_key: str = _SyncHeader(None), db: Session = Depends(get_db)):
+    """Local server: the sync agent calls this after applying new data, so open pages refresh."""
+    _sync_check_key(x_sync_key)
+    for b in db.query(models.Barangay).all():
+        await manager.broadcast({'type': 'sync_update', 'barangay_id': b.id})
+    return {'ok': True}
+
+
+# ---- BilisLikas 2.0: cloud sync phase 4 (status and districts) ----
+MANILA_DISTRICTS = ['Binondo', 'Ermita', 'Intramuros', 'Malate', 'Paco', 'Pandacan', 'Port Area', 'Quiapo',
+                    'Sampaloc', 'San Andres', 'San Miguel', 'San Nicolas', 'Santa Ana', 'Santa Cruz',
+                    'Santa Mesa', 'Tondo']
+
+
+class BLDistrict(_BLBaseModel):
+    district: _BLOptional[str] = None
+
+
+@app.get('/districts')
+def list_districts():
+    return MANILA_DISTRICTS
+
+
+@app.put('/barangays/{barangay_id}/district')
+async def set_barangay_district(barangay_id: int, payload: BLDistrict, db: Session = Depends(get_db),
+                                current_user=Depends(auth.get_current_user)):
+    if current_user.role != 'city_admin':
+        raise HTTPException(status_code=403, detail='Only the City Admin can set a barangay\'s district.')
+    b = db.query(models.Barangay).filter(models.Barangay.id == barangay_id).first()
+    if not b:
+        raise HTTPException(status_code=404, detail='Barangay not found.')
+    d = (payload.district or '').strip() or None
+    if d is not None and d not in MANILA_DISTRICTS:
+        raise HTTPException(status_code=422, detail='Choose one of the 16 districts of Manila.')
+    b.district = d
+    db.commit()
+    await _bl_notify(barangay_id)
+    return {'id': b.id, 'name': b.name, 'district': b.district}
+
+
+@app.get('/sync/info')
+def sync_info(db: Session = Depends(get_db), current_user=Depends(auth.get_current_user)):
+    """Small summary for the sidebar badge."""
+    st = {r.key: r.value for r in db.query(models.SyncState).all()}
+    hub_rows = db.query(models.SyncLog.origin, func.max(models.SyncLog.received_at), func.count(models.SyncLog.seq)) \
+        .group_by(models.SyncLog.origin).all()
+    if hub_rows:  # this server receives data from others: it is the cloud hub
+        return {'role': 'hub', 'server_id': models.SERVER_ID,
+                'servers': [{'server_id': o, 'last_received_at': _bl_iso(t), 'changes': n} for o, t, n in hub_rows]}
+    waiting = sum(db.query(cls).filter(cls.sync_dirty.is_(True)).count() for cls in models.SYNCED_MODELS)
+    last_t = int(st.get('push_tombstone_id', '0') or 0)
+    waiting += db.query(models.SyncTombstone).filter(models.SyncTombstone.id > last_t).count()
+    return {'role': 'server', 'server_id': models.SERVER_ID, 'configured': bool(st.get('last_pull_at')),
+            'last_push_at': st.get('last_push_at'), 'last_pull_at': st.get('last_pull_at'), 'waiting': waiting}

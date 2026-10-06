@@ -8,10 +8,12 @@ load_dotenv()
 DB_USER = os.getenv("POSTGRES_USER")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 DB_NAME = os.getenv("POSTGRES_DB")
-DB_HOST = "127.0.0.1"
-DB_PORT = "5432"
+DB_HOST = os.getenv("POSTGRES_HOST", "127.0.0.1")
+DB_PORT = os.getenv("POSTGRES_PORT", "5432")
 
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+if os.getenv("POSTGRES_SSLMODE"):
+    DATABASE_URL += "?sslmode=" + os.getenv("POSTGRES_SSLMODE")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

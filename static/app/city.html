@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>City Overview · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=8">
 <style>
 .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .kpis .kpi .value { font-size: 28px; }
@@ -47,8 +47,9 @@
 
     <div class="grid grid-2">
       <section class="panel">
-        <div class="panel-head"><h2>Barangays</h2><span class="note">Most unaccounted first. Click a row to filter centers.</span></div>
-        <div class="table-wrap"><table class="data"><thead><tr><th scope="col">Barangay</th><th scope="col">Evacuated</th><th scope="col">Unaccounted</th><th scope="col">Centers</th></tr></thead><tbody id="brgys"></tbody></table></div>
+        <div class="panel-head"><h2>Barangays</h2><select id="distSel" class="input" style="width:200px;height:40px;font-size:14px" aria-label="Filter by district"><option value="">All districts</option></select></div>
+        <p style="font-size:13px;color:var(--muted);margin:0">Most unaccounted first. Click a row to filter the centers below.</p>
+        <div class="table-wrap"><table class="data"><thead><tr><th scope="col">Barangay</th><th scope="col">District</th><th scope="col">Evacuated</th><th scope="col">Unaccounted</th><th scope="col">Centers</th></tr></thead><tbody id="brgys"></tbody></table></div>
       </section>
       <section class="panel">
         <div class="panel-head"><h2>Alerts needing action</h2><span class="note" id="alertCount"></span></div>
@@ -64,7 +65,7 @@
     <p class="notice no-print">District grouping, shared centers, relief totals, and incident types from the design will appear here as those records are added to the backend.</p>
   </main>
 </div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=8"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'city_admin' });
@@ -72,6 +73,14 @@
   const $ = (id) => document.getElementById(id);
   let filter = null;
   let data = null;
+  let distFilter = '';
+  const districtOf = {};
+  try {
+    const [dl, bl] = await Promise.all([BL.api('/districts'), BL.api('/barangays')]);
+    (bl || []).forEach((b) => { districtOf[b.id] = b.district || ''; });
+    document.getElementById('distSel').innerHTML += (dl || []).map((d) => '<option>' + BL.esc(d) + '</option>').join('');
+  } catch (e) { /* districts arrive with cloud sync phase 4 */ }
+  document.getElementById('distSel').addEventListener('change', (e) => { distFilter = e.target.value; filter = null; render(); });
 
   document.getElementById('print').addEventListener('click', () => window.print());
 
@@ -114,14 +123,15 @@
     const rows = brgys.map((b) => {
       const residents = reg.filter((ev) => ev.registered_barangay_id === b.id);
       const ok = residents.filter((ev) => present.has(ev.id)).length;
-      return { id: b.id, name: b.name, reg: residents.length, ok: ok, miss: residents.length - ok, centers: (b.centers || []).length };
-    }).sort((a, b) => b.miss - a.miss);
+      return { id: b.id, name: b.name, district: districtOf[b.id] || '', reg: residents.length, ok: ok, miss: residents.length - ok, centers: (b.centers || []).length };
+    }).filter((r) => !distFilter || r.district === distFilter).sort((a, b) => b.miss - a.miss);
     $('brgys').innerHTML = rows.map((r) =>
       '<tr class="clickable' + (filter === r.id ? ' selected' : '') + '" data-id="' + r.id + '" tabindex="0">' +
       '<td><strong style="color:var(--navy)">' + BL.esc(r.name) + '</strong></td>' +
+      '<td>' + (r.district ? BL.esc(r.district) : '<span style="color:var(--muted)">Not set</span>') + '</td>' +
       '<td>' + r.ok + ' / ' + r.reg + (r.reg ? ' (' + Math.round(r.ok / r.reg * 100) + '%)' : '') + '</td>' +
       '<td class="' + (r.miss ? 'tone-red' : 'tone-green') + '" style="font-weight:800">' + r.miss + '</td>' +
-      '<td>' + r.centers + '</td></tr>').join('') || '<tr><td colspan="4"><div class="empty">No barangays yet.</div></td></tr>';
+      '<td>' + r.centers + '</td></tr>').join('') || '<tr><td colspan="5"><div class="empty">No barangays in this view.</div></td></tr>';
     document.querySelectorAll('#brgys tr.clickable').forEach((tr) => {
       const pick = () => { const id = Number(tr.dataset.id); filter = filter === id ? null : id; render(); };
       tr.addEventListener('click', pick);
@@ -141,7 +151,7 @@
     $('alerts').innerHTML = alerts.length ? alerts.map((a) => '<li style="background:' + colors[a.lvl][0] + '"><span class="dot" style="background:' + colors[a.lvl][1] + '"></span><span><strong>' + BL.esc(a.title) + '</strong><br>' + BL.esc(a.detail) + '</span></li>').join('') : '<li class="empty" style="display:block">No alerts. All centers have space.</li>';
 
     // Centers table, fullest first
-    const list = allCenters.filter((c) => !filter || c.brgyId === filter).sort((a, b) => (b.occupancy / (b.capacity || 1)) - (a.occupancy / (a.capacity || 1)));
+    const list = allCenters.filter((c) => (!filter || c.brgyId === filter) && (!distFilter || districtOf[c.brgyId] === distFilter)).sort((a, b) => (b.occupancy / (b.capacity || 1)) - (a.occupancy / (a.capacity || 1)));
     const fname = filter ? (rows.find((r) => r.id === filter) || {}).name : null;
     $('centerNote').innerHTML = (fname ? 'Showing ' + BL.esc(fname) + ' <button type="button" class="btn btn-ghost" style="min-height:32px;padding:0 10px;font-size:12px" id="clear">Show all</button>' : 'All barangays, fullest first');
     const clr = document.getElementById('clear');

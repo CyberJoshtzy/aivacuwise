@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Evacuees · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=8">
 </head>
 <body>
 <div class="shell">
@@ -41,7 +41,7 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=8"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -135,6 +135,7 @@
     const m = BL.modal(
       '<div class="dialog-head"><div><h2>' + BL.esc(ev.full_name) + '</h2><div style="font-size:14px;color:var(--muted)">' + (where[ev.id] ? 'At ' + BL.esc(where[ev.id]) + ' now' : 'Not at an evacuation center') + '</div></div>' + xBtn + '</div>' +
       '<div class="dialog-body" style="display:flex;flex-direction:column;gap:18px">' +
+      '<div style="display:flex;gap:16px;align-items:center"><div id="vPhoto" style="width:96px;height:96px;border-radius:50%;background:var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);text-align:center;flex-shrink:0">No photo</div><div style="font-size:13px;color:var(--muted)">Photo shown on the Entrance Display. Registrations made before photos were saved show initials instead.</div></div>' +
       '<div class="facts">' +
       '<div><div class="k">Sex</div><div class="v">' + BL.esc(ev.sex || '-') + '</div></div>' +
       '<div><div class="k">Birthday</div><div class="v">' + BL.esc(ev.birthdate || '-') + '</div></div>' +
@@ -152,6 +153,7 @@
       '</div>' +
       '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)">Every check-in and check-out, newest first.</span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Close</button><button type="button" class="btn btn-primary" id="toEdit">Edit Information</button></div></div>', 820);
     m.el.querySelector('#toEdit').addEventListener('click', () => { m.close(); edit(ev); });
+    fetch('/evacuees/' + ev.id + '/photo', { headers: { Authorization: 'Bearer ' + BL.token() } }).then((r) => r.ok ? r.blob() : null).then((b) => { if (b) m.el.querySelector('#vPhoto').innerHTML = '<img alt="Photo of ' + BL.esc(ev.full_name) + '" src="' + URL.createObjectURL(b) + '" style="width:100%;height:100%;object-fit:cover">'; }).catch(() => {});
     try {
       const hist = await BL.api('/evacuees/' + ev.id + '/history');
       const labels = { check_in: ['Checked in at', '#15803D'], check_out: ['Left', '#1D4ED8'] };
