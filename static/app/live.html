@@ -122,7 +122,7 @@ body.tv .res { max-height: none; }
   const tv = new URLSearchParams(location.search).get('tv') === '1';
   if (tv) document.body.classList.add('tv');
   const $ = (id) => document.getElementById(id);
-  const TYPES = ['Fire', 'Earthquake', 'Flood', 'Typhoon', 'Landslide', 'Other'];
+  const TYPES = ['Fire', 'Earthquake', 'Flood', 'Landslide', 'Other'];
   let brgys = [], brgyId = me.barangay_id, incident = null, lastEnded = null, residents = [], where = {}, centers = [];
   let allInc = [];
   let prevWhere = null, fresh = new Set(), arrivals = 0, tab = 'not', feed = [], timerId = null;
@@ -278,7 +278,7 @@ body.tv .res { max-height: none; }
       TYPES.map((t) => '<button type="button" role="radio" aria-checked="false" class="type" data-k="' + t + '">' + t + '</button>').join('') + '</div></div>' +
       '<div class="field-group"><label for="sCenter">Evacuation center *</label><select id="sCenter" class="input" style="height:46px">' +
       (centers.length ? '<option value="" selected disabled>Select Evacuation Center</option>' + centers.map((c) => '<option value="' + c.id + '">' + BL.esc(c.name) + '</option>').join('') : '<option value="">No evacuation centers yet. Add one first.</option>') + '</select></div>' +
-      '<p class="notice">All ' + residents.length + ' registered residents will be listed as "Not yet" until they are identified by the entrance camera.</p></div>' +
+      '</div>' +
       '<div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="button" class="btn btn-danger" id="sGo" disabled>Start Evacuation</button></div></div>', 620);
     const f = (id) => m.el.querySelector('#' + id);
     f('types').addEventListener('click', (e) => {
