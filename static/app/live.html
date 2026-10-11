@@ -37,7 +37,7 @@
 .type { min-height: 56px; border: 2px solid var(--field); border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 15px; font-weight: 800; color: var(--navy); cursor: pointer; }
 .type[aria-checked="true"] { border-color: var(--red); background: var(--red-bg); color: var(--red); }
 /* TV mode for the officials' monitor: live.html?tv=1 */
-body.tv .sidebar, body.tv #openDisplay, body.tv #openTv, body.tv #startBtn, body.tv #endBtn, body.tv [data-manual], body.tv .page-head p, body.tv #brgySel, body.tv .field-group { display: none !important; }
+body.tv .sidebar, body.tv #openDisplay, body.tv #openTv, body.tv #startBtn, body.tv #resumeBtn, body.tv #endBtn, body.tv [data-manual], body.tv .page-head p, body.tv #brgySel, body.tv .field-group { display: none !important; }
 body.tv .main { zoom: 1.25; padding: 20px 28px; }
 body.tv .res { max-height: none; }
 @media (max-width: 1100px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: minmax(0, 1fr); } }
@@ -50,7 +50,7 @@ body.tv .res { max-height: none; }
     <div class="page-head">
       <div>
         <h1>Live Evacuation</h1>
-        <p>Evacuees are identified by the entrance camera as they walk in. Anyone the camera misses can be checked in manually.</p>
+        <p>Evacuees are identified by the entrance camera as they walk in.</p>
       </div>
       <div class="toolbar">
         <select id="brgySel" class="input" style="width:220px;height:46px" hidden aria-label="Barangay"></select>
@@ -65,10 +65,12 @@ body.tv .res { max-height: none; }
     <div class="banner" id="banner">
       <div style="display:flex;align-items:center;gap:14px">
         <span class="pulse" id="pulse" hidden></span>
-        <div><div class="title" id="bTitle">Evacuation mode is off</div><div class="sub" id="bSub">Start it when a disaster happens so arrivals are tracked against everyone registered.</div></div>
+        <div><div class="title" id="bTitle">Evacuation mode is off</div><div class="sub" id="bSub">Start it when a disaster happens so arrivals are tracked against everyone registered.</div>
+          <div id="bTimes" hidden style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px"></div></div>
       </div>
       <div style="display:flex;align-items:center;gap:16px">
         <div id="timerBox" hidden><div style="font-size:12px;font-weight:700;color:#FDE8E8;text-align:right">Elapsed</div><div class="timer" id="timer">00:00:00</div></div>
+        <button type="button" class="btn btn-white" id="resumeBtn" hidden>Resume Evacuation</button>
         <button type="button" class="btn btn-primary" id="startBtn">Start Evacuation</button>
         <button type="button" class="btn btn-white" id="endBtn" hidden>End Evacuation</button>
       </div>
@@ -90,7 +92,7 @@ body.tv .res { max-height: none; }
             <div style="font-size:15px;color:#D6DDF0">Each person the camera identifies appears here within a second, and gets a green check in the list.</div>
           </div>
           <div class="field-group">
-            <label for="manualCenter">Manual check-ins go to</label>
+            <label for="manualCenter">Evacuation Center</label>
             <select id="manualCenter" class="input" style="height:46px;font-size:15px"></select>
           </div>
         </section>
@@ -112,7 +114,7 @@ body.tv .res { max-height: none; }
     </div>
   </main>
 </div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -121,7 +123,8 @@ body.tv .res { max-height: none; }
   if (tv) document.body.classList.add('tv');
   const $ = (id) => document.getElementById(id);
   const TYPES = ['Fire', 'Earthquake', 'Flood', 'Typhoon', 'Landslide', 'Other'];
-  let brgys = [], brgyId = me.barangay_id, incident = null, residents = [], where = {}, centers = [];
+  let brgys = [], brgyId = me.barangay_id, incident = null, lastEnded = null, residents = [], where = {}, centers = [];
+  let allInc = [];
   let prevWhere = null, fresh = new Set(), arrivals = 0, tab = 'not', feed = [], timerId = null;
 
   try { brgys = await BL.api('/barangays') || []; } catch (e) { brgys = []; }
@@ -139,18 +142,21 @@ body.tv .res { max-height: none; }
 
   $('tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (!b) return; tab = b.dataset.t; render(); });
   $('q').addEventListener('input', render);
+  $('manualCenter').addEventListener('change', () => { $('openDisplay').href = 'display.html?center=' + $('manualCenter').value; });
 
   async function load() {
     try {
       const [summary, evacuees, act] = await Promise.all([
         BL.api('/dashboard/summary'), BL.api('/evacuees'),
-        BL.api('/incidents?active=true').catch(() => null)
-      ]);
+        BL.api('/incidents?active=true').catch(() => null),
+        BL.api('/incidents').catch(() => [])
+      ]).then((r) => { allInc = r[3] || []; return r; });
       if (act === null) {
-        $('loadError').textContent = 'The evacuation start/end feature needs the batch 3 backend update. Arrivals and manual check-ins still work.';
+        $('loadError').textContent = 'The evacuation start/end feature needs the batch 3 backend update. Arrivals from the camera still work.';
         $('loadError').hidden = false;
       } else { $('loadError').hidden = true; }
       incident = (act || []).find((i) => i.barangay_id === brgyId) || null;
+      lastEnded = allInc.filter((i) => i.barangay_id === brgyId && i.ended_at).sort((a, b) => String(b.ended_at).localeCompare(String(a.ended_at)))[0] || null;
       where = {};
       centers = [];
       (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => {
@@ -196,10 +202,23 @@ body.tv .res { max-height: none; }
     $('timerBox').hidden = !on;
     $('startBtn').hidden = on;
     $('endBtn').hidden = !on;
+    const canResume = !on && lastEnded && !lastEnded.finished && lastEnded.id === Math.max.apply(null, allInc.filter((x) => x.barangay_id === brgyId).map((x) => x.id));
+    $('resumeBtn').hidden = !canResume;
+    $('startBtn').textContent = canResume ? 'Start New Evacuation' : 'Start Evacuation';
     const cName = incident && incident.evacuation_center_id ? ((centers.find((c) => c.id === incident.evacuation_center_id) || {}).name || '') : '';
-    $('bTitle').textContent = on ? 'Evacuation active: ' + incident.disaster_type : 'Evacuation mode is off';
-    $('bSub').textContent = on ? brgyName(brgyId) + (cName ? ' · main center: ' + cName : '') + ' · started ' + BL.dateTime(incident.started_at)
-      : 'Start it when a disaster happens so arrivals are tracked against everyone registered.';
+    $('bTitle').textContent = on ? 'Evacuation active: ' + incident.disaster_type : (lastEnded && !lastEnded.finished ? 'Evacuation paused' : 'Evacuation mode is off');
+    $('bSub').textContent = on ? brgyName(brgyId) + (cName ? ' · center: ' + cName : '') + ' · started ' + BL.dateTime(incident.started_at)
+      : (lastEnded ? (lastEnded.finished ? 'The last evacuation was finished and the evacuee list was reset. Start a new one when a disaster happens.' : 'The evacuation was paused. Press Resume Evacuation to continue it, or start a new one.') : 'Start it when a disaster happens so arrivals are tracked against everyone registered.');
+    const fmtDate = (d) => BL.parseT(d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    const dur = (a, b) => { const m = Math.max(0, Math.round((BL.parseT(b) - BL.parseT(a)) / 60000)); return (m >= 60 ? Math.floor(m / 60) + ' hr ' : '') + (m % 60) + ' min'; };
+    const cell = (k, v) => '<div><div style="font-size:12px;font-weight:700;color:#FDE8E8;text-transform:uppercase;letter-spacing:.04em">' + k + '</div><div style="font-size:16px;font-weight:800">' + BL.esc(v) + '</div></div>';
+    if (on) {
+      $('bTimes').innerHTML = cell('Date', fmtDate(incident.started_at)) + cell('Time started', BL.time(incident.started_at)) + cell('Time ended', 'Ongoing');
+      $('bTimes').hidden = false; $('bTimes').style.display = 'flex';
+    } else if (lastEnded) {
+      $('bTimes').innerHTML = cell(lastEnded.finished ? 'Last evacuation (finished)' : 'Paused evacuation', lastEnded.disaster_type) + cell('Date', fmtDate(lastEnded.started_at)) + cell('Time started', BL.time(lastEnded.started_at)) + cell(lastEnded.finished ? 'Time ended' : 'Time paused', BL.time(lastEnded.ended_at) + (fmtDate(lastEnded.ended_at) !== fmtDate(lastEnded.started_at) ? ' (' + BL.parseT(lastEnded.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ')' : '')) + cell('Duration', dur(lastEnded.started_at, lastEnded.ended_at));
+      $('bTimes').hidden = false; $('bTimes').style.display = 'flex';
+    } else { $('bTimes').hidden = true; $('bTimes').style.display = 'none'; }
     clearInterval(timerId);
     if (on) {
       const tick = () => {
@@ -210,7 +229,7 @@ body.tv .res { max-height: none; }
       tick(); timerId = setInterval(tick, 1000);
     }
 
-    // Manual check-in destination
+    // Evacuation center for this session (also sets the Entrance Display link)
     const sel = $('manualCenter');
     const keep = sel.value || (incident && incident.evacuation_center_id ? String(incident.evacuation_center_id) : '');
     sel.innerHTML = centers.map((c) => '<option value="' + c.id + '">' + BL.esc(c.name) + ' (' + (c.capacity - c.occupancy) + ' spaces left)</option>').join('') || '<option value="">No evacuation centers yet</option>';
@@ -239,7 +258,7 @@ body.tv .res { max-height: none; }
       const tag = a !== null && a >= 60 ? '<span class="chip">Senior</span>' : a !== null && a < 5 ? '<span class="chip">Child under 5</span>' : '';
       const right = c
         ? '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--green)">Evacuated</div><div class="meta">' + BL.esc(c.name) + '</div></div><span class="okdot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>'
-        : '<span class="meta" style="font-weight:700">Not yet</span><button type="button" class="btn btn-ghost btn-sm" data-manual="' + r.id + '" aria-label="Check in ' + BL.esc(r.full_name) + ' manually">Check in manually</button>';
+        : '<span class="meta" style="font-weight:700">Not yet</span>';
       return '<li class="' + (fresh.has(r.id) ? 'new' : '') + '"><div><div class="name">' + BL.esc(r.full_name) + ' ' + tag + '</div><div class="meta">' + BL.esc(r.sex || '-') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + (r.identification_method === 'facial_recognition' ? ' &#183; Face ID' : ' &#183; Manual') + '</div></div><div class="right">' + right + '</div></li>';
     }).join('');
     fresh.clear();
@@ -250,20 +269,6 @@ body.tv .res { max-height: none; }
     $('feedEmpty').hidden = feed.length > 0;
   }
 
-  $('res').addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-manual]'); if (!b) return;
-    const centerId = Number($('manualCenter').value);
-    if (!centerId) { BL.toast('Add an evacuation center first.'); return; }
-    const r = residents.find((x) => x.id === Number(b.dataset.manual));
-    b.disabled = true;
-    try {
-      await BL.api('/checkin', { method: 'POST', json: { evacuee_id: r.id, evacuation_center_id: centerId, event_type: 'check_in' } });
-      feed.unshift({ text: '<strong>' + BL.esc(r.full_name) + '</strong> checked in manually', time: BL.time(), dot: '#1D4ED8' });
-      BL.toast(r.full_name + ' checked in.');
-      await load();
-    } catch (ex) { BL.toast(ex.message); b.disabled = false; }
-  });
-
   $('startBtn').addEventListener('click', () => {
     let kind = '';
     const m = BL.modal(
@@ -271,17 +276,18 @@ body.tv .res { max-height: none; }
       '<div class="dialog-body" style="display:flex;flex-direction:column;gap:16px"><div class="form-error" id="sErr" hidden></div>' +
       '<div class="field-group"><span id="tl" style="font-size:14px;font-weight:700">Type of disaster *</span><div class="types" role="radiogroup" aria-labelledby="tl" id="types">' +
       TYPES.map((t) => '<button type="button" role="radio" aria-checked="false" class="type" data-k="' + t + '">' + t + '</button>').join('') + '</div></div>' +
-      '<div class="field-group"><label for="sCenter">Main evacuation center</label><select id="sCenter" class="input" style="height:46px"><option value="">Any of our centers</option>' +
-      centers.map((c) => '<option value="' + c.id + '">' + BL.esc(c.name) + '</option>').join('') + '</select></div>' +
-      '<p class="notice">All ' + residents.length + ' registered residents will be listed as "Not yet" until they are identified at the entrance or checked in manually.</p></div>' +
+      '<div class="field-group"><label for="sCenter">Evacuation center *</label><select id="sCenter" class="input" style="height:46px">' +
+      (centers.length ? '<option value="" selected disabled>Select Evacuation Center</option>' + centers.map((c) => '<option value="' + c.id + '">' + BL.esc(c.name) + '</option>').join('') : '<option value="">No evacuation centers yet. Add one first.</option>') + '</select></div>' +
+      '<p class="notice">All ' + residents.length + ' registered residents will be listed as "Not yet" until they are identified by the entrance camera.</p></div>' +
       '<div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="button" class="btn btn-danger" id="sGo" disabled>Start Evacuation</button></div></div>', 620);
     const f = (id) => m.el.querySelector('#' + id);
     f('types').addEventListener('click', (e) => {
       const b = e.target.closest('.type'); if (!b) return;
       kind = b.dataset.k;
       f('types').querySelectorAll('.type').forEach((x) => x.setAttribute('aria-checked', x === b));
-      f('sGo').disabled = false;
+      f('sGo').disabled = !f('sCenter').value;
     });
+    f('sCenter').addEventListener('change', () => { f('sGo').disabled = !kind || !f('sCenter').value; });
     f('sGo').addEventListener('click', async () => {
       f('sGo').disabled = true;
       const body = { disaster_type: kind };
@@ -298,12 +304,39 @@ body.tv .res { max-height: none; }
 
   $('endBtn').addEventListener('click', () => {
     const inN = residents.filter((r) => where[r.id]).length;
-    BL.confirmBox({
-      title: 'End evacuation mode?',
-      text: inN + ' of ' + residents.length + ' residents were checked in, and ' + (residents.length - inN) + ' are still not accounted for. Check-in records are kept.',
-      ok: 'End Evacuation', danger: true,
-      action: () => BL.api('/incidents/' + incident.id + '/end', { method: 'POST' })
-    }).then((done) => { if (done) { BL.toast('Evacuation ended.'); load(); } });
+    const m = BL.modal(
+      '<div style="padding:26px 28px;display:flex;flex-direction:column;gap:14px">' +
+      '<h2 style="font-size:21px;font-weight:800">Stop the evacuation?</h2>' +
+      '<p style="font-size:15px;line-height:1.6;color:#3D4659;margin:0">' + inN + ' of ' + residents.length + ' residents are checked in, and ' + (residents.length - inN) + ' are still not accounted for.</p>' +
+      '<div class="form-error" id="eErr" hidden></div>' +
+      '<button type="button" class="btn btn-outline btn-lg" id="ePause">Pause Evacuation</button>' +
+      '<button type="button" class="btn btn-danger btn-lg" id="eFinish">Finish Evacuation</button>' +
+      '<div style="display:flex;justify-content:flex-end"><button type="button" class="btn btn-ghost" data-close>Cancel</button></div></div>', 560);
+    const go = async (finish) => {
+      m.el.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+      try {
+        await BL.api('/incidents/' + incident.id + '/end', { method: 'POST', json: { finish: finish } });
+        m.close();
+        if (finish) { feed = []; arrivals = 0; prevWhere = null; }
+        BL.toast(finish ? 'Evacuation finished. The evacuee list was reset.' : 'Evacuation paused. Press Resume Evacuation to continue.');
+        load();
+      } catch (ex) {
+        const e = m.el.querySelector('#eErr'); e.textContent = ex.message; e.hidden = false;
+        m.el.querySelectorAll('button').forEach((x) => { x.disabled = false; });
+      }
+    };
+    m.el.querySelector('#ePause').addEventListener('click', () => go(false));
+    m.el.querySelector('#eFinish').addEventListener('click', () => go(true));
+  });
+
+  $('resumeBtn').addEventListener('click', async () => {
+    $('resumeBtn').disabled = true;
+    try {
+      await BL.api('/incidents/' + lastEnded.id + '/resume', { method: 'POST' });
+      BL.toast('Evacuation resumed.');
+      await load();
+    } catch (ex) { BL.toast(ex.message); }
+    $('resumeBtn').disabled = false;
   });
 
   await load();
