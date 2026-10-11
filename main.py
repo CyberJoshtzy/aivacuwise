@@ -1324,3 +1324,7 @@ def sync_info(db: Session = Depends(get_db), current_user=Depends(auth.get_curre
     waiting += db.query(models.SyncTombstone).filter(models.SyncTombstone.id > last_t).count()
     return {'role': 'server', 'server_id': models.SERVER_ID, 'configured': bool(st.get('last_pull_at')),
             'last_push_at': st.get('last_push_at'), 'last_pull_at': st.get('last_pull_at'), 'waiting': waiting}
+
+# ---- BilisLikas 2.0: forgot password ----
+import password_reset
+app.include_router(password_reset.router)

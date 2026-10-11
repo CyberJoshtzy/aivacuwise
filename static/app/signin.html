@@ -19,6 +19,10 @@
 .signin form { width: min(440px, 100%); display: flex; flex-direction: column; gap: 20px; animation: pop .35s ease-out; }
 .signin h1 { font-size: 32px; font-weight: 800; }
 .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.code-input { letter-spacing: .5em; font-size: 22px; font-weight: 700; text-align: center; }
+.linkbtn { background: none; border: none; padding: 0; color: var(--navy); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.linkbtn:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+.signin form[hidden] { display: none; }
 .help { padding: 14px 16px; background: var(--tint); border-radius: 10px; font-size: 13px; line-height: 1.5; }
 @media (max-width: 900px) {
   .signin { flex-direction: column; }
@@ -56,7 +60,7 @@
       <div class="field-group">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <label for="pw">Password</label>
-          <a href="#help" style="font-size:13px;font-weight:600">Forgot password?</a>
+          <a href="#" id="forgotLink" style="font-size:13px;font-weight:600">Forgot password?</a>
         </div>
         <div class="input-wrap">
           <input id="pw" class="input" type="password" autocomplete="current-password" placeholder="Enter your password" required>
@@ -65,7 +69,47 @@
       </div>
       <label class="check"><input type="checkbox" id="remember">Keep me signed in on this device</label>
       <button class="btn btn-primary btn-lg" type="submit" id="submit">Sign In</button>
-      <p id="help" class="help">Forgot your password? Contact your City Admin to reset it. For security, passwords cannot be recovered through this page.</p>
+    </form>
+
+    <form id="fp" novalidate hidden>
+      <button type="button" class="back linkbtn" id="fpBack" style="text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Back to sign in</button>
+      <div>
+        <h1 id="fpTitle">Forgot password</h1>
+        <p id="fpLead" style="color:var(--muted);margin-top:8px">Enter the email address registered to your account. We will email you a 6-digit code.</p>
+      </div>
+      <div id="fpError" class="form-error" role="alert" hidden></div>
+
+      <div id="step1" style="display:flex;flex-direction:column;gap:20px">
+        <div class="field-group">
+          <label for="fpEmail">Email address</label>
+          <input id="fpEmail" class="input" type="text" inputmode="email" autocomplete="username" placeholder="official@barangay.gov.ph">
+        </div>
+        <button class="btn btn-primary btn-lg" type="button" id="fpNext">Send Code</button>
+      </div>
+
+      <div id="step3" hidden style="display:none;flex-direction:column;gap:20px">
+        <div class="field-group">
+          <label for="fpCode">6-digit code</label>
+          <input id="fpCode" class="input code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="------">
+        </div>
+        <button class="btn btn-primary btn-lg" type="button" id="fpVerify">Verify Code</button>
+        <div style="font-size:14px;color:var(--muted)">Did not get it? <button type="button" class="linkbtn" id="fpResend">Send again</button></div>
+      </div>
+
+      <div id="step4" hidden style="display:none;flex-direction:column;gap:20px">
+        <div class="field-group">
+          <label for="fpPw">New password</label>
+          <div class="input-wrap"><input id="fpPw" class="input" type="password" autocomplete="new-password" placeholder="At least 8 characters"><button type="button" class="eye" id="fpEye1"></button></div>
+          <div class="hint" style="font-size:13px;font-weight:600;color:var(--muted)">Use 8+ characters with letters and a number.</div>
+        </div>
+        <div class="field-group">
+          <label for="fpPw2">Confirm new password</label>
+          <div class="input-wrap"><input id="fpPw2" class="input" type="password" autocomplete="new-password" placeholder="Re-enter your new password"><button type="button" class="eye" id="fpEye2"></button></div>
+        </div>
+        <button class="btn btn-primary btn-lg" type="button" id="fpSave">Save New Password</button>
+      </div>
+
+      <p class="help">No internet on the server, or no access to your email? Contact your City Admin to reset your password.</p>
     </form>
   </main>
 </div>
@@ -98,6 +142,77 @@
       submit.textContent = 'Sign In';
     }
   });
+  // ---------- forgot password ----------
+  const $ = (id) => document.getElementById(id);
+  const fp = $('fp'), fpErr = $('fpError');
+  let fpEmailVal = '', fpCodeVal = '';
+  BL.eyeToggle($('fpPw'), $('fpEye1'));
+  BL.eyeToggle($('fpPw2'), $('fpEye2'));
+
+  async function post(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(Array.isArray(d.detail) ? d.detail.map((x) => x.msg).join(', ') : (d.detail || 'Something went wrong (' + r.status + ').'));
+    return d;
+  }
+  function fpShow(step, title, lead) {
+    ['step1', 'step3', 'step4'].forEach((s) => { $(s).hidden = s !== step; $(s).style.display = s === step ? 'flex' : 'none'; });
+    $('fpTitle').textContent = title; $('fpLead').textContent = lead; fpErr.hidden = true;
+  }
+  function fpFail(ex) { fpErr.textContent = ex.message; fpErr.hidden = false; }
+  async function busy(btn, text, fn) {
+    const old = btn.textContent; btn.disabled = true; btn.textContent = text;
+    try { await fn(); } catch (ex) { fpFail(ex); } finally { btn.disabled = false; btn.textContent = old; }
+  }
+
+  $('forgotLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    form.hidden = true; fp.hidden = false;
+    $('fpEmail').value = email.value.trim();
+    fpShow('step1', 'Forgot password', 'Enter the email address registered to your account. We will email you a 6-digit code.');
+    $('fpEmail').focus();
+  });
+  $('fpBack').addEventListener('click', () => { fp.hidden = true; form.hidden = false; err.hidden = true; });
+
+  async function sendCode() {
+    const d = await post('/password/send', { email: fpEmailVal });
+    fpShow('step3', 'Enter the code', 'We sent a 6-digit code to ' + d.hint + '. It expires in ' + d.expires_in_minutes + ' minutes. Check your Spam folder if you do not see it.');
+    $('fpCode').value = ''; $('fpCode').focus();
+    const rs = $('fpResend'); rs.disabled = true;
+    let left = 60; rs.textContent = 'Send again (' + left + 's)';
+    const t = setInterval(() => { left--; rs.textContent = left > 0 ? 'Send again (' + left + 's)' : 'Send again'; if (left <= 0) { clearInterval(t); rs.disabled = false; } }, 1000);
+  }
+  $('fpNext').addEventListener('click', () => busy($('fpNext'), 'Sending...', async () => {
+    fpEmailVal = $('fpEmail').value.trim();
+    if (!fpEmailVal) throw new Error('Enter your email address.');
+    await post('/password/forgot', { email: fpEmailVal });
+    await sendCode();
+  }));
+  $('fpResend').addEventListener('click', () => busy($('fpResend'), 'Sending...', sendCode));
+  $('fpCode').addEventListener('input', () => { $('fpCode').value = $('fpCode').value.replace(/\D/g, '').slice(0, 6); });
+
+  $('fpVerify').addEventListener('click', () => busy($('fpVerify'), 'Checking...', async () => {
+    fpCodeVal = $('fpCode').value.trim();
+    if (fpCodeVal.length !== 6) throw new Error('Enter the 6-digit code.');
+    await post('/password/verify', { email: fpEmailVal, code: fpCodeVal });
+    fpShow('step4', 'Set a new password', 'Choose a new password for ' + fpEmailVal + '.');
+    $('fpPw').focus();
+  }));
+
+  $('fpSave').addEventListener('click', () => busy($('fpSave'), 'Saving...', async () => {
+    const a = $('fpPw').value, b = $('fpPw2').value;
+    if (a.length < 8 || !/[A-Za-z]/.test(a) || !/\d/.test(a)) throw new Error('Use 8+ characters with letters and a number.');
+    if (a !== b) throw new Error('The passwords do not match.');
+    await post('/password/reset', { email: fpEmailVal, code: fpCodeVal, new_password: a });
+    fp.hidden = true; form.hidden = false; err.hidden = true;
+    email.value = fpEmailVal; pw.value = '';
+    const note = document.createElement('p');
+    note.className = 'notice'; note.style.background = 'var(--green-bg)';
+    note.textContent = 'Your password was changed. Sign in with your new password.';
+    err.parentNode.insertBefore(note, err);
+    pw.focus();
+  }));
+
   const pre = new URLSearchParams(location.search).get('email');
   if (pre) {
     email.value = pre;

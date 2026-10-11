@@ -7,18 +7,8 @@
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=8">
 <style>
-.reg { min-height: 100vh; display: flex; }
-.reg aside { width: 460px; flex-shrink: 0; background: var(--navy); color: #FFFFFF; padding: 48px 52px; display: flex; flex-direction: column; gap: 40px; }
-.reg aside .tile { align-self: flex-start; padding: 16px 20px; background: #FFFFFF; border-radius: 18px; }
-.reg aside .tile img { width: 230px; height: auto; display: block; }
-.reg aside h2 { color: #FFFFFF; font-size: 26px; font-weight: 800; }
-.reg aside ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 20px; }
-.reg aside li { display: flex; gap: 14px; }
-.reg aside .n { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 2px solid #8C9ACB; display: flex; align-items: center; justify-content: center; font-weight: 800; }
-.reg aside li:first-child .n { background: var(--orange); border-color: var(--orange); color: var(--navy); }
-.reg aside strong { display: block; font-size: 16px; }
-.reg aside span.sub { font-size: 14px; color: #C3CCE4; }
-.reg main { flex-grow: 1; padding: 40px 64px; display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+.reg { min-height: 100vh; display: flex; justify-content: center; }
+.reg main { flex-grow: 1; width: 100%; padding: 40px 64px; display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 22px; }
 .span2 { grid-column: span 2; }
 .phone { display: flex; }
@@ -30,31 +20,16 @@
 .confirm { grid-column: span 2; display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: #FFFFFF; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; line-height: 1.5; color: #3D4659; cursor: pointer; }
 .confirm input { width: 20px; height: 20px; margin-top: 1px; flex-shrink: 0; accent-color: var(--navy); }
 .done { max-width: 560px; margin: 60px auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 18px; }
-@media (max-width: 1000px) { .reg { flex-direction: column; } .reg aside { width: 100%; padding: 28px 24px; } .reg main { padding: 28px 20px; } .grid2 { grid-template-columns: minmax(0, 1fr); } .span2, .confirm { grid-column: auto; } }
-</style>
+@media (max-width: 1000px) { .reg { flex-direction: column; } </style>
 </head>
 <body>
 <div class="reg">
-  <aside>
-    <div class="tile"><img src="/static/logo.png" alt="BilisLikas 2.0"></div>
-    <div>
-      <h2>How registration works</h2>
-      <p style="margin-top:8px;font-size:15px;line-height:1.55;color:#D6DDF0">Accounts give access to residents' personal and facial data, so use your official barangay details only.</p>
-    </div>
-    <ol>
-      <li><span class="n">1</span><div><strong>Register your barangay</strong><span class="sub">Use your official barangay details.</span></div></li>
-      <li><span class="n">2</span><div><strong>Your barangay is saved</strong><span class="sub">It is added to the list of registered barangays.</span></div></li>
-      <li><span class="n">3</span><div><strong>Sign in</strong><span class="sub">Use your email and password right away.</span></div></li>
-    </ol>
-  </aside>
-
   <main>
     <a href="index.html" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Back to home</a>
 
     <section id="formView" style="display:flex;flex-direction:column;gap:20px">
       <div>
         <h1 style="font-size:32px;font-weight:800">Register barangay account</h1>
-        <p style="color:var(--muted);margin-top:6px">All fields are required.</p>
       </div>
       <div id="err" class="form-error" role="alert" hidden></div>
       <form id="form" class="grid2" novalidate>
@@ -64,8 +39,10 @@
           <select id="pos" class="input"><option value="">Select your designation</option><option>Barangay Chairman</option><option>Barangay Kagawad</option><option>SK Chairman</option><option>Barangay Secretary</option><option value="other">Others (please specify)</option></select>
           <div id="otherBox" class="field-group" hidden style="margin-top:6px"><label for="posOther">Please specify your designation</label><input id="posOther" class="input" placeholder="e.g., BDRRM Officer"></div>
         </div>
-        <div class="field-group span2"><label for="name">Full name</label><input id="name" class="input" placeholder="First name, middle initial, last name" autocomplete="name"></div>
-        <div class="field-group"><label for="email">Email address</label><input id="email" type="email" class="input" placeholder="official@barangay.gov.ph" autocomplete="email"></div>
+        <div class="field-group" style="grid-column:1"><label for="fname">First name</label><input id="fname" class="input" placeholder="e.g., Juan" autocomplete="given-name"></div>
+        <div class="field-group"><label for="mname">Middle name <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="mname" class="input" placeholder="e.g., Santos" autocomplete="additional-name"></div>
+        <div class="field-group" style="grid-column:1"><label for="lname">Last name</label><input id="lname" class="input" placeholder="e.g., Dela Cruz" autocomplete="family-name"></div>
+        <div class="field-group" style="grid-column:1"><label for="email">Email address</label><input id="email" type="email" class="input" placeholder="official@barangay.gov.ph" autocomplete="email"></div>
         <div class="field-group"><label for="phone">Mobile number</label><div class="phone"><span>+63</span><input id="phone" type="tel" class="input" placeholder="9XX XXX XXXX" autocomplete="tel-national"></div></div>
         <div class="field-group"><label for="pw">Password</label>
           <div class="input-wrap"><input id="pw" type="password" class="input" placeholder="At least 8 characters" autocomplete="new-password"><button type="button" class="eye" id="eye1"></button></div>
@@ -82,7 +59,6 @@
           <button type="submit" class="btn btn-primary btn-lg" id="submit" disabled>Register</button>
           <span style="font-size:14px;color:var(--muted)">Already registered? <a href="signin.html" style="font-weight:700">Sign in</a></span>
         </div>
-        <p id="missing" class="span2" style="font-size:13px;color:var(--muted);margin:0"></p>
       </form>
     </section>
 
@@ -137,7 +113,8 @@
       ['barangay name', $('brgy').value.trim()],
       ['district', $('dist').value],
       ['designation', $('pos').value && ($('pos').value !== 'other' || $('posOther').value.trim())],
-      ['full name', $('name').value.trim()],
+      ['first name', $('fname').value.trim()],
+      ['last name', $('lname').value.trim()],
       ['email', /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('email').value.trim())],
       ['mobile number', /^9\d{9}$/.test(phoneDigits())],
       ['password', okPw], ['matching passwords', pw2 && pw2 === pw],
@@ -146,7 +123,6 @@
     ];
     const miss = req.filter((r) => !r[1]).map((r) => r[0]);
     $('submit').disabled = miss.length > 0;
-    $('missing').textContent = miss.length ? 'Still needed: ' + miss.join(', ') + '.' : '';
   }
   $('form').addEventListener('input', sync);
   $('form').addEventListener('change', sync);
@@ -158,7 +134,8 @@
     $('submit').disabled = true; $('submit').textContent = 'Registering...';
     const body = {
       barangay_name: $('brgy').value.trim(), district: $('dist').value, designation: $('pos').value, designation_other: $('posOther').value.trim(),
-      full_name: $('name').value.trim(), email: $('email').value.trim(), mobile_number: '0' + phoneDigits(),
+      full_name: [$('fname').value, $('mname').value, $('lname').value].map((v) => v.trim()).filter(Boolean).join(' '),
+      email: $('email').value.trim(), mobile_number: '0' + phoneDigits(),
       password: $('pw').value, registration_code: $('code').value.trim() || null
     };
     try {
