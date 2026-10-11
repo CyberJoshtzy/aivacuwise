@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trackers · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=8">
+<link rel="stylesheet" href="app.css?v=9">
 <style>
 .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
 .tlist { list-style: none; margin: 0; padding: 0; max-height: 720px; overflow-y: auto; }
@@ -58,7 +58,7 @@
     <div id="none" class="empty" hidden style="padding:40px">No trackers are assigned to residents yet. Once a GPS tracker is assigned and starts sending positions to <code>POST /gps_pings</code>, it appears here.</div>
   </main>
 </div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();

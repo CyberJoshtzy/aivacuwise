@@ -176,100 +176,6 @@ def get_ping_history(tracker_id: int, db: Session = Depends(get_db)):
         .all()
     )
 
-@app.post("/transfers", response_model=schemas.TransferOut)
-async def create_transfer(
-    transfer: schemas.TransferCreate,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(get_db),
-):
-    evacuee = db.query(models.Evacuee).filter(models.Evacuee.id == transfer.evacuee_id).first()
-    if not evacuee:
-        raise HTTPException(status_code=404, detail="Evacuee not found")
-
-    to_center = db.query(models.EvacuationCenter).filter(models.EvacuationCenter.id == transfer.to_center_id).first()
-    if not to_center:
-        raise HTTPException(status_code=404, detail="Destination evacuation center not found")
-
-    from_center = None
-
-    if transfer.from_center_id is not None:
-        if transfer.from_center_id == transfer.to_center_id:
-            raise HTTPException(status_code=400, detail="Source and destination centers must be different")
-
-        from_center = db.query(models.EvacuationCenter).filter(models.EvacuationCenter.id == transfer.from_center_id).first()
-        if not from_center:
-            raise HTTPException(status_code=404, detail="Source evacuation center not found")
-
-        latest_event = (
-            db.query(models.CheckinRecord)
-            .filter(models.CheckinRecord.evacuee_id == transfer.evacuee_id)
-            .order_by(models.CheckinRecord.id.desc())
-            .first()
-        )
-        if (
-            not latest_event
-            or latest_event.event_type != "check_in"
-            or latest_event.evacuation_center_id != transfer.from_center_id
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail="Evacuee is not currently checked in at the specified source center",
-            )
-
-    now = datetime.utcnow()
-
-    db_transfer = models.Transfer(
-        evacuee_id=transfer.evacuee_id,
-        from_center_id=transfer.from_center_id,
-        to_center_id=transfer.to_center_id,
-        timestamp=now,
-        approved_by=current_user.id,
-    )
-    db.add(db_transfer)
-
-    if transfer.from_center_id is not None:
-        db.add(models.CheckinRecord(
-            evacuee_id=transfer.evacuee_id,
-            evacuation_center_id=transfer.from_center_id,
-            event_type="check_out",
-            timestamp=now,
-        ))
-
-    db.add(models.CheckinRecord(
-        evacuee_id=transfer.evacuee_id,
-        evacuation_center_id=transfer.to_center_id,
-        event_type="check_in",
-        timestamp=now,
-    ))
-
-    db.commit()
-    db.refresh(db_transfer)
-
-    if from_center is not None:
-        await manager.broadcast({"type": "occupancy_update", "barangay_id": from_center.barangay_id})
-    await manager.broadcast({"type": "occupancy_update", "barangay_id": to_center.barangay_id})
-
-    return db_transfer
-
-
-@app.get("/transfers", response_model=List[schemas.TransferOut])
-def list_transfers(db: Session = Depends(get_db)):
-    return db.query(models.Transfer).order_by(models.Transfer.id.desc()).all()
-
-
-@app.get("/evacuees/{evacuee_id}/transfers", response_model=List[schemas.TransferOut])
-def evacuee_transfer_history(evacuee_id: int, db: Session = Depends(get_db)):
-    evacuee = db.query(models.Evacuee).filter(models.Evacuee.id == evacuee_id).first()
-    if not evacuee:
-        raise HTTPException(status_code=404, detail="Evacuee not found")
-    return (
-        db.query(models.Transfer)
-        .filter(models.Transfer.evacuee_id == evacuee_id)
-        .order_by(models.Transfer.id.desc())
-        .all()
-    )
-
-
 @app.post("/checkin/walkin", response_model=schemas.WalkinCheckinOut)
 async def walkin_register_and_checkin(
     data: schemas.WalkinCheckinCreate,
@@ -707,7 +613,7 @@ async def bl_delete_center(center_id: int,
         raise _BLHTTPException(status_code=403, detail='You can only delete your own barangay\'s centers.')
     occ = _bl_occupancy(db, c.id)
     if occ > 0:
-        raise _BLHTTPException(status_code=409, detail='%d evacuees are inside this center. Transfer them to another center before deleting it.' % occ)
+        raise _BLHTTPException(status_code=409, detail='%d evacuees are inside this center. Move them to another center before deleting it.' % occ)
     Checkin = _bl_model('checkin_records')
     Transfer = _bl_model('transfers')
     used = db.query(Checkin).filter(Checkin.evacuation_center_id == c.id).first() is not None
@@ -718,7 +624,7 @@ async def bl_delete_center(center_id: int,
     except RuntimeError:
         pass
     if used:
-        raise _BLHTTPException(status_code=409, detail='This center has check-in or transfer history, so it is kept for the records and cannot be deleted.')
+        raise _BLHTTPException(status_code=409, detail='This center has check-in history, so it is kept for the records and cannot be deleted.')
     barangay_id = c.barangay_id
     db.delete(c)
     db.commit()

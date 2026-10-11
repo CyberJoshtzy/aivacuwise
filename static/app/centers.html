@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Evacuation Centers · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=8">
+<link rel="stylesheet" href="app.css?v=9">
 <style>
 .ccard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .ccard h2 { font-size: 17px; font-weight: 800; }
@@ -51,7 +51,7 @@
     <p class="notice">Facilities, camera status, and barangays sharing a center from the design will appear on these cards once those records are added to the backend.</p>
   </main>
 </div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -133,7 +133,7 @@
       (people.length ? '<div class="table-wrap"><table class="data"><thead><tr><th scope="col">Name</th><th scope="col">Identified by</th></tr></thead><tbody>' +
         people.map((p) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(p.full_name) + '</strong></td><td>' + (p.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>') + '</td></tr>').join('') +
         '</tbody></table></div>' : '<div class="empty">Nobody is checked in at this center right now.</div>') +
-      '</div><div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><a class="btn btn-outline" href="transfers.html">Transfer Evacuees</a><button type="button" class="btn btn-ghost" data-close>Close</button></div></div>', 720);
+      '</div><div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Close</button></div></div>', 720);
   }
 
   function form(c) {
@@ -187,7 +187,7 @@
   function del(c) {
     BL.confirmBox({
       title: 'Delete ' + c.name + '?',
-      text: 'This removes the center from the list. Centers with evacuees inside, or with past check-ins or transfers, are kept for the records and cannot be deleted.',
+      text: 'This removes the center from the list. Centers with evacuees inside, or with past check-ins, are kept for the records and cannot be deleted.',
       ok: 'Delete Center', danger: true,
       action: () => BL.api('/evacuation_centers/' + c.id, { method: 'DELETE' })
     }).then((done) => { if (done) { BL.toast(c.name + ' was deleted.'); load(); } });

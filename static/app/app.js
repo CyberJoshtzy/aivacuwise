@@ -123,7 +123,6 @@ const BL = (() => {
       ['people', 'Evacuees', 'evacuees.html'],
       ['face', 'Pre-Registration', 'preregister.html'],
       ['center', 'Evacuation Centers', 'centers.html'],
-      ['transfer', 'Transfers', 'transfers.html'],
       ['tracker', 'Trackers', 'trackers.html'],
       ['pin', 'Barangays', 'barangays.html']
     ],
@@ -132,7 +131,6 @@ const BL = (() => {
       ['center', 'Evacuation Centers', 'centers.html'],
       ['people', 'Evacuees', 'evacuees.html'],
       ['face', 'Pre-Registration', 'preregister.html'],
-      ['transfer', 'Transfers', 'transfers.html'],
       ['live', 'Live Evacuation', 'live.html'],
       ['tv', 'Entrance Display', 'entrance.html'],
       ['tracker', 'Trackers', 'trackers.html'],

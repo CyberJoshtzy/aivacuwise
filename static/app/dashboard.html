@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=8">
+<link rel="stylesheet" href="app.css?v=9">
 <style>
 .groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .group { padding: 14px; border-radius: 12px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
@@ -61,14 +61,14 @@
         <div id="missingEmpty" class="empty" hidden>Everyone registered in your barangay is checked in at an evacuation center.</div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>History log</h2><span class="note">Live check-ins and recent transfers</span></div>
+        <div class="panel-head"><h2>History log</h2><span class="note">Live check-ins and departures</span></div>
         <ul class="feed" id="feed"></ul>
         <div id="feedEmpty" class="empty" hidden>No activity yet. Check-ins appear here the moment they happen.</div>
       </section>
     </div>
   </main>
 </div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'barangay_official' });
@@ -178,19 +178,6 @@
     renderFeed();
   }
 
-  async function loadTransfers() {
-    try {
-      const list = await BL.api('/transfers');
-      (list || []).slice(0, 10).reverse().forEach((t) => {
-        feed.unshift({
-          text: '<strong>' + BL.esc(names[t.evacuee_id] || 'Evacuee #' + t.evacuee_id) + '</strong> transferred from ' + BL.esc(centerNames[t.from_center_id] || 'unknown center') + ' to ' + BL.esc(centerNames[t.to_center_id] || 'center #' + t.to_center_id),
-          time: t.timestamp ? BL.dateTime(t.timestamp) : '', dot: '#F7941D'
-        });
-      });
-    } catch (e) { /* transfers are optional for this panel */ }
-    renderFeed();
-  }
-
   function renderFeed() {
     $('feed').innerHTML = feed.slice(0, 40).map((f) => '<li class="' + (f.fresh ? 'new' : '') + '"><span class="dot" style="background:' + f.dot + '"></span><span>' + f.text + '</span><span class="time">' + BL.esc(f.time) + '</span></li>').join('');
     feed.forEach((f) => { f.fresh = false; });
@@ -209,7 +196,6 @@
     } catch (e) { /* incidents endpoint not installed yet */ }
   }
   await load(false);
-  await loadTransfers();
   await loadIncident();
   BL.connectLive(() => { load(true); loadIncident(); }, $('live'));
 })();

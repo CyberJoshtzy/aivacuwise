@@ -1,6 +1,5 @@
-"""Covers check-in, walk-in registration, and transfers - including the
-'occupancy accuracy fix' documented in the setup log (an evacuee must not
-appear at two centers at once after being transferred)."""
+"""Covers check-in and walk-in registration, including the 'occupancy
+accuracy fix' (an evacuee must not appear at two centers at once)."""
 
 
 def test_checkin_appears_in_center_list(client, staff_headers, evacuee, center):
@@ -46,86 +45,28 @@ def test_walkin_checkin_creates_and_checks_in(client, staff_headers, center, bar
     assert "Maria Santos" in names
 
 
-def test_transfer_moves_evacuee_between_centers(
+def test_checkin_at_second_center_moves_evacuee(
     client, staff_headers, evacuee, center, second_center
 ):
-    checkin_resp = client.post(
-        "/checkin",
-        json={
-            "evacuee_id": evacuee["id"],
-            "evacuation_center_id": center["id"],
-            "event_type": "check_in",
-        },
-        headers=staff_headers,
-    )
-    assert checkin_resp.status_code in (200, 201)
+    # Occupancy accuracy fix: an evacuee counts only at the center of their
+    # latest check-in, so arriving at a second center moves them there.
+    for c in (center, second_center):
+        r = client.post(
+            "/checkin",
+            json={"evacuee_id": evacuee["id"], "evacuation_center_id": c["id"], "event_type": "check_in"},
+            headers=staff_headers,
+        )
+        assert r.status_code in (200, 201), r.text
 
-    transfer_resp = client.post(
-        "/transfers",
-        json={
-            "evacuee_id": evacuee["id"],
-            "from_center_id": center["id"],
-            "to_center_id": second_center["id"],
-        },
-        headers=staff_headers,
-    )
-    assert transfer_resp.status_code in (200, 201), transfer_resp.text
-
-    # This is the bug the setup log calls out by name: before the fix, a
-    # transferred evacuee showed up at BOTH centers because the query only
-    # checked "does any check_in row exist", not "is this their latest event".
-    old_listing = client.get(
-        f"/evacuation_centers/{center['id']}/evacuees", headers=staff_headers
-    )
-    new_listing = client.get(
-        f"/evacuation_centers/{second_center['id']}/evacuees", headers=staff_headers
-    )
-    old_names = [e["full_name"] for e in old_listing.json()]
-    new_names = [e["full_name"] for e in new_listing.json()]
-
+    old_names = [e["full_name"] for e in client.get(f"/evacuation_centers/{center['id']}/evacuees", headers=staff_headers).json()]
+    new_names = [e["full_name"] for e in client.get(f"/evacuation_centers/{second_center['id']}/evacuees", headers=staff_headers).json()]
     assert "Juan Dela Cruz" not in old_names
     assert "Juan Dela Cruz" in new_names
-
-
-def test_transfer_rejects_mismatched_source_center(
-    client, staff_headers, evacuee, center, second_center
-):
-    # evacuee was never checked in anywhere, so claiming they're transferring
-    # FROM `center` should be rejected rather than silently accepted.
-    resp = client.post(
-        "/transfers",
-        json={
-            "evacuee_id": evacuee["id"],
-            "from_center_id": center["id"],
-            "to_center_id": second_center["id"],
-        },
-        headers=staff_headers,
-    )
-    assert resp.status_code >= 400
-
-
-def test_evacuee_history_records_both_events(
-    client, staff_headers, evacuee, center, second_center
-):
-    client.post(
-        "/checkin",
-        json={
-            "evacuee_id": evacuee["id"],
-            "evacuation_center_id": center["id"],
-            "event_type": "check_in",
-        },
-        headers=staff_headers,
-    )
-    client.post(
-        "/transfers",
-        json={
-            "evacuee_id": evacuee["id"],
-            "from_center_id": center["id"],
-            "to_center_id": second_center["id"],
-        },
-        headers=staff_headers,
-    )
 
     history = client.get(f"/evacuees/{evacuee['id']}/history", headers=staff_headers)
     assert history.status_code == 200
     assert len(history.json()) >= 2
+
+
+def test_transfer_endpoints_are_removed(client, staff_headers):
+    assert client.get("/transfers", headers=staff_headers).status_code in (404, 405)
