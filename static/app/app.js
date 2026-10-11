@@ -310,5 +310,56 @@ const BL = (() => {
     });
   }
 
-  return { nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
+  // ---------- Emergency hotlines (available on every page) ----------
+  const HOTLINES = [
+    { group: 'Emergency', name: 'National Emergency Hotline', note: 'Police, fire, medical, rescue', nums: ['911'], main: true },
+    { group: 'Emergency', name: 'Philippine Red Cross', note: 'Ambulance and rescue', nums: ['143', '(02) 8527-0000'] },
+    { group: 'Emergency', name: 'PNP (Police)', note: 'Crime, missing persons', nums: ['117', '(02) 8722-0650'] },
+    { group: 'Emergency', name: 'Bureau of Fire Protection (BFP)', note: 'Fire', nums: ['(02) 8426-0219', '(02) 8426-0246'] },
+    { group: 'Disaster', name: 'NDRRMC', note: 'National disaster operations center', nums: ['(02) 8911-1406', '(02) 8912-2665'] },
+    { group: 'Disaster', name: 'MMDA', note: 'Metro Manila flooding and road emergencies', nums: ['136', '(02) 8882-4151'] },
+    { group: 'Disaster', name: 'PAGASA', note: 'Weather and typhoon updates', nums: ['(02) 8284-0800'] },
+    { group: 'Protection', name: 'DSWD', note: 'Violence against women and children, social welfare', nums: ['(02) 8931-8101'] }
+  ];
+  function telHref(n) {
+    let d = String(n).replace(/\D/g, '');
+    if (d.length <= 4) return 'tel:' + d;             // short codes like 911, 143, 117, 136
+    if (d.startsWith('0')) d = '63' + d.slice(1);       // (02) 8xxx-xxxx or 09xx -> +63
+    return 'tel:+' + d;
+  }
+  function showHotlines() {
+    const rows = HOTLINES.map((h) =>
+      '<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:' + (h.main ? '#FDECEC' : 'var(--bg)') + '">' +
+      '<div style="flex-grow:1;min-width:0"><div style="font-weight:800;color:var(--navy)">' + esc(h.name) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(h.note) + '</div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">' + h.nums.map((n) =>
+        '<div style="display:flex;gap:8px;align-items:center">' +
+        '<a class="btn ' + (h.main ? 'btn-danger' : 'btn-outline') + '" style="width:220px;min-height:44px;justify-content:center;font-size:17px;font-weight:800;white-space:nowrap" href="' + telHref(n) + '" aria-label="Call ' + esc(h.name) + ' at ' + esc(n) + '">&#9742; ' + esc(n) + '</a>' +
+        '<button type="button" class="btn btn-ghost btn-sm" style="min-height:44px;width:72px" data-copy="' + esc(n) + '" aria-label="Copy ' + esc(n) + '">Copy</button></div>').join('') + '</div></div>').join('');
+    const m = modal(
+      '<div style="padding:24px 26px;display:flex;flex-direction:column;gap:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="font-size:22px;font-weight:800;color:#B91C1C">Emergency Hotlines</h2><button type="button" class="btn btn-ghost" data-close>Close</button></div>' +
+      '<p style="font-size:14px;color:#3D4659;margin:0">Tap a number to call it on a phone. On a laptop, press Copy and dial it on any phone. 911 works on all networks, even without load.</p>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;max-height:65vh;overflow-y:auto">' + rows + '</div></div>', 720);
+    m.el.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied ' + b.dataset.copy); }
+      catch (e) { toast('Dial ' + b.dataset.copy); }
+    }));
+  }
+  function addHotlineButton() {
+    if (document.getElementById('hotlineBtn') || /display\.html$/.test(location.pathname)) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.id = 'hotlineBtn'; b.className = 'no-print';
+    b.setAttribute('aria-label', 'Emergency hotlines (press H)');
+    b.innerHTML = '<span aria-hidden="true" style="font-size:20px">&#9742;</span> Emergency Hotlines';
+    b.style.cssText = 'position:fixed;right:20px;bottom:20px;z-index:900;display:flex;align-items:center;gap:8px;min-height:52px;padding:0 20px;border:none;border-radius:999px;background:#B91C1C;color:#FFFFFF;font:inherit;font-size:16px;font-weight:800;box-shadow:0 8px 24px rgba(185,28,28,.35);cursor:pointer';
+    b.addEventListener('click', showHotlines);
+    document.body.appendChild(b);
+    document.addEventListener('keydown', (e) => {
+      const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
+      if (!typing && (e.key === 'h' || e.key === 'H') && !document.querySelector('.scrim')) showHotlines();
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addHotlineButton); else addHotlineButton();
+
+  return { showHotlines, nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
 })();

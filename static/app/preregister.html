@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pre-Registration · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=9">
+<link rel="stylesheet" href="app.css?v=11">
 <style>
 .steps { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .steps li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--muted); }
@@ -39,6 +39,10 @@
 .chipbox { min-height: 44px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--field); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; background: #FFFFFF; }
 .chipbox:has(input:checked) { border-color: var(--navy); background: var(--tint); }
 .chipbox input { width: 18px; height: 18px; accent-color: var(--navy); }
+.fam-results { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.fam-results button { text-align: left; padding: 10px 12px; border: 1.5px solid var(--field); border-radius: 10px; background: #FFFFFF; font: inherit; font-size: 14px; cursor: pointer; }
+.fam-results button:hover, .fam-results button:focus { border-color: var(--navy); background: var(--tint); }
+.fam-picked { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--tint); border: 1.5px solid var(--navy); font-size: 14px; }
 .formlayout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
 .side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
 @media (max-width: 1100px) { .cap, .formlayout { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
@@ -88,7 +92,9 @@
           <div id="slots" style="display:flex;flex-direction:column;gap:10px"></div>
           <div id="checkMsg" class="notice" hidden></div>
         </section>
-        <p class="notice">For side photos, turn the head only about 30 to 45 degrees so both eyes stay visible. A full side view cannot be matched by the camera.</p>
+        <label class="chipbox" style="min-height:56px"><input type="checkbox" id="infant">This evacuee is an infant (under 2 years old)</label>
+        <p class="notice" id="infantNote" hidden>Infants do not need face photos. A baby's face changes quickly and is usually not visible while being carried, so the camera cannot match it reliably. The infant will be linked to a parent or guardian and checked in automatically when that person is recognized. You may take one front photo so staff can identify the infant on the Entrance Display.</p>
+        <p class="notice" id="adultNote">For side photos, turn the head only about 30 to 45 degrees so both eyes stay visible. A full side view cannot be matched by the camera.</p>
         <button type="button" class="btn btn-primary btn-lg" id="toStep2" disabled>Next: Evacuee Information</button>
       </div>
     </section>
@@ -103,18 +109,21 @@
             <div class="field-group span2"><label for="last">Last name *</label><input id="last" class="input req"></div>
             <div class="field-group"><label for="suffix">Suffix *</label><select id="suffix" class="input req"><option value="">Select</option><option>None</option><option>Jr.</option><option>Sr.</option><option>II</option><option>III</option><option>IV</option></select></div>
             <div class="field-group"><label for="sex">Sex *</label><select id="sex" class="input req"><option value="">Select</option><option>Male</option><option>Female</option></select></div>
-            <div class="field-group"><label for="bday">Birthday *</label><input id="bday" type="date" class="input req"></div>
-            <div class="field-group"><label for="age">Age</label><input id="age" class="input" readonly style="background:var(--bg)"></div>
+            <div class="field-group span2"><label id="bdayLbl">Birthday *</label><div style="display:grid;grid-template-columns:1.4fr 0.8fr 1fr;gap:8px" role="group" aria-labelledby="bdayLbl"><select id="bMonth" class="input" aria-label="Birth month"><option value="">Month</option></select><select id="bDay" class="input" aria-label="Birth day"><option value="">Day</option></select><select id="bYear" class="input" aria-label="Birth year"><option value="">Year</option></select></div></div>
+            <div class="field-group span2"><label for="age">Age</label><input id="age" class="input" readonly style="background:var(--bg)"></div>
             <div class="field-group span2"><label for="civil">Civil status *</label><select id="civil" class="input req"><option value="">Select</option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option></select></div>
           </div>
         </fieldset>
-        <fieldset class="form-card"><legend>Address, household, and contact</legend>
+        <fieldset class="form-card"><legend>Address, family, and contact</legend>
           <div class="form-grid">
-            <div class="field-group span4"><label for="addr">House no. and street *</label><input id="addr" class="input req"></div>
-            <div class="field-group span2"><label for="hhMode">Household *</label><select id="hhMode" class="input"><option value="new">Start a new household (this person is the head)</option><option value="join">Add to an existing household</option></select></div>
-            <div class="field-group span2" id="hhPick" hidden><label for="hhSel">Existing household *</label><select id="hhSel" class="input"></select></div>
+            <div class="field-group span2"><label for="addr">House no. and street *</label><input id="addr" class="input req"></div>
+            <div class="field-group span2"><label for="homeBrgy">Barangay *</label><input id="homeBrgy" class="input req" placeholder="e.g., Barangay 194"></div>
+            <div class="field-group span2"><label for="hhMode">Family *</label><select id="hhMode" class="input"><option value="new">Start a new family (this person is the head of the family)</option><option value="join">Add to an existing family</option></select></div>
+            <div class="field-group span2" id="headBox"><label for="isHead">Is this person the head of the family? *</label><select id="isHead" class="input"><option value="">Select</option><option value="yes">Yes, head of the family</option><option value="no">No, a family member</option></select></div>
+            <div class="field-group span2" id="sizeBox"><label for="famSize">Number of family members *</label><select id="famSize" class="input"></select></div>
+            <div class="field-group span2" id="hhPick" hidden><label for="famSearch">Existing family *</label><input type="hidden" id="hhSel" value=""><div id="famPicked" class="fam-picked" hidden></div><input id="famSearch" class="input" placeholder="Type the family name or a member's name" autocomplete="off"><div id="famResults" class="fam-results" role="listbox" aria-label="Matching families"></div><div id="famInfo" style="font-size:13px;color:var(--muted)"></div></div>
+            <div class="field-group span2" id="guardBox" hidden><label for="guardian">Parent or guardian *</label><select id="guardian" class="input"></select><div style="font-size:13px;color:var(--muted)">The infant is checked in together with this person.</div></div>
             <div class="field-group span2"><label for="phone">Mobile number (if any)</label><input id="phone" type="tel" class="input" placeholder="09XX XXX XXXX"></div>
-            <div class="field-group span2"><label for="ec">Emergency contact (name and number) *</label><input id="ec" class="input req" placeholder="e.g., Maria Dela Cruz, 0917 000 0000"></div>
           </div>
         </fieldset>
         <fieldset class="form-card"><legend>Special needs (for evacuation priority)</legend>
@@ -122,7 +131,22 @@
             <label class="chipbox"><input type="checkbox" value="Senior citizen">Senior citizen</label>
             <label class="chipbox"><input type="checkbox" value="Pregnant">Pregnant</label>
             <label class="chipbox"><input type="checkbox" value="PWD">Person with Disability (PWD)</label>
-            <label class="chipbox"><input type="checkbox" value="Medical condition">Medical condition</label>
+            <label class="chipbox"><input type="checkbox" value="Medical condition" id="medChk">Medical condition</label>
+          </div>
+          <div id="medBox" hidden style="margin-top:14px;flex-direction:column;gap:10px">
+            <div style="font-size:14px;font-weight:700">Medical condition (tick all that apply) *</div>
+            <div class="chips" id="meds">
+              <label class="chipbox"><input type="checkbox" value="Diabetes">Diabetes</label>
+              <label class="chipbox"><input type="checkbox" value="Hypertension">Hypertension (high blood pressure)</label>
+              <label class="chipbox"><input type="checkbox" value="Asthma">Asthma</label>
+              <label class="chipbox"><input type="checkbox" value="Heart disease">Heart disease</label>
+              <label class="chipbox"><input type="checkbox" value="Kidney disease">Kidney disease or dialysis</label>
+              <label class="chipbox"><input type="checkbox" value="Epilepsy">Epilepsy or seizures</label>
+              <label class="chipbox"><input type="checkbox" value="Needs oxygen">Needs oxygen</label>
+              <label class="chipbox"><input type="checkbox" value="Bedridden">Bedridden</label>
+              <label class="chipbox"><input type="checkbox" value="Other" id="medOtherChk">Other</label>
+            </div>
+            <div class="field-group" id="medOtherBox" hidden><label for="medOther">Please specify the medical condition *</label><input id="medOther" class="input" placeholder="e.g., Tuberculosis, cancer treatment"></div>
           </div>
         </fieldset>
       </form>
@@ -147,7 +171,7 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=12"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -159,6 +183,9 @@
     { key: 'right', label: 'Right side', say: 'Turn your head slightly to your RIGHT', arrow: 'R' }
   ];
   let brgys = [], brgyId = me.barangay_id, stream = null, shots = {}, embedding = null, checks = {}, step = 1, households = [];
+  const INFANT_YEARS = 2;
+  const isInfant = () => $('infant').checked;
+  const angles = () => isInfant() ? ANGLES.filter((a) => a.key === 'front') : ANGLES;
 
   try { brgys = await BL.api('/barangays') || []; } catch (e) {}
   const bName = (id) => (brgys.find((b) => b.id === id) || {}).name || 'your barangay';
@@ -187,17 +214,18 @@
   }
 
   // ---------- Step 1: camera ----------
-  const target = () => ANGLES.find((a) => !shots[a.key]);
+  const target = () => angles().find((a) => !shots[a.key]);
   function drawCapture() {
     const t = target();
-    const n = ANGLES.filter((a) => shots[a.key]).length;
+    const n = angles().filter((a) => shots[a.key]).length;
     $('count').textContent = n;
+    $('count').nextSibling.textContent = ' of ' + angles().length + (isInfant() ? ', optional)' : ')');
     $('say').textContent = t ? t.say : 'All photos captured.';
     $('arrowL').hidden = !stream || !t || t.arrow !== 'L';
     $('arrowR').hidden = !stream || !t || t.arrow !== 'R';
     $('shoot').hidden = !stream || !t;
     if (t) $('shoot').textContent = 'Capture ' + t.label + ' Photo';
-    $('slots').innerHTML = ANGLES.map((a) => {
+    $('slots').innerHTML = angles().map((a) => {
       const c = checks[a.key];
       const cls = c ? (c.ok ? 'ok' : 'bad') : (t && t.key === a.key && stream ? 'active' : '');
       const status = c ? c.message : shots[a.key] ? 'Captured' : (t && t.key === a.key ? 'Capture now' : 'Waiting');
@@ -206,7 +234,7 @@
         '<div style="flex-grow:1;min-width:0"><div style="font-weight:700">' + a.label + '</div><div style="font-size:12px;font-weight:600;color:' + color + '">' + BL.esc(status) + '</div></div>' +
         (shots[a.key] ? '<button type="button" class="btn btn-ghost btn-sm" data-retake="' + a.key + '" aria-label="Retake ' + a.label + ' photo">Retake</button>' : '') + '</div>';
     }).join('');
-    $('toStep2').disabled = !embedding;
+    $('toStep2').disabled = isInfant() ? false : !embedding;
   }
 
   $('camOn').addEventListener('click', async () => {
@@ -240,7 +268,8 @@
     const f = document.createElement('div'); f.className = 'flash'; $('stage').appendChild(f); setTimeout(() => f.remove(), 500);
     embedding = null; checks = {};
     drawCapture();
-    if (!target()) await checkFaces();
+    if (!target() && !isInfant()) await checkFaces();
+    if (isInfant()) stopCamera();
   });
 
   $('slots').addEventListener('click', (e) => {
@@ -270,9 +299,18 @@
     drawCapture();
   }
 
+  $('infant').addEventListener('change', () => {
+    shots = {}; checks = {}; embedding = null; $('checkMsg').hidden = true;
+    $('infantNote').hidden = !isInfant(); $('adultNote').hidden = isInfant();
+    $('toStep2').textContent = isInfant() ? 'Next: Infant Information' : 'Next: Evacuee Information';
+    drawCapture();
+  });
+
   $('toStep2').addEventListener('click', () => {
     step = 2; drawSteps();
-    $('miniThumbs').innerHTML = ANGLES.map((a) => '<div style="text-align:center"><div style="aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--bg)"><img alt="' + a.label + ' photo" src="' + shots[a.key] + '" style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></div><div style="font-size:12px;color:var(--muted);margin-top:4px">' + a.label + '</div></div>').join('');
+    if (isInfant()) { $('hhMode').value = 'join'; $('hhMode').disabled = true; $('civil').value = 'Single'; } else { $('hhMode').disabled = false; }
+    showFamilyMode();
+    $('miniThumbs').innerHTML = (isInfant() && !shots.front) ? '<div style="grid-column:1/-1;font-size:13px;color:var(--muted)">Infant: no face photos (checked in with the guardian).</div>' : angles().filter((a) => shots[a.key]).map((a) => '<div style="text-align:center"><div style="aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--bg)"><img alt="' + a.label + ' photo" src="' + shots[a.key] + '" style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></div><div style="font-size:12px;color:var(--muted);margin-top:4px">' + a.label + '</div></div>').join('');
     $('first').focus();
     syncForm();
   });
@@ -280,29 +318,86 @@
 
   // ---------- Step 2: form ----------
   async function loadHouseholds() {
-    try { households = await BL.api('/barangays/' + brgyId + '/households') || []; } catch (e) { households = []; }
-    $('hhSel').innerHTML = '<option value="">Select a household</option>' + households.map((h) => {
-      const head = (h.members || []).find((m) => m.is_head_of_family) || (h.members || [])[0] || {};
-      return '<option value="' + h.id + '">Household #' + h.id + (head.full_name ? ': ' + BL.esc(head.full_name) : '') + ' (' + (h.members || []).length + ' members)</option>';
-    }).join('');
+    try { households = await BL.api('/barangays/' + brgyId + '/families') || []; } catch (e) { households = []; }
+    pickFamily($('hhSel').value || null);
+  }
+  const famLabel = (h) => BL.esc(h.head_name || 'Family #' + h.id) + ' family' + (h.member_count ? ' (' + h.registered + ' of ' + h.member_count + ' members)' : ' (' + h.registered + ' member' + (h.registered === 1 ? ')' : 's)'));
+  function searchFamilies() {
+    const q = $('famSearch').value.trim().toLowerCase();
+    if (!q) { $('famResults').innerHTML = households.length ? '<div style="font-size:13px;color:var(--muted)">Type at least one letter to search ' + households.length + ' families.</div>' : '<div style="font-size:13px;color:var(--muted)">No families registered yet. Start a new family instead.</div>'; return; }
+    const hits = households.filter((h) => (h.members || []).some((m) => String(m.full_name).toLowerCase().includes(q))).slice(0, 8);
+    $('famResults').innerHTML = hits.length ? hits.map((h) => '<button type="button" role="option" data-fam="' + h.id + '"><strong>' + famLabel(h) + '</strong><br><span style="font-size:12px;color:var(--muted)">' + BL.esc((h.members || []).map((m) => m.full_name).join(', ')) + '</span></button>').join('') : '<div style="font-size:13px;color:var(--muted)">No family matches "' + BL.esc(q) + '".</div>';
+  }
+  function pickFamily(id) {
+    $('hhSel').value = id ? String(id) : '';
+    const h = households.find((x) => String(x.id) === $('hhSel').value);
+    if (!h) $('hhSel').value = '';
+    $('famPicked').hidden = !h; $('famSearch').hidden = !!h; $('famResults').hidden = !!h;
+    if (h) $('famPicked').innerHTML = '<span><strong>' + famLabel(h) + '</strong></span><button type="button" class="btn btn-ghost btn-sm" id="famChange">Change</button>';
+    else { $('famSearch').value = ''; searchFamilies(); }
+    fillGuardians(); syncForm();
+  }
+  $('famResults').addEventListener('click', (e) => { const b = e.target.closest('[data-fam]'); if (b) pickFamily(b.dataset.fam); });
+  $('famPicked').addEventListener('click', (e) => { if (e.target.closest('#famChange')) { pickFamily(null); $('famSearch').focus(); } });
+  $('famSearch').addEventListener('input', searchFamilies);
+  $('famSearch').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const b = $('famResults').querySelector('[data-fam]'); if (b) pickFamily(b.dataset.fam); } });
+  function fillGuardians() {
+    const h = households.find((x) => String(x.id) === $('hhSel').value);
+    const opts = h ? h.members.filter((m) => !m.is_infant) : [];
+    $('guardian').innerHTML = '<option value="">' + (h ? 'Select the parent or guardian' : 'Choose the family first') + '</option>' +
+      opts.map((m) => '<option value="' + m.id + '">' + BL.esc(m.full_name) + (m.age != null ? ' (' + m.age + ' yrs)' : '') + '</option>').join('');
+    $('famInfo').textContent = '';
+  }
+  function showFamilyMode() {
+    const join = $('hhMode').value === 'join';
+    $('hhPick').hidden = !join; $('sizeBox').hidden = join; $('headBox').hidden = join; $('guardBox').hidden = !isInfant();
     syncForm();
   }
-  $('hhMode').addEventListener('change', () => { $('hhPick').hidden = $('hhMode').value !== 'join'; syncForm(); });
+  $('hhMode').addEventListener('change', showFamilyMode);
+  $('medChk').addEventListener('change', () => { $('medBox').hidden = !$('medChk').checked; $('medBox').style.display = $('medChk').checked ? 'flex' : 'none'; syncForm(); });
+  $('medOtherChk').addEventListener('change', () => { $('medOtherBox').hidden = !$('medOtherChk').checked; syncForm(); });
+  $('famSize').innerHTML = Array.from({ length: 20 }, (_, i) => '<option value="' + (i + 1) + '">' + (i + 1) + (i ? ' members' : ' member (lives alone)') + '</option>').join('');
+  $('famSize').value = '4';
+  $('homeBrgy').value = city ? '' : bName(me.barangay_id);
+  // Birthday dropdowns: Month, Day, Year
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const thisYear = new Date().getFullYear();
+  $('bMonth').innerHTML += MONTHS.map((m, i) => '<option value="' + (i + 1) + '">' + m + '</option>').join('');
+  $('bYear').innerHTML += Array.from({ length: thisYear - 1899 }, (_, i) => '<option>' + (thisYear - i) + '</option>').join('');
+  function fillDays() {
+    const y = Number($('bYear').value) || 2000, mo = Number($('bMonth').value) || 1;
+    const max = new Date(y, mo, 0).getDate(), keep = $('bDay').value;
+    $('bDay').innerHTML = '<option value="">Day</option>' + Array.from({ length: max }, (_, i) => '<option>' + (i + 1) + '</option>').join('');
+    if (keep && Number(keep) <= max) $('bDay').value = keep;
+  }
+  fillDays();
+  $('bMonth').addEventListener('change', fillDays);
+  $('bYear').addEventListener('change', fillDays);
+  const pad = (n) => String(n).padStart(2, '0');
+  const bdayValue = () => ($('bYear').value && $('bMonth').value && $('bDay').value) ? $('bYear').value + '-' + pad($('bMonth').value) + '-' + pad($('bDay').value) : '';
   $('noMiddle').addEventListener('change', () => { $('middle').disabled = $('noMiddle').checked; if ($('noMiddle').checked) $('middle').value = ''; syncForm(); });
-  $('bday').max = new Date().toISOString().slice(0, 10);
   $('form').addEventListener('input', syncForm);
   $('form').addEventListener('change', syncForm);
 
   function syncForm() {
-    const a = BL.age($('bday').value);
-    $('age').value = a === null ? '' : a + (a === 1 ? ' year old' : ' years old');
+    const bd = bdayValue();
+    const a = bd ? BL.age(bd) : null;
+    let ageText = '';
+    if (a !== null && a >= 0) {
+      if (a < 1) { const d = new Date(bd), t = new Date(); const mo = (t.getFullYear() - d.getFullYear()) * 12 + t.getMonth() - d.getMonth() - (t.getDate() < d.getDate() ? 1 : 0); ageText = Math.max(0, mo) + (mo === 1 ? ' month old' : ' months old'); }
+      else ageText = a + (a === 1 ? ' year old' : ' years old');
+    }
+    $('age').value = ageText;
     const req = [
       ['First name', $('first').value.trim()], ['Middle name', $('noMiddle').checked || $('middle').value.trim()],
       ['Last name', $('last').value.trim()], ['Suffix', $('suffix').value], ['Sex', $('sex').value],
-      ['Birthday', $('bday').value && a !== null && a >= 0], ['Civil status', $('civil').value],
-      ['House no. and street', $('addr').value.trim()],
-      ['Household', $('hhMode').value === 'new' || $('hhSel').value],
-      ['Emergency contact', $('ec').value.trim()]
+      ['Birthday', bd && a !== null && a >= 0 && new Date(bd) <= new Date()], ['Civil status', $('civil').value],
+      ['House no. and street', $('addr').value.trim()], ['Barangay', $('homeBrgy').value.trim()],
+      ['Family', $('hhMode').value === 'new' || $('hhSel').value],
+      ['Head of the family (Yes or No)', $('hhMode').value === 'join' || $('isHead').value],
+      ['Medical condition', !$('medChk').checked || (document.querySelectorAll('#meds input:checked').length && (!$('medOtherChk').checked || $('medOther').value.trim()))],
+      ['Parent or guardian', !isInfant() || $('guardian').value],
+      [isInfant() ? 'Birthday under 2 years old (or untick Infant in step 1)' : 'Face photos (age 2 and up; tick Infant in step 1 if under 2)', a === null || (isInfant() ? a < INFANT_YEARS : a >= INFANT_YEARS)]
     ];
     const miss = req.filter((r) => !r[1]).map((r) => r[0]);
     $('register').disabled = miss.length > 0;
@@ -330,34 +425,38 @@
     const suffix = $('suffix').value === 'None' ? '' : $('suffix').value;
     const fullName = [$('first').value.trim(), $('noMiddle').checked ? '' : $('middle').value.trim(), $('last').value.trim(), suffix].filter(Boolean).join(' ');
     const needs = Array.from(document.querySelectorAll('#needs input:checked')).map((i) => i.value);
-    const base = { full_name: fullName, birthdate: $('bday').value, sex: $('sex').value, address: $('addr').value.trim(), contact_number: $('phone').value.trim() || null };
-    const extra = { civil_status: $('civil').value, special_needs: needs, emergency_contact: $('ec').value.trim() };
+    if ($('medChk').checked) Array.from(document.querySelectorAll('#meds input:checked')).forEach((i) => {
+      needs.push('Medical: ' + (i.value === 'Other' ? $('medOther').value.trim().replace(/,/g, ';') : i.value));
+    });
+    const base = { full_name: fullName, birthdate: bdayValue(), sex: $('sex').value, address: $('addr').value.trim(), contact_number: $('phone').value.trim() || null };
+    const extra = { civil_status: $('civil').value, special_needs: needs, emergency_contact: null, home_barangay: $('homeBrgy').value.trim(), guardian_evacuee_id: isInfant() ? Number($('guardian').value) : null };
     let id = null;
     try {
       if ($('hhMode').value === 'new') {
-        const h = await BL.api('/households', { method: 'POST', json: { registered_barangay_id: brgyId, members: [Object.assign({ is_head_of_family: true }, base)] } });
+        const h = await BL.api('/households', { method: 'POST', json: { registered_barangay_id: brgyId, members: [Object.assign({ is_head_of_family: $('isHead').value === 'yes' }, base)] } });
         id = (h.members || [])[0].id;
-        await BL.api('/evacuees/' + id, { method: 'PUT', json: extra });
+        await BL.api('/households/' + h.id + '/size', { method: 'PUT', json: { member_count: Number($('famSize').value) } });
       } else {
-        const m = await BL.api('/households/' + $('hhSel').value + '/members', { method: 'POST', json: Object.assign({}, base, extra) });
+        const m = await BL.api('/households/' + $('hhSel').value + '/members', { method: 'POST', json: Object.assign({}, base, { civil_status: extra.civil_status, special_needs: needs, emergency_contact: extra.emergency_contact }) });
         id = m.id;
       }
-      await BL.api('/evacuees/' + id + '/facial_embedding', { method: 'POST', json: await embeddingBody(embedding) });
-      try { await BL.api('/evacuees/' + id + '/photo', { method: 'POST', json: { image: shots.front } }); } catch (e) { /* photo is optional; recognition does not need it */ }
+      await BL.api('/evacuees/' + id, { method: 'PUT', json: extra });
+      if (!isInfant()) await BL.api('/evacuees/' + id + '/facial_embedding', { method: 'POST', json: await embeddingBody(embedding) });
+      if (shots.front) { try { await BL.api('/evacuees/' + id + '/photo', { method: 'POST', json: { image: shots.front } }); } catch (e) { /* photo is optional; recognition does not need it */ } }
     } catch (ex) {
       $('saveErr').textContent = (id ? 'The evacuee was saved (ID ' + id + '), but the face data was not: ' : '') + ex.message;
       $('saveErr').hidden = false;
       btn.textContent = 'Register Evacuee'; btn.disabled = false;
       return;
     }
-    const a = BL.age($('bday').value);
+    const a = BL.age(bdayValue());
     $('doneTitle').textContent = fullName + ' is registered';
     $('doneFacts').innerHTML =
       '<div><div class="k">Sex</div><div class="v">' + BL.esc($('sex').value) + '</div></div>' +
-      '<div><div class="k">Age</div><div class="v">' + a + ' years old</div></div>' +
-      '<div><div class="k">Face data</div><div class="v" style="color:var(--green)">3 of 3 photos saved</div></div>' +
-      '<div><div class="k">Barangay</div><div class="v">' + BL.esc(bName(brgyId)) + '</div></div>' +
-      '<div><div class="k">Special needs</div><div class="v">' + (needs.length ? BL.esc(needs.join(', ')) : 'None') + '</div></div>' +
+      '<div><div class="k">Age</div><div class="v">' + BL.esc($('age').value) + '</div></div>' +
+      (isInfant() ? '<div><div class="k">Checked in with</div><div class="v">' + BL.esc($('guardian').selectedOptions[0].textContent) + '</div></div>' : '<div><div class="k">Face data</div><div class="v" style="color:var(--green)">3 of 3 photos saved</div></div>') +
+      '<div><div class="k">Barangay</div><div class="v">' + BL.esc($('homeBrgy').value.trim()) + '</div></div>' +
+      '<div><div class="k">Special needs</div><div class="v">' + (needs.length ? BL.esc(needs.filter((x) => x !== 'Medical condition').join(', ')) : 'None') + '</div></div>' +
       '<div><div class="k">Evacuee ID</div><div class="v">' + id + '</div></div>';
     step = 3; drawSteps();
     btn.textContent = 'Register Evacuee';
@@ -365,7 +464,9 @@
 
   $('again').addEventListener('click', () => {
     shots = {}; checks = {}; embedding = null;
-    $('form').reset(); $('middle').disabled = false; $('hhPick').hidden = true;
+    $('form').reset(); $('middle').disabled = false; $('hhMode').disabled = false;
+    $('infant').checked = false; $('infantNote').hidden = true; $('adultNote').hidden = false;
+    $('famSize').value = '4'; pickFamily(null); $('medBox').hidden = true; $('medBox').style.display = 'none'; $('medOtherBox').hidden = true; $('homeBrgy').value = city ? '' : bName(me.barangay_id); fillDays(); showFamilyMode();
     $('checkMsg').hidden = true;
     step = 1; drawSteps(); drawCapture(); loadHouseholds();
   });
