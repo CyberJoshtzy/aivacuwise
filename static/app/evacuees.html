@@ -33,7 +33,7 @@
     <section class="panel" style="padding:0;overflow:hidden">
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th scope="col">Evacuee</th><th scope="col" id="brgyCol" hidden>Barangay</th><th scope="col">Household</th><th scope="col">Status</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+          <thead><tr><th scope="col">Evacuee</th><th scope="col" id="brgyCol" hidden>Barangay</th><th scope="col">Family</th><th scope="col">Status</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -41,13 +41,13 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
   const city = me.role === 'city_admin';
   const $ = (id) => document.getElementById(id);
-  let brgyNames = {}, centerNames = {}, where = {}, list = [], extra = {};
+  let brgyNames = {}, centerNames = {}, where = {}, list = [], listAll = [], extra = {}, trackerOf = {};
   let filter = 'all';
 
   try {
@@ -58,6 +58,33 @@
   BL.renderSidebar(me, 'evacuees.html', brgyNames[me.barangay_id]);
   $('brgyCol').hidden = !city;
 
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function niceDate(d) {
+    const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? MONTHS[Number(m[2]) - 1] + ' ' + Number(m[3]) + ', ' + m[1] : '-';
+  }
+  function ageText(d) {
+    const a = BL.age(d); if (a === null) return '-';
+    if (a >= 1) return a + (a === 1 ? ' year old' : ' years old');
+    const b = new Date(String(d).slice(0, 10)), t = new Date();
+    const mo = Math.max(0, (t.getFullYear() - b.getFullYear()) * 12 + t.getMonth() - b.getMonth() - (t.getDate() < b.getDate() ? 1 : 0));
+    return mo + (mo === 1 ? ' month old' : ' months old');
+  }
+  function needsList(ev) {
+    const n = (extra[ev.id] || {}).special_needs || [];
+    const meds = n.filter((x) => x.startsWith('Medical: ')).map((x) => x.slice(9));
+    const out = n.filter((x) => x !== 'Medical condition' && !x.startsWith('Medical: '));
+    if (n.includes('Medical condition') || meds.length) out.push('Medical condition' + (meds.length ? ': ' + meds.join(', ') : ''));
+    return out;
+  }
+  const allList = () => listAll;
+  function familyText(ev) {
+    if (!ev.household_id) return 'None';
+    const head = listAll.find((x) => x.household_id === ev.household_id && x.is_head_of_family);
+    const name = head ? 'Family of ' + head.full_name : 'Family #' + ev.household_id;
+    return name + (ev.is_head_of_family ? ' (head of the family)' : '');
+  }
+  const homeBrgy = (ev) => (extra[ev.id] || {}).home_barangay || brgyNames[ev.registered_barangay_id] || '-';
   const FILTERS = [
     ['all', 'All', () => true],
     ['in', 'Evacuated', (e) => !!where[e.id]],
@@ -82,9 +109,11 @@
     try {
       const [evacuees, summary, det] = await Promise.all([BL.api('/evacuees'), BL.api('/dashboard/summary'), BL.api('/evacuee_details').catch(() => [])]);
       extra = {}; (det || []).forEach((d) => { extra[d.id] = d; });
+      try { trackerOf = {}; (await BL.api('/trackers') || []).forEach((t) => { if (t.assigned_evacuee_id) trackerOf[t.assigned_evacuee_id] = t.device_id; }); } catch (e) {}
       where = {};
       (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => (c.evacuees || []).forEach((ev) => { where[ev.id] = c.name; })));
-      list = (evacuees || []).filter((e) => city || e.registered_barangay_id === me.barangay_id);
+      listAll = evacuees || [];
+      list = listAll.filter((e) => city || e.registered_barangay_id === me.barangay_id);
       $('loadError').hidden = true;
       render();
     } catch (e) {
@@ -104,11 +133,12 @@
       const a = BL.age(e.birthdate);
       const face = e.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>';
       const status = where[e.id] ? '<span class="chip green">At ' + BL.esc(where[e.id]) + '</span>' : '<span class="chip" style="background:var(--line-soft);color:var(--muted)">Not checked in</span>';
-      const hh = e.household_id ? 'Household #' + e.household_id + (e.is_head_of_family ? ' <span class="chip navy">Head</span>' : '') : '<span style="color:var(--muted)">None</span>';
+      const head = e.household_id ? listAll.find((x) => x.household_id === e.household_id && x.is_head_of_family) : null;
+      const hh = e.household_id ? BL.esc(head ? 'Family of ' + head.full_name : 'Family #' + e.household_id) + (e.is_head_of_family ? ' <span class="chip navy">Head</span>' : '') : '<span style="color:var(--muted)">None</span>';
       return '<tr>' +
         '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(e.full_name) + '</strong> ' + face +
-        '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + BL.esc(e.sex || 'Sex not set') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + ' ' + ((extra[e.id] || {}).special_needs || []).map((n) => '<span class="chip">' + BL.esc(n) + '</span>').join(' ') + '</div></td>' +
-        (city ? '<td>' + BL.esc(brgyNames[e.registered_barangay_id] || '-') + '</td>' : '') +
+        '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + BL.esc(e.sex || 'Sex not set') + ', ' + (a === null ? 'age unknown' : (a >= 1 ? a + ' yrs' : ageText(e.birthdate))) + ' ' + needsList(e).map((n) => '<span class="chip">' + BL.esc(n) + '</span>').join(' ') + '</div></td>' +
+        (city ? '<td>' + BL.esc(homeBrgy(e)) + '</td>' : '') +
         '<td>' + hh + '</td><td>' + status + '</td>' +
         '<td><div class="row-actions">' +
         '<button type="button" class="btn btn-ghost btn-sm" data-act="view" data-id="' + e.id + '" aria-label="View ' + BL.esc(e.full_name) + '">View</button>' +
@@ -138,16 +168,16 @@
       '<div style="display:flex;gap:16px;align-items:center"><div id="vPhoto" style="width:96px;height:96px;border-radius:50%;background:var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);text-align:center;flex-shrink:0">No photo</div><div style="font-size:13px;color:var(--muted)">Photo shown on the Entrance Display. Registrations made before photos were saved show initials instead.</div></div>' +
       '<div class="facts">' +
       '<div><div class="k">Sex</div><div class="v">' + BL.esc(ev.sex || '-') + '</div></div>' +
-      '<div><div class="k">Birthday</div><div class="v">' + BL.esc(ev.birthdate || '-') + '</div></div>' +
-      '<div><div class="k">Age</div><div class="v">' + (a === null ? '-' : a + ' years old') + '</div></div>' +
+      '<div><div class="k">Birthday</div><div class="v">' + BL.esc(niceDate(ev.birthdate)) + '</div></div>' +
+      '<div><div class="k">Age</div><div class="v">' + BL.esc(ageText(ev.birthdate)) + '</div></div>' +
       '<div><div class="k">Address</div><div class="v">' + BL.esc(ev.address || '-') + '</div></div>' +
       '<div><div class="k">Contact number</div><div class="v">' + BL.esc(ev.contact_number || 'None') + '</div></div>' +
       '<div><div class="k">Identification</div><div class="v">' + (ev.identification_method === 'facial_recognition' ? 'Face ID' : 'Manual') + '</div></div>' +
-      '<div><div class="k">Barangay</div><div class="v">' + BL.esc(brgyNames[ev.registered_barangay_id] || '-') + '</div></div>' +
-      '<div><div class="k">Household</div><div class="v">' + (ev.household_id ? '#' + ev.household_id + (ev.is_head_of_family ? ' (head)' : '') : 'None') + '</div></div>' +
+      '<div><div class="k">Barangay</div><div class="v">' + BL.esc(homeBrgy(ev)) + '</div></div>' +
+      '<div><div class="k">Family</div><div class="v">' + BL.esc(familyText(ev)) + '</div></div>' +
+      ((extra[ev.id] || {}).guardian_evacuee_id ? '<div><div class="k">Parent or guardian</div><div class="v">' + BL.esc((listAll.find((x) => x.id === extra[ev.id].guardian_evacuee_id) || {}).full_name || '-') + '</div></div>' : '') +
       '<div><div class="k">Civil status</div><div class="v">' + BL.esc((extra[ev.id] || {}).civil_status || '-') + '</div></div>' +
-      '<div><div class="k">Emergency contact</div><div class="v">' + BL.esc((extra[ev.id] || {}).emergency_contact || '-') + '</div></div>' +
-      '<div><div class="k">Special needs</div><div class="v">' + BL.esc(((extra[ev.id] || {}).special_needs || []).join(', ') || 'None') + '</div></div>' +
+      '<div><div class="k">Special needs</div><div class="v">' + BL.esc(needsList(ev).join('; ') || 'None') + '</div></div>' +
       '</div>' +
       '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Movement history</h3><ul class="timeline" id="hist"><li style="color:var(--muted)">Loading history.</li></ul></div>' +
       '</div>' +
@@ -181,7 +211,8 @@
       '<div class="field-group span4"><label for="fAddr">Address *</label><input id="fAddr" class="input" value="' + BL.esc(ev.address || '') + '"></div>' +
       '<div class="field-group span2"><label for="fPhone">Contact number</label><input id="fPhone" type="tel" class="input" value="' + BL.esc(ev.contact_number || '') + '"></div>' +
       '<div class="field-group span2"><label for="fCivil">Civil status</label><select id="fCivil" class="input">' + ['', 'Single', 'Married', 'Widowed', 'Separated'].map((c) => '<option value="' + c + '"' + (c === (ex.civil_status || '') ? ' selected' : '') + '>' + (c || 'Not set') + '</option>').join('') + '</select></div>' +
-      '<div class="field-group span4"><label for="fEc">Emergency contact</label><input id="fEc" class="input" value="' + BL.esc(ex.emergency_contact || '') + '"></div>' +
+      '<div class="field-group span4"><label for="fTrk">GPS tracker ID</label><input id="fTrk" class="input" placeholder="Leave empty if no tracker" value="' + BL.esc(trackerOf[ev.id] || '') + '"></div>' +
+      '<div class="field-group span4"><label for="fBrgy">Barangay</label><input id="fBrgy" class="input" value="' + BL.esc(homeBrgy(ev) === '-' ? '' : homeBrgy(ev)) + '"></div>' +
       '<div class="field-group span4"><span style="font-size:14px;font-weight:700">Special needs</span><div style="display:flex;flex-wrap:wrap;gap:8px" id="fNeeds">' + ['Senior citizen', 'Pregnant', 'PWD', 'Medical condition'].map((n) => '<label class="check" style="border:1.5px solid var(--field);border-radius:10px;padding:0 12px"><input type="checkbox" value="' + n + '"' + ((ex.special_needs || []).includes(n) ? ' checked' : '') + '>' + n + '</label>').join('') + '</div></div>' +
       '</div></div>' +
       '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)" id="eHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="eSave">Save Changes</button></div></div>' +
@@ -206,9 +237,14 @@
         await BL.api('/evacuees/' + ev.id, { method: 'PUT', json: {
           full_name: f('fName').value, sex: f('fSex').value, birthdate: f('fBday').value,
           address: f('fAddr').value, contact_number: f('fPhone').value,
-          civil_status: f('fCivil').value || null, emergency_contact: f('fEc').value.trim() || null,
-          special_needs: Array.from(m.el.querySelectorAll('#fNeeds input:checked')).map((i) => i.value)
+          civil_status: f('fCivil').value || null, home_barangay: f('fBrgy').value.trim() || null,
+          special_needs: (() => {
+            const picked = Array.from(m.el.querySelectorAll('#fNeeds input:checked')).map((i) => i.value);
+            const meds = picked.includes('Medical condition') ? (ex.special_needs || []).filter((x) => x.startsWith('Medical: ')) : [];
+            return picked.concat(meds);
+          })()
         } });
+        if (f('fTrk').value.trim() !== (trackerOf[ev.id] || '')) await BL.api('/evacuees/' + ev.id + '/tracker', { method: 'PUT', json: { device_id: f('fTrk').value.trim() } });
         m.close();
         BL.toast('Evacuee information updated.');
         load();

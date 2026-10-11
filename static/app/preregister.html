@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pre-Registration · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="app.css?v=10">
 <style>
 .steps { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .steps li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--muted); }
@@ -149,6 +149,13 @@
             <div class="field-group" id="medOtherBox" hidden><label for="medOther">Please specify the medical condition *</label><input id="medOther" class="input" placeholder="e.g., Tuberculosis, cancer treatment"></div>
           </div>
         </fieldset>
+        <fieldset class="form-card"><legend>GPS tracker</legend>
+          <div class="form-grid">
+            <div class="field-group span2"><label for="hasTracker">Was this evacuee given a GPS tracker? *</label><select id="hasTracker" class="input"><option value="">Select</option><option value="no">No</option><option value="yes">Yes, a tracker was given</option></select></div>
+            <div class="field-group span2" id="trackerBox" hidden><label for="tracker">Tracker ID *</label><input id="tracker" class="input" placeholder="e.g., IMEI printed on the AST-400" autocomplete="off"></div>
+          </div>
+          <p class="notice" style="margin:0">Give trackers first to seniors, PWD, pregnant women, and young children, so their last known location can be found if they go missing.</p>
+        </fieldset>
       </form>
       <div class="side">
         <section class="panel">
@@ -171,7 +178,7 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=10"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -355,6 +362,7 @@
   }
   $('hhMode').addEventListener('change', showFamilyMode);
   $('medChk').addEventListener('change', () => { $('medBox').hidden = !$('medChk').checked; $('medBox').style.display = $('medChk').checked ? 'flex' : 'none'; syncForm(); });
+  $('hasTracker').addEventListener('change', () => { $('trackerBox').hidden = $('hasTracker').value !== 'yes'; if ($('hasTracker').value !== 'yes') $('tracker').value = ''; syncForm(); });
   $('medOtherChk').addEventListener('change', () => { $('medOtherBox').hidden = !$('medOtherChk').checked; syncForm(); });
   $('famSize').innerHTML = Array.from({ length: 20 }, (_, i) => '<option value="' + (i + 1) + '">' + (i + 1) + (i ? ' members' : ' member (lives alone)') + '</option>').join('');
   $('famSize').value = '4';
@@ -394,6 +402,8 @@
       ['Birthday', bd && a !== null && a >= 0 && new Date(bd) <= new Date()], ['Civil status', $('civil').value],
       ['House no. and street', $('addr').value.trim()], ['Barangay', $('homeBrgy').value.trim()],
       ['Family', $('hhMode').value === 'new' || $('hhSel').value],
+      ['GPS tracker (Yes or No)', $('hasTracker').value],
+      ['Tracker ID', $('hasTracker').value !== 'yes' || $('tracker').value.trim()],
       ['Head of the family (Yes or No)', $('hhMode').value === 'join' || $('isHead').value],
       ['Medical condition', !$('medChk').checked || (document.querySelectorAll('#meds input:checked').length && (!$('medOtherChk').checked || $('medOther').value.trim()))],
       ['Parent or guardian', !isInfant() || $('guardian').value],
@@ -442,6 +452,10 @@
       }
       await BL.api('/evacuees/' + id, { method: 'PUT', json: extra });
       if (!isInfant()) await BL.api('/evacuees/' + id + '/facial_embedding', { method: 'POST', json: await embeddingBody(embedding) });
+      if ($('tracker').value.trim()) {
+        try { await BL.api('/evacuees/' + id + '/tracker', { method: 'PUT', json: { device_id: $('tracker').value.trim() } }); }
+        catch (e) { BL.toast('Registered, but the tracker was not linked: ' + e.message); }
+      }
       if (shots.front) { try { await BL.api('/evacuees/' + id + '/photo', { method: 'POST', json: { image: shots.front } }); } catch (e) { /* photo is optional; recognition does not need it */ } }
     } catch (ex) {
       $('saveErr').textContent = (id ? 'The evacuee was saved (ID ' + id + '), but the face data was not: ' : '') + ex.message;
@@ -455,6 +469,7 @@
       '<div><div class="k">Sex</div><div class="v">' + BL.esc($('sex').value) + '</div></div>' +
       '<div><div class="k">Age</div><div class="v">' + BL.esc($('age').value) + '</div></div>' +
       (isInfant() ? '<div><div class="k">Checked in with</div><div class="v">' + BL.esc($('guardian').selectedOptions[0].textContent) + '</div></div>' : '<div><div class="k">Face data</div><div class="v" style="color:var(--green)">3 of 3 photos saved</div></div>') +
+      '<div><div class="k">GPS tracker</div><div class="v">' + ($('tracker').value.trim() ? BL.esc($('tracker').value.trim()) : 'None') + '</div></div>' +
       '<div><div class="k">Barangay</div><div class="v">' + BL.esc($('homeBrgy').value.trim()) + '</div></div>' +
       '<div><div class="k">Special needs</div><div class="v">' + (needs.length ? BL.esc(needs.filter((x) => x !== 'Medical condition').join(', ')) : 'None') + '</div></div>' +
       '<div><div class="k">Evacuee ID</div><div class="v">' + id + '</div></div>';
@@ -466,7 +481,7 @@
     shots = {}; checks = {}; embedding = null;
     $('form').reset(); $('middle').disabled = false; $('hhMode').disabled = false;
     $('infant').checked = false; $('infantNote').hidden = true; $('adultNote').hidden = false;
-    $('famSize').value = '4'; pickFamily(null); $('medBox').hidden = true; $('medBox').style.display = 'none'; $('medOtherBox').hidden = true; $('homeBrgy').value = city ? '' : bName(me.barangay_id); fillDays(); showFamilyMode();
+    $('trackerBox').hidden = true; $('famSize').value = '4'; pickFamily(null); $('medBox').hidden = true; $('medBox').style.display = 'none'; $('medOtherBox').hidden = true; $('homeBrgy').value = city ? '' : bName(me.barangay_id); fillDays(); showFamilyMode();
     $('checkMsg').hidden = true;
     step = 1; drawSteps(); drawCapture(); loadHouseholds();
   });
