@@ -92,9 +92,7 @@
     ['kids', 'Children', (e) => { const a = BL.age(e.birthdate); return a !== null && a < 18; }],
     ['seniors', 'Seniors', (e) => { const a = BL.age(e.birthdate); return a !== null && a >= 60; }],
     ['pwd', 'PWD', (e) => ((extra[e.id] || {}).special_needs || []).includes('PWD')],
-    ['preg', 'Pregnant', (e) => ((extra[e.id] || {}).special_needs || []).includes('Pregnant')],
-    ['face', 'Face ID', (e) => e.identification_method === 'facial_recognition'],
-    ['manual', 'Manual', (e) => e.identification_method !== 'facial_recognition']
+    ['preg', 'Pregnant', (e) => ((extra[e.id] || {}).special_needs || []).includes('Pregnant')]
   ];
   $('pills').innerHTML = FILTERS.map(([k, label]) => '<button type="button" class="pill" data-f="' + k + '" aria-pressed="' + (k === filter) + '">' + label + '</button>').join('');
   $('pills').addEventListener('click', (e) => {
