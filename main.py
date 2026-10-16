@@ -600,7 +600,7 @@ def enrolled_faces(db: Session = Depends(get_db), current_user=Depends(auth.get_
     for e in evacuees:
         try:
             embedding = json.loads(e.facial_embedding)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             continue
         result.append({"evacuee_id": e.id, "full_name": e.full_name, "embedding": embedding})
     return result
@@ -1614,7 +1614,7 @@ async def bl_register(payload: BLRegister, db: _BLSession = _BLDepends(get_db)):
             cname = " ".join(str(c.get("name") or "").split())
             caddr = " ".join(str(c.get("address") or "").split())
             ccap = int(c.get("capacity") or 0)
-        except AttributeError, TypeError, ValueError:
+        except (AttributeError, TypeError, ValueError):
             continue
         if not cname or not caddr or ccap <= 0:
             raise _BLHTTPException(

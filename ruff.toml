@@ -1,5 +1,5 @@
 # Ruff settings for BilisLikas 2.0 (linting, security checks, formatting)
-target-version = "py314"
+target-version = "py313"
 line-length = 100
 
 extend-exclude = [
