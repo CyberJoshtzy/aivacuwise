@@ -1,12 +1,16 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum, Text, Float, Boolean
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import enum
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
+
 from database import Base
 
-class UserRole(str, enum.Enum):
+
+class UserRole(str, enum.Enum):  # noqa: UP042
     barangay_official = "barangay_official"
     city_admin = "city_admin"
+
 
 class Barangay(Base):
     __tablename__ = "barangays"
@@ -14,6 +18,7 @@ class Barangay(Base):
     name = Column(String, nullable=False, unique=True)
 
     centers = relationship("EvacuationCenter", back_populates="barangay")
+
 
 class EvacuationCenter(Base):
     __tablename__ = "evacuation_centers"
@@ -24,6 +29,7 @@ class EvacuationCenter(Base):
     barangay_id = Column(Integer, ForeignKey("barangays.id"))
 
     barangay = relationship("Barangay", back_populates="centers")
+
 
 class User(Base):
     __tablename__ = "users"
@@ -69,6 +75,7 @@ class CheckinRecord(Base):
     event_type = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
+
 class Tracker(Base):
     __tablename__ = "trackers"
     id = Column(Integer, primary_key=True)
@@ -77,12 +84,14 @@ class Tracker(Base):
     battery_level = Column(Integer, nullable=True)
     tracking_method = Column(String, nullable=True)
 
+
 class TrackerPing(Base):
     __tablename__ = "tracker_pings"
     id = Column(Integer, primary_key=True)
     tracker_id = Column(Integer, ForeignKey("trackers.id"), nullable=False)
     evacuation_center_id = Column(Integer, ForeignKey("evacuation_centers.id"), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
 
 class Transfer(Base):
     __tablename__ = "transfers"
@@ -91,7 +100,8 @@ class Transfer(Base):
     from_center_id = Column(Integer, ForeignKey("evacuation_centers.id"), nullable=True)
     to_center_id = Column(Integer, ForeignKey("evacuation_centers.id"), nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)\
+    approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
 
 class GpsPing(Base):
     __tablename__ = "gps_pings"
@@ -111,6 +121,7 @@ class Household(Base):
     head_of_family_evacuee_id = Column(Integer, ForeignKey("evacuees.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class Incident(Base):
     __tablename__ = "incidents"
     id = Column(Integer, primary_key=True, index=True)
@@ -126,11 +137,13 @@ class Incident(Base):
 # ---- BilisLikas 2.0: cloud sync phase 1 (sync-ready records) ----
 import os as _sync_os
 import uuid as _sync_uuid
+
 from sqlalchemy import event as _sync_event
 from sqlalchemy.orm import Session as _SyncSession
 from sqlalchemy.orm import object_session as _sync_object_session
 
-SERVER_ID = _sync_os.getenv('BILISLIKAS_SERVER_ID', 'local')
+SERVER_ID = _sync_os.getenv("BILISLIKAS_SERVER_ID", "local")
+
 
 class ReliefRecord(Base):
     __tablename__ = "relief_records"
@@ -147,8 +160,20 @@ class ReliefRecord(Base):
     notes = Column(String, nullable=True)
 
 
-SYNCED_MODELS = [Barangay, EvacuationCenter, User, Household, Evacuee, CheckinRecord,
-                 Transfer, Tracker, TrackerPing, GpsPing, Incident, ReliefRecord]
+SYNCED_MODELS = [
+    Barangay,
+    EvacuationCenter,
+    User,
+    Household,
+    Evacuee,
+    CheckinRecord,
+    Transfer,
+    Tracker,
+    TrackerPing,
+    GpsPing,
+    Incident,
+    ReliefRecord,
+]
 
 for _cls in SYNCED_MODELS:
     _cls.uuid = Column(String(36), unique=True, index=True, nullable=True)
@@ -171,12 +196,12 @@ Incident.resumed_at = Column(DateTime, nullable=True)
 def incident_active_seconds(i, now=None):
     """Seconds the evacuation was actually running (pauses excluded)."""
     now = now or datetime.utcnow()
-    base = getattr(i, 'active_seconds', None)
+    base = getattr(i, "active_seconds", None)
     if i.ended_at is not None:
         if base is not None:
             return max(0, int(base))
         return max(0, int((i.ended_at - i.started_at).total_seconds()))  # older records
-    since = getattr(i, 'resumed_at', None) or i.started_at
+    since = getattr(i, "resumed_at", None) or i.started_at
     return max(0, int((base or 0) + (now - since).total_seconds()))
 
 
@@ -197,16 +222,16 @@ class SyncState(Base):
 
 def _sync_importing(target):
     s = _sync_object_session(target)
-    return bool(s is not None and s.info.get('sync_import'))
+    return bool(s is not None and s.info.get("sync_import"))
 
 
 def _sync_on_insert(mapper, connection, target):
     if _sync_importing(target):
         return
     target.sync_dirty = True
-    if not getattr(target, 'uuid', None):
+    if not getattr(target, "uuid", None):
         target.uuid = str(_sync_uuid.uuid4())
-    if not getattr(target, 'origin', None):
+    if not getattr(target, "origin", None):
         target.origin = SERVER_ID
     target.updated_at = datetime.utcnow()
 
@@ -219,23 +244,30 @@ def _sync_on_update(mapper, connection, target):
 
 
 for _cls in SYNCED_MODELS:
-    _sync_event.listen(_cls, 'before_insert', _sync_on_insert)
-    _sync_event.listen(_cls, 'before_update', _sync_on_update)
+    _sync_event.listen(_cls, "before_insert", _sync_on_insert)
+    _sync_event.listen(_cls, "before_update", _sync_on_update)
 
 
-@_sync_event.listens_for(_SyncSession, 'before_flush')
+@_sync_event.listens_for(_SyncSession, "before_flush")
 def _sync_record_deletions(session, flush_context, instances):
-    if session.info.get('sync_import'):
+    if session.info.get("sync_import"):
         return
     for obj in list(session.deleted):
-        if type(obj) in SYNCED_MODELS and getattr(obj, 'uuid', None):
-            session.add(SyncTombstone(table_name=obj.__tablename__, record_uuid=obj.uuid,
-                                      deleted_at=datetime.utcnow(), origin=SERVER_ID))
+        if type(obj) in SYNCED_MODELS and getattr(obj, "uuid", None):
+            session.add(
+                SyncTombstone(
+                    table_name=obj.__tablename__,
+                    record_uuid=obj.uuid,
+                    deleted_at=datetime.utcnow(),
+                    origin=SERVER_ID,
+                )
+            )
 
 
 # ---- BilisLikas 2.0: cloud sync phase 3 (push, pull, notify) ----
 class SyncLog(Base):
     """On the cloud hub: every change received, in order, so each server can pull what it has not seen."""
+
     __tablename__ = "sync_log"
     seq = Column(Integer, primary_key=True)
     table_name = Column(String, nullable=False)

@@ -1,0 +1,34 @@
+# Checks that run automatically on every `git commit`.
+# After installing, run `pre-commit autoupdate` once to get the newest hook versions.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files   # blocks files over 500 KB (photos, dumps)
+        args: ["--maxkb=500"]
+      - id: detect-private-key        # blocks SSH or TLS private keys
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks                  # blocks passwords, API keys, tokens
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest (all tests must pass)
+        entry: venv/bin/pytest -q
+        language: system
+        pass_filenames: false
+        types: [python]

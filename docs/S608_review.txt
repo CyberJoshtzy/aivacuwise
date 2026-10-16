@@ -1,0 +1,9 @@
+migrate_sync_phase1.py:27:27: S608 Possible SQL injection vector through string-based query construction
+migrate_sync_phase1.py:30:17: S608 Possible SQL injection vector through string-based query construction
+migrate_sync_phase1.py:33:27: S608 Possible SQL injection vector through string-based query construction
+migrate_sync_phase1.py:49:37: S608 Possible SQL injection vector through string-based query construction
+migrate_sync_phase1.py:50:35: S608 Possible SQL injection vector through string-based query construction
+migrate_sync_phase3.py:26:17: S608 Possible SQL injection vector through string-based query construction
+migrate_sync_phase3.py:30:27: S608 Possible SQL injection vector through string-based query construction
+migrate_sync_phase3.py:42:38: S608 Possible SQL injection vector through string-based query construction
+Found 8 errors.

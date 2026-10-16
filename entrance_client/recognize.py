@@ -6,16 +6,16 @@ checked in at a different center, a transfer is recorded instead of a plain chec
 
 Run:  ~/bilislikas2.0/venv/bin/python recognize.py      Stop: press q in the window, or Ctrl+C.
 """
+
 import json
 import sys
 import time
 
+import config
 import cv2
 import face_recognition
 import numpy as np
 import requests
-
-import config
 
 
 class Backend:
@@ -24,7 +24,11 @@ class Backend:
         self.token = None
 
     def login(self):
-        r = requests.post(self.base + "/login", data={"username": config.USERNAME, "password": config.PASSWORD}, timeout=10)
+        r = requests.post(
+            self.base + "/login",
+            data={"username": config.USERNAME, "password": config.PASSWORD},
+            timeout=10,
+        )
         if r.status_code != 200:
             sys.exit("Login failed (%s). Check USERNAME and PASSWORD in config.py." % r.status_code)
         self.token = r.json()["access_token"]
@@ -71,12 +75,18 @@ def parse_faces(rows):
 def main():
     api = Backend()
     api.login()
-    print("Signed in to %s as %s. Camera guards evacuation center %s." % (api.base, config.USERNAME, config.EVACUATION_CENTER_ID))
+    print(
+        "Signed in to %s as %s. Camera guards evacuation center %s."
+        % (api.base, config.USERNAME, config.EVACUATION_CENTER_ID)
+    )
 
     cam = cv2.VideoCapture(config.CAMERA_INDEX, cv2.CAP_V4L2)
     cam.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # always use the newest frame (avoids the multi-second lag)
     if not cam.isOpened():
-        sys.exit("Cannot open camera %s. Close any browser tab using the webcam and try again." % config.CAMERA_INDEX)
+        sys.exit(
+            "Cannot open camera %s. Close any browser tab using the webcam and try again."
+            % config.CAMERA_INDEX
+        )
 
     ids, names, vecs, where = [], [], [], {}
     last_load = 0.0
@@ -109,7 +119,7 @@ def main():
             locs = face_recognition.face_locations(rgb, model="hog")
             encs = face_recognition.face_encodings(rgb, known_face_locations=locs)
 
-            for (top, right, bottom, left), enc in zip(locs, encs):
+            for (top, right, bottom, left), enc in zip(locs, encs):  # noqa: B905
                 label, color = "Not registered", (0, 0, 220)
                 if vecs:
                     dist = face_recognition.face_distance(vecs, enc)
@@ -121,26 +131,56 @@ def main():
                             last_action[eid] = now
                             here = where.get(eid)
                             if here == config.EVACUATION_CENTER_ID:
-                                print("%s is already inside this center (match %.3f)." % (name, dist[i]))
+                                print(
+                                    "%s is already inside this center (match %.3f)."
+                                    % (name, dist[i])
+                                )
                             elif here is not None:
-                                r = api.call("POST", "/transfers", json={"evacuee_id": eid, "from_center_id": here, "to_center_id": config.EVACUATION_CENTER_ID})
+                                r = api.call(
+                                    "POST",
+                                    "/transfers",
+                                    json={
+                                        "evacuee_id": eid,
+                                        "from_center_id": here,
+                                        "to_center_id": config.EVACUATION_CENTER_ID,
+                                    },
+                                )
                                 if r.status_code in (200, 201):
-                                    print("TRANSFERRED %s from center %s (match %.3f)" % (name, here, dist[i]))
+                                    print(
+                                        "TRANSFERRED %s from center %s (match %.3f)"
+                                        % (name, here, dist[i])
+                                    )
                                     where[eid] = config.EVACUATION_CENTER_ID
                                 else:
                                     print("Transfer failed for %s: %s" % (name, r.text[:120]))
                             else:
-                                r = api.call("POST", "/checkin", json={"evacuee_id": eid, "evacuation_center_id": config.EVACUATION_CENTER_ID, "event_type": "check_in"})
+                                r = api.call(
+                                    "POST",
+                                    "/checkin",
+                                    json={
+                                        "evacuee_id": eid,
+                                        "evacuation_center_id": config.EVACUATION_CENTER_ID,
+                                        "event_type": "check_in",
+                                    },
+                                )
                                 if r.status_code in (200, 201):
                                     print("CHECKED IN %s (match %.3f)" % (name, dist[i]))
                                     where[eid] = config.EVACUATION_CENTER_ID
                                 else:
                                     print("Check-in failed for %s: %s" % (name, r.text[:120]))
                 if config.SHOW_PREVIEW:
-                    t, r_, b, l = [int(v / scale) for v in (top, right, bottom, left)]
+                    t, r_, b, l = [int(v / scale) for v in (top, right, bottom, left)]  # noqa: E741
                     cv2.rectangle(frame, (l, t), (r_, b), color, 2)
                     cv2.rectangle(frame, (l, b), (r_, b + 28), color, cv2.FILLED)
-                    cv2.putText(frame, label, (l + 6, b + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                    cv2.putText(
+                        frame,
+                        label,
+                        (l + 6, b + 20),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6,
+                        (255, 255, 255),
+                        2,
+                    )
 
             if config.SHOW_PREVIEW:
                 cv2.imshow("BilisLikas 2.0 entrance camera (press q to stop)", frame)

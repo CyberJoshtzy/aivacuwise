@@ -10,6 +10,7 @@ Settings (in .env):
   SMTP_USER, SMTP_PASSWORD     Gmail address and its 16-letter App Password
   SMTP_HOST, SMTP_PORT         optional, default smtp.gmail.com and 465
 """
+
 import hashlib
 import hmac
 import os
@@ -38,6 +39,7 @@ router = APIRouter()
 
 class PasswordResetCode(Base):
     """Local only, never synced to the cloud. Stores a hash of the code, not the code itself."""
+
     __tablename__ = "password_reset_codes"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
@@ -51,8 +53,9 @@ class PasswordResetCode(Base):
 
 try:  # create the table on the real database if it does not exist yet
     from database import engine as _engine
+
     PasswordResetCode.__table__.create(bind=_engine, checkfirst=True)
-except Exception:
+except Exception:  # noqa: S110
     pass
 
 
@@ -105,15 +108,20 @@ def _options(user):
 
 
 def _message(code):
-    return ("Your BilisLikas 2.0 password reset code is %s. It expires in %d minutes. "
-            "If you did not ask for this, ignore this message." % (code, CODE_MINUTES))
+    return (
+        "Your BilisLikas 2.0 password reset code is %s. It expires in %d minutes. "
+        "If you did not ask for this, ignore this message." % (code, CODE_MINUTES)
+    )
 
 
 def send_email(to_address, code):
     user = (os.getenv("SMTP_USER") or "").strip()
     pw = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "").strip()
     if not user or not pw:
-        raise HTTPException(status_code=503, detail="Email sending is not set up on this server yet. Contact your City Admin.")
+        raise HTTPException(
+            status_code=503,
+            detail="Email sending is not set up on this server yet. Contact your City Admin.",
+        )
     msg = EmailMessage()
     msg["Subject"] = "BilisLikas 2.0 password reset code"
     msg["From"] = "BilisLikas 2.0 <%s>" % user
@@ -126,15 +134,24 @@ def send_email(to_address, code):
             s.login(user, pw)
             s.send_message(msg)
     except smtplib.SMTPAuthenticationError:
-        raise HTTPException(status_code=502, detail="The server's email login was rejected. Check SMTP_USER and SMTP_PASSWORD (App Password).")
+        raise HTTPException(  # noqa: B904
+            status_code=502,
+            detail="The server's email login was rejected. Check SMTP_USER and SMTP_PASSWORD (App Password).",
+        )
     except Exception:
-        raise HTTPException(status_code=502, detail="The email could not be sent. Check the server's internet connection and try again.")
+        raise HTTPException(  # noqa: B904
+            status_code=502,
+            detail="The email could not be sent. Check the server's internet connection and try again.",
+        )
 
 
 def _active_code(db, user):
-    return (db.query(PasswordResetCode)
-            .filter(PasswordResetCode.user_id == user.id, PasswordResetCode.used_at.is_(None))
-            .order_by(PasswordResetCode.id.desc()).first())
+    return (
+        db.query(PasswordResetCode)
+        .filter(PasswordResetCode.user_id == user.id, PasswordResetCode.used_at.is_(None))
+        .order_by(PasswordResetCode.id.desc())
+        .first()
+    )
 
 
 def _check_code(db, email, code):
@@ -152,7 +169,12 @@ def _check_code(db, email, code):
         row.attempts += 1
         db.commit()
         left = MAX_ATTEMPTS - row.attempts
-        raise HTTPException(status_code=400, detail="The code is not correct. %d tries left." % left if left else "Too many wrong tries. Request a new code.")
+        raise HTTPException(
+            status_code=400,
+            detail="The code is not correct. %d tries left." % left
+            if left
+            else "Too many wrong tries. Request a new code.",
+        )
     return user, row
 
 
@@ -164,7 +186,10 @@ def forgot(payload: ForgotIn, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No account uses this email address.")
     opts = _options(user)
     if not opts:
-        raise HTTPException(status_code=409, detail="This account has no email address saved. Contact your City Admin.")
+        raise HTTPException(
+            status_code=409,
+            detail="This account has no email address saved. Contact your City Admin.",
+        )
     return {"options": opts}
 
 
@@ -180,14 +205,24 @@ def send(payload: SendIn, db: Session = Depends(get_db)):
     now = datetime.utcnow()
     if last is not None and (now - last.created_at).total_seconds() < RESEND_SECONDS:
         wait = RESEND_SECONDS - int((now - last.created_at).total_seconds())
-        raise HTTPException(status_code=429, detail="Please wait %d seconds before requesting another code." % wait)
+        raise HTTPException(
+            status_code=429, detail="Please wait %d seconds before requesting another code." % wait
+        )
     code = "%06d" % secrets.randbelow(1000000)
     send_email(user.email, code)
     hint = mask_email(user.email)
-    db.query(PasswordResetCode).filter(PasswordResetCode.user_id == user.id,
-                                       PasswordResetCode.used_at.is_(None)).update({PasswordResetCode.used_at: now})
-    db.add(PasswordResetCode(user_id=user.id, code_hash=_hash(code), channel=channel, created_at=now,
-                             expires_at=now + timedelta(minutes=CODE_MINUTES)))
+    db.query(PasswordResetCode).filter(
+        PasswordResetCode.user_id == user.id, PasswordResetCode.used_at.is_(None)
+    ).update({PasswordResetCode.used_at: now})
+    db.add(
+        PasswordResetCode(
+            user_id=user.id,
+            code_hash=_hash(code),
+            channel=channel,
+            created_at=now,
+            expires_at=now + timedelta(minutes=CODE_MINUTES),
+        )
+    )
     db.commit()
     return {"sent": True, "channel": channel, "hint": hint, "expires_in_minutes": CODE_MINUTES}
 
@@ -202,7 +237,10 @@ def verify(payload: VerifyIn, db: Session = Depends(get_db)):
 def reset(payload: ResetIn, db: Session = Depends(get_db)):
     pw = payload.new_password or ""
     if len(pw) < 8 or not re.search(r"[A-Za-z]", pw) or not re.search(r"\d", pw):
-        raise HTTPException(status_code=422, detail="Use a password with at least 8 characters, including letters and a number.")
+        raise HTTPException(
+            status_code=422,
+            detail="Use a password with at least 8 characters, including letters and a number.",
+        )
     user, row = _check_code(db, payload.email, payload.code)
     user.password_hash = auth.get_password_hash(pw)
     row.used_at = datetime.utcnow()

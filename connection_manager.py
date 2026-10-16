@@ -1,11 +1,11 @@
-from typing import List
 from fastapi import WebSocket
+
 import models
 
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[dict] = []
+        self.active_connections: list[dict] = []
 
     async def connect(self, websocket: WebSocket, user: models.User):
         await websocket.accept()
@@ -21,7 +21,11 @@ class ConnectionManager:
         for conn in self.active_connections:
             user = conn["user"]
             target_barangay = message.get("barangay_id")
-            if user.role == "city_admin" or target_barangay is None or target_barangay == user.barangay_id:
+            if (
+                user.role == "city_admin"
+                or target_barangay is None
+                or target_barangay == user.barangay_id
+            ):
                 try:
                     await conn["websocket"].send_json(message)
                 except Exception:

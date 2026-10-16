@@ -1,0 +1,47 @@
+# Runs on GitHub's servers on every push and pull request.
+# Uses dummy secrets only. Tests run on in-memory SQLite, never on a real database.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    env:
+      # Dummy values so modules that read .env settings can be imported.
+      # Rename these to match the variable names your config.py or database.py expects.
+      DATABASE_URL: sqlite:///./ci.db
+      JWT_SECRET_KEY: ci-dummy-secret
+      SYNC_KEY: ci-dummy-sync-key
+      SMTP_USER: ci@example.com
+      SMTP_PASSWORD: ci-dummy-password
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+          pip install -r requirements-dev.txt
+
+      - name: Lint and security rules (ruff)
+        run: ruff check .
+
+      - name: Formatting
+        run: ruff format --check .
+
+      - name: Tests
+        run: pytest -q
+
+      - name: Known vulnerable dependencies (report only)
+        run: pip-audit
+        continue-on-error: true

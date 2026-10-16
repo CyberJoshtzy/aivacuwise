@@ -9,6 +9,7 @@ Residents do not sign up. They were pre-registered by their barangay, so they si
                          active evacuation in the barangay, assigned GPS tracker
 Residents never see other families, other barangays, or any staff dashboard data (RA 10173).
 """
+
 import base64
 import hashlib
 import hmac
@@ -32,15 +33,17 @@ _fails = {}
 
 
 class ResidentLogin(BaseModel):
-    first_name: str = ''
-    middle_name: str = ''
+    first_name: str = ""
+    middle_name: str = ""
     last_name: str
     birthdate: str  # YYYY-MM-DD
     mobile_number: str
 
 
 def _secret():
-    return (os.environ.get("JWT_SECRET_KEY") or os.environ.get("SECRET_KEY") or "bilislikas-resident").encode()
+    return (
+        os.environ.get("JWT_SECRET_KEY") or os.environ.get("SECRET_KEY") or "bilislikas-resident"
+    ).encode()
 
 
 def _make_token(evacuee_id):
@@ -55,7 +58,7 @@ def _read_token(token):
         good = hmac.new(_secret(), (eid + "." + exp).encode(), hashlib.sha256).hexdigest()
         if hmac.compare_digest(sig, good) and int(exp) > time.time():
             return int(eid)
-    except Exception:
+    except Exception:  # noqa: S110
         pass
     return None
 
@@ -87,33 +90,42 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
     recent = [t for t in _fails.get(ip, []) if now - t < FAIL_WINDOW]
     _fails[ip] = recent
     if len(recent) >= MAX_FAILS:
-        raise HTTPException(status_code=429, detail="Too many attempts. Wait 10 minutes and try again.")
+        raise HTTPException(
+            status_code=429, detail="Too many attempts. Wait 10 minutes and try again."
+        )
     last = " ".join(p.last_name.split()).lower()
-    first = " ".join((p.first_name or '').split()).lower()
-    middle = " ".join((p.middle_name or '').split()).lower()
+    first = " ".join((p.first_name or "").split()).lower()
+    middle = " ".join((p.middle_name or "").split()).lower()
     mobile = _digits(p.mobile_number)
     try:
         bday = datetime.strptime(p.birthdate.strip(), "%Y-%m-%d").date()
     except ValueError:
-        raise HTTPException(status_code=422, detail="Choose your complete birthday.")
+        raise HTTPException(status_code=422, detail="Choose your complete birthday.")  # noqa: B904
     if not first or not last or not re.fullmatch(r"09\d{9}", mobile):
-        raise HTTPException(status_code=422, detail="Enter your first name, last name and a valid mobile number, such as 0917 123 4567.")
+        raise HTTPException(
+            status_code=422,
+            detail="Enter your first name, last name and a valid mobile number, such as 0917 123 4567.",
+        )
     E = models.Evacuee
     match = None
     for e in db.query(E).filter(E.birthdate.isnot(None)).all():
         if e.birthdate.date() != bday:
             continue
         words = (e.full_name or "").lower().split()
-        if not words or " ".join(words[-len(last.split()):]) != last:
+        if not words or " ".join(words[-len(last.split()) :]) != last:
             continue
-        if " ".join(words[:len(first.split())]) != first:
+        if " ".join(words[: len(first.split())]) != first:
             continue
         if middle and middle not in " ".join(words):
             continue
         nums = {_digits(e.contact_number)}
         if e.household_id:
             h = db.get(models.Household, e.household_id)
-            head = db.get(E, h.head_of_family_evacuee_id) if h and h.head_of_family_evacuee_id else None
+            head = (
+                db.get(E, h.head_of_family_evacuee_id)
+                if h and h.head_of_family_evacuee_id
+                else None
+            )
             if head:
                 nums.add(_digits(head.contact_number))
         if mobile in nums:
@@ -121,9 +133,16 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
             break
     if not match:
         _fails[ip].append(now)
-        raise HTTPException(status_code=401, detail="No pre-registered resident matches these details. Check your name, birthday and mobile number, or ask your barangay office.")
+        raise HTTPException(
+            status_code=401,
+            detail="No pre-registered resident matches these details. Check your name, birthday and mobile number, or ask your barangay office.",
+        )
     _fails.pop(ip, None)
-    return {"token": _make_token(match.id), "full_name": match.full_name, "expires_in_hours": TOKEN_HOURS}
+    return {
+        "token": _make_token(match.id),
+        "full_name": match.full_name,
+        "expires_in_hours": TOKEN_HOURS,
+    }
 
 
 def _current_resident(authorization: str = Header(default=""), db: Session = Depends(get_db)):
@@ -136,22 +155,46 @@ def _current_resident(authorization: str = Header(default=""), db: Session = Dep
 
 
 def _status(e, db):
-    last = (db.query(models.CheckinRecord).filter(models.CheckinRecord.evacuee_id == e.id)
-            .order_by(models.CheckinRecord.id.desc()).first())
+    last = (
+        db.query(models.CheckinRecord)
+        .filter(models.CheckinRecord.evacuee_id == e.id)
+        .order_by(models.CheckinRecord.id.desc())
+        .first()
+    )
     if last and last.event_type == "check_in":
         c = db.get(models.EvacuationCenter, last.evacuation_center_id)
-        return {"accounted": True, "center": c.name if c else None, "center_address": c.address if c else None, "since": _iso(last.timestamp)}
-    return {"accounted": False, "center": None, "center_address": None, "since": _iso(last.timestamp) if last else None}
+        return {
+            "accounted": True,
+            "center": c.name if c else None,
+            "center_address": c.address if c else None,
+            "since": _iso(last.timestamp),
+        }
+    return {
+        "accounted": False,
+        "center": None,
+        "center_address": None,
+        "since": _iso(last.timestamp) if last else None,
+    }
 
 
 def _history(eid, db, limit=30):
-    rows = (db.query(models.CheckinRecord).filter(models.CheckinRecord.evacuee_id == eid)
-            .order_by(models.CheckinRecord.id.desc()).limit(limit).all())
+    rows = (
+        db.query(models.CheckinRecord)
+        .filter(models.CheckinRecord.evacuee_id == eid)
+        .order_by(models.CheckinRecord.id.desc())
+        .limit(limit)
+        .all()
+    )
     out = []
     for r in rows:
         c = db.get(models.EvacuationCenter, r.evacuation_center_id)
-        out.append({"event": "Checked in" if r.event_type == "check_in" else "Checked out",
-                    "center": c.name if c else None, "time": _iso(r.timestamp)})
+        out.append(
+            {
+                "event": "Checked in" if r.event_type == "check_in" else "Checked out",
+                "center": c.name if c else None,
+                "time": _iso(r.timestamp),
+            }
+        )
     return out
 
 
@@ -162,38 +205,76 @@ def resident_me(e=Depends(_current_resident), db: Session = Depends(get_db)):
     tracker = db.query(models.Tracker).filter(models.Tracker.assigned_evacuee_id == e.id).first()
     tracker_info = None
     if tracker:
-        ping = (db.query(models.GpsPing).filter(models.GpsPing.tracker_id == tracker.id)
-                .order_by(models.GpsPing.id.desc()).first())
-        tracker_info = {"device_id": tracker.device_id, "battery": tracker.battery_level,
-                        "last_signal": _iso(ping.timestamp) if ping else None}
+        ping = (
+            db.query(models.GpsPing)
+            .filter(models.GpsPing.tracker_id == tracker.id)
+            .order_by(models.GpsPing.id.desc())
+            .first()
+        )
+        tracker_info = {
+            "device_id": tracker.device_id,
+            "battery": tracker.battery_level,
+            "last_signal": _iso(ping.timestamp) if ping else None,
+        }
     family, head_name = [], None
     if e.household_id:
         h = db.get(models.Household, e.household_id)
         if h and h.head_of_family_evacuee_id:
             head = db.get(E, h.head_of_family_evacuee_id)
             head_name = head.full_name if head else None
-        for m in db.query(E).filter(E.household_id == e.household_id, E.id != e.id).order_by(E.full_name).all():
+        for m in (
+            db.query(E)
+            .filter(E.household_id == e.household_id, E.id != e.id)
+            .order_by(E.full_name)
+            .all()
+        ):
             st = _status(m, db)
-            family.append({"name": m.full_name, "age": _age(m.birthdate), "sex": m.sex,
-                           "head": bool(m.is_head_of_family), "accounted": st["accounted"],
-                           "center": st["center"], "since": st["since"], "history": _history(m.id, db, 10)})
+            family.append(
+                {
+                    "name": m.full_name,
+                    "age": _age(m.birthdate),
+                    "sex": m.sex,
+                    "head": bool(m.is_head_of_family),
+                    "accounted": st["accounted"],
+                    "center": st["center"],
+                    "since": st["since"],
+                    "history": _history(m.id, db, 10),
+                }
+            )
     incident = None
     if e.registered_barangay_id:
-        I = models.Incident
-        i = (db.query(I).filter(I.barangay_id == e.registered_barangay_id, I.ended_at.is_(None))
-             .order_by(I.id.desc()).first())
+        I = models.Incident  # noqa: E741
+        i = (
+            db.query(I)
+            .filter(I.barangay_id == e.registered_barangay_id, I.ended_at.is_(None))
+            .order_by(I.id.desc())
+            .first()
+        )
         if i:
-            c = db.get(models.EvacuationCenter, i.evacuation_center_id) if i.evacuation_center_id else None
-            incident = {"disaster_type": i.disaster_type, "started_at": _iso(i.started_at),
-                        "center": c.name if c else None, "center_address": c.address if c else None}
+            c = (
+                db.get(models.EvacuationCenter, i.evacuation_center_id)
+                if i.evacuation_center_id
+                else None
+            )
+            incident = {
+                "disaster_type": i.disaster_type,
+                "started_at": _iso(i.started_at),
+                "center": c.name if c else None,
+                "center_address": c.address if c else None,
+            }
     return {
         "profile": {
-            "full_name": e.full_name, "birthdate": e.birthdate.date().isoformat() if e.birthdate else None,
-            "age": _age(e.birthdate), "sex": e.sex, "civil_status": e.civil_status,
-            "address": e.address, "contact_number": e.contact_number,
+            "full_name": e.full_name,
+            "birthdate": e.birthdate.date().isoformat() if e.birthdate else None,
+            "age": _age(e.birthdate),
+            "sex": e.sex,
+            "civil_status": e.civil_status,
+            "address": e.address,
+            "contact_number": e.contact_number,
             "barangay": brgy.name if brgy else getattr(e, "home_barangay", None),
             "special_needs": [x for x in (e.special_needs or "").split(",") if x],
-            "head_of_family": bool(e.is_head_of_family), "family_head": head_name,
+            "head_of_family": bool(e.is_head_of_family),
+            "family_head": head_name,
             "face_registered": bool(e.facial_embedding),
         },
         "status": _status(e, db),

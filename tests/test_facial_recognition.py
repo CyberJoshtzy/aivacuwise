@@ -39,9 +39,7 @@ def test_facial_embedding_marks_identification_method(client, staff_headers, eva
     assert match["identification_method"] == "facial_recognition"
 
 
-def test_enrolled_faces_excludes_evacuees_without_embeddings(
-    client, staff_headers, evacuee
-):
+def test_enrolled_faces_excludes_evacuees_without_embeddings(client, staff_headers, evacuee):
     # `evacuee` was never given a facial_embedding, so it must not appear here.
     enrolled = client.get("/evacuees/enrolled_faces", headers=staff_headers)
     ids = [f["evacuee_id"] for f in enrolled.json()]

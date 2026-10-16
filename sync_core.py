@@ -7,6 +7,7 @@ turned back into a local id on arrival.
 Conflict rule: last write wins, by updated_at. Check-ins, transfers and pings are events that are
 only ever added, so they never conflict.
 """
+
 import datetime as _dt
 import enum
 
@@ -18,27 +19,62 @@ import models
 # Order matters: parents before children.
 # (table name, model, {fk column: parent model}, natural-key columns that must stay unique)
 SPEC = [
-    ('barangays', models.Barangay, {}, ['name']),
-    ('users', models.User, {'barangay_id': models.Barangay}, ['username', 'email']),
-    ('evacuation_centers', models.EvacuationCenter, {'barangay_id': models.Barangay}, []),
-    ('households', models.Household, {'registered_barangay_id': models.Barangay,
-                                      'head_of_family_evacuee_id': models.Evacuee}, []),
-    ('evacuees', models.Evacuee, {'registered_barangay_id': models.Barangay, 'household_id': models.Household}, []),
-    ('trackers', models.Tracker, {'assigned_evacuee_id': models.Evacuee}, ['device_id']),
-    ('checkin_records', models.CheckinRecord, {'evacuee_id': models.Evacuee,
-                                               'evacuation_center_id': models.EvacuationCenter}, []),
-    ('transfers', models.Transfer, {'evacuee_id': models.Evacuee, 'from_center_id': models.EvacuationCenter,
-                                    'to_center_id': models.EvacuationCenter, 'approved_by': models.User}, []),
-    ('tracker_pings', models.TrackerPing, {'tracker_id': models.Tracker,
-                                           'evacuation_center_id': models.EvacuationCenter}, []),
-    ('gps_pings', models.GpsPing, {'tracker_id': models.Tracker}, []),
-    ('incidents', models.Incident, {'barangay_id': models.Barangay, 'evacuation_center_id': models.EvacuationCenter,
-                                    'started_by': models.User, 'ended_by': models.User}, []),
+    ("barangays", models.Barangay, {}, ["name"]),
+    ("users", models.User, {"barangay_id": models.Barangay}, ["username", "email"]),
+    ("evacuation_centers", models.EvacuationCenter, {"barangay_id": models.Barangay}, []),
+    (
+        "households",
+        models.Household,
+        {"registered_barangay_id": models.Barangay, "head_of_family_evacuee_id": models.Evacuee},
+        [],
+    ),
+    (
+        "evacuees",
+        models.Evacuee,
+        {"registered_barangay_id": models.Barangay, "household_id": models.Household},
+        [],
+    ),
+    ("trackers", models.Tracker, {"assigned_evacuee_id": models.Evacuee}, ["device_id"]),
+    (
+        "checkin_records",
+        models.CheckinRecord,
+        {"evacuee_id": models.Evacuee, "evacuation_center_id": models.EvacuationCenter},
+        [],
+    ),
+    (
+        "transfers",
+        models.Transfer,
+        {
+            "evacuee_id": models.Evacuee,
+            "from_center_id": models.EvacuationCenter,
+            "to_center_id": models.EvacuationCenter,
+            "approved_by": models.User,
+        },
+        [],
+    ),
+    (
+        "tracker_pings",
+        models.TrackerPing,
+        {"tracker_id": models.Tracker, "evacuation_center_id": models.EvacuationCenter},
+        [],
+    ),
+    ("gps_pings", models.GpsPing, {"tracker_id": models.Tracker}, []),
+    (
+        "incidents",
+        models.Incident,
+        {
+            "barangay_id": models.Barangay,
+            "evacuation_center_id": models.EvacuationCenter,
+            "started_by": models.User,
+            "ended_by": models.User,
+        },
+        [],
+    ),
 ]
 BY_TABLE = {t: (cls, fks, keys) for t, cls, fks, keys in SPEC}
 ORDER = {t: i for i, (t, _c, _f, _k) in enumerate(SPEC)}
-SKIP_COLUMNS = {'id', 'sync_dirty'}
-ALIAS_PREFIX = 'alias:'
+SKIP_COLUMNS = {"id", "sync_dirty"}
+ALIAS_PREFIX = "alias:"
 
 
 def _tname(cls):
@@ -48,7 +84,7 @@ def _tname(cls):
 def _parse_time(v):
     if v is None or isinstance(v, _dt.datetime):
         return v
-    return _dt.datetime.fromisoformat(str(v).replace('Z', ''))
+    return _dt.datetime.fromisoformat(str(v).replace("Z", ""))
 
 
 # ---------------------------------------------------------------- outgoing
@@ -75,13 +111,17 @@ def serialize(db, obj, cache=None):
         elif isinstance(v, enum.Enum):
             v = v.value
         data[name] = v
-    return {'table': table, 'uuid': obj.uuid, 'data': data}
+    return {"table": table, "uuid": obj.uuid, "data": data}
 
 
 # ---------------------------------------------------------------- incoming
 def _aliases(db):
-    return {r.key[len(ALIAS_PREFIX):]: r.value for r in
-            db.query(models.SyncState).filter(models.SyncState.key.like(ALIAS_PREFIX + '%')).all()}
+    return {
+        r.key[len(ALIAS_PREFIX) :]: r.value
+        for r in db.query(models.SyncState)
+        .filter(models.SyncState.key.like(ALIAS_PREFIX + "%"))
+        .all()
+    }
 
 
 def _find(db, cls, uuid, aliases):
@@ -97,17 +137,17 @@ def apply_rows(db, rows):
     had this or a newer version; aliased = linked to the same record registered here; waiting = its
     parent has not arrived yet, so the sender must send it again later.
     Must be called with db.info['sync_import'] = True so local stamping is switched off."""
-    db.info['sync_import'] = True
+    db.info["sync_import"] = True
     aliases = _aliases(db)
     applied, skipped, aliased, waiting, pending = [], [], [], [], []
-    for row in sorted(rows, key=lambda r: ORDER.get(r.get('table'), 99)):
-        table, uuid, data = row.get('table'), row.get('uuid'), dict(row.get('data') or {})
+    for row in sorted(rows, key=lambda r: ORDER.get(r.get("table"), 99)):
+        table, uuid, data = row.get("table"), row.get("uuid"), dict(row.get("data") or {})
         if table not in BY_TABLE or not uuid:
             skipped.append(uuid)
             continue
         cls, fks, keys = BY_TABLE[table]
         obj = _find(db, cls, uuid, aliases)
-        incoming_time = _parse_time(data.get('updated_at'))
+        incoming_time = _parse_time(data.get("updated_at"))
         if obj is not None:
             if obj.uuid != uuid:  # an alias: same real-world record known under another uuid here
                 skipped.append(uuid)
@@ -172,11 +212,11 @@ def apply_rows(db, rows):
 
 def apply_tombstones(db, tombstones):
     """Delete records that were deleted on another server. Returns the list of (table, uuid) removed."""
-    db.info['sync_import'] = True
+    db.info["sync_import"] = True
     aliases = _aliases(db)
     removed = []
-    for t in sorted(tombstones, key=lambda x: -ORDER.get(x.get('table'), 0)):
-        table, uuid = t.get('table'), t.get('uuid')
+    for t in sorted(tombstones, key=lambda x: -ORDER.get(x.get("table"), 0)):
+        table, uuid = t.get("table"), t.get("uuid")
         if table not in BY_TABLE:
             continue
         cls = BY_TABLE[table][0]
@@ -185,13 +225,22 @@ def apply_tombstones(db, tombstones):
             continue
         try:
             with db.begin_nested():
-                if table == 'evacuees':  # same clean-up as the local Delete Evacuee button
-                    db.query(models.Tracker).filter(models.Tracker.assigned_evacuee_id == obj.id).update(
-                        {models.Tracker.assigned_evacuee_id: None}, synchronize_session=False)
-                    db.query(models.Household).filter(models.Household.head_of_family_evacuee_id == obj.id).update(
-                        {models.Household.head_of_family_evacuee_id: None}, synchronize_session=False)
-                    db.query(models.Transfer).filter(models.Transfer.evacuee_id == obj.id).delete(synchronize_session=False)
-                    db.query(models.CheckinRecord).filter(models.CheckinRecord.evacuee_id == obj.id).delete(synchronize_session=False)
+                if table == "evacuees":  # same clean-up as the local Delete Evacuee button
+                    db.query(models.Tracker).filter(
+                        models.Tracker.assigned_evacuee_id == obj.id
+                    ).update({models.Tracker.assigned_evacuee_id: None}, synchronize_session=False)
+                    db.query(models.Household).filter(
+                        models.Household.head_of_family_evacuee_id == obj.id
+                    ).update(
+                        {models.Household.head_of_family_evacuee_id: None},
+                        synchronize_session=False,
+                    )
+                    db.query(models.Transfer).filter(models.Transfer.evacuee_id == obj.id).delete(
+                        synchronize_session=False
+                    )
+                    db.query(models.CheckinRecord).filter(
+                        models.CheckinRecord.evacuee_id == obj.id
+                    ).delete(synchronize_session=False)
                 db.delete(obj)
                 db.flush()
             removed.append((table, uuid))
@@ -205,7 +254,13 @@ def dirty_rows(db, limit=300):
     """Records created or changed on this server that the hub has not confirmed yet, parents first."""
     rows, cache = [], {}
     for _t, cls, _f, _k in SPEC:
-        for obj in db.query(cls).filter(cls.sync_dirty.is_(True)).order_by(cls.id).limit(limit - len(rows)).all():
+        for obj in (
+            db.query(cls)
+            .filter(cls.sync_dirty.is_(True))
+            .order_by(cls.id)
+            .limit(limit - len(rows))
+            .all()
+        ):
             rows.append(serialize(db, obj, cache))
         if len(rows) >= limit:
             break
@@ -215,7 +270,8 @@ def dirty_rows(db, limit=300):
 def mark_clean(db, rows):
     """After the hub accepted rows, clear their flag, unless the record changed again meanwhile."""
     for r in rows:
-        cls = BY_TABLE[r['table']][0]
-        when = _parse_time(r['data'].get('updated_at'))
-        db.query(cls).filter(cls.uuid == r['uuid'], cls.updated_at == when).update(
-            {cls.sync_dirty: False}, synchronize_session=False)
+        cls = BY_TABLE[r["table"]][0]
+        when = _parse_time(r["data"].get("updated_at"))
+        db.query(cls).filter(cls.uuid == r["uuid"], cls.updated_at == when).update(
+            {cls.sync_dirty: False}, synchronize_session=False
+        )

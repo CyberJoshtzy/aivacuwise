@@ -21,14 +21,13 @@ def test_login_rejects_wrong_password(client, admin_headers):
 
 
 def test_protected_route_rejects_missing_token(client):
+    client.headers.pop("Authorization", None)  # this test checks the not-signed-in case
     resp = client.get("/users/me")
     assert resp.status_code == 401
 
 
 def test_protected_route_rejects_garbage_token(client):
-    resp = client.get(
-        "/users/me", headers={"Authorization": "Bearer not-a-real-token"}
-    )
+    resp = client.get("/users/me", headers={"Authorization": "Bearer not-a-real-token"})
     assert resp.status_code == 401
 
 

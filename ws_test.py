@@ -1,8 +1,10 @@
 import asyncio
-import websockets
 import sys
 
+import websockets
+
 token = sys.argv[1]
+
 
 async def listen():
     uri = f"ws://127.0.0.1:8000/ws/dashboard?token={token}"
@@ -11,5 +13,6 @@ async def listen():
         while True:
             message = await ws.recv()
             print("Received:", message)
+
 
 asyncio.run(listen())

@@ -6,7 +6,7 @@ BACKEND_URL = "http://127.0.0.1:8000"
 
 # Barangay official account the camera signs in with (test account).
 USERNAME = "brgytest"
-PASSWORD = "TestPass123!"
+PASSWORD = "TestPass123!"  # noqa: S105
 
 # The evacuation center this camera guards. 1 = Test Elementary School.
 EVACUATION_CENTER_ID = 2
