@@ -9,14 +9,12 @@
 <style>
 .preview { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #0E1F4F; border: 1px solid var(--line); }
 .preview iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .stats .kpi .value { font-size: 28px; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
 .link-box { display: flex; gap: 8px; }
 .link-box input { flex-grow: 1; min-width: 0; height: 44px; font-size: 13px; background: var(--bg); }
 .steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.55; }
-.nophoto { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
-.nophoto li { padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 14px; display: flex; justify-content: space-between; gap: 8px; }
 @media (max-width: 1200px) { .layout { grid-template-columns: minmax(0, 1fr); } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 </head>
@@ -27,7 +25,7 @@
     <div class="page-head">
       <div>
         <h1>Entrance Display</h1>
-        <p>What evacuees see on the monitor at the evacuation center entrance. Faces move from "Not yet here" to "Just arrived" as the camera identifies them.</p>
+        <p>What evacuees see on the monitor at the evacuation center entrance. Faces move from "Unaccounted" to "Accounted" as the camera identifies them.</p>
       </div>
       <div class="toolbar">
         <label for="centerSel" class="sr-only">Evacuation center</label>
@@ -38,10 +36,9 @@
     <div id="loadError" class="form-error" role="alert" hidden></div>
 
     <div class="stats">
-      <div class="kpi"><div class="label">Still expected</div><div class="value" id="sWait">0</div><div class="sub">Shown under "Not yet here"</div></div>
-      <div class="kpi"><div class="label">Arrived or safe</div><div class="value tone-green" id="sSafe">0</div><div class="sub" id="sSafeSub"></div></div>
-      <div class="kpi"><div class="label">Priority still expected</div><div class="value tone-amber" id="sPrio">0</div><div class="sub">Seniors, PWD, pregnant</div></div>
-      <div class="kpi"><div class="label">Without a photo</div><div class="value" id="sNoPhoto">0</div><div class="sub">Shown with initials</div></div>
+      <div class="kpi"><div class="label">Unaccounted</div><div class="value" id="sWait">0</div><div class="sub">Shown under "Unaccounted"</div></div>
+      <div class="kpi"><div class="label">Accounted</div><div class="value tone-green" id="sSafe">0</div><div class="sub" id="sSafeSub"></div></div>
+      <div class="kpi"><div class="label">Priority unaccounted</div><div class="value tone-amber" id="sPrio">0</div><div class="sub">Seniors, children under 5, PWD, pregnant, medical</div></div>
     </div>
 
     <div class="layout">
@@ -61,16 +58,11 @@
             <li>Monitor 2 (facing officials): open Live Evacuation in TV mode: <a id="tvLink" href="live.html?tv=1" target="_blank" rel="noopener">live.html?tv=1</a></li>
           </ol>
         </section>
-        <section class="panel">
-          <div class="panel-head"><h2 style="font-size:17px">Residents without a photo</h2><span class="note" id="npCount"></span></div>
-          <ul class="nophoto" id="noPhoto"></ul>
-          <p class="notice">They were registered before photos were saved, so the display shows their initials. Recognition still works for anyone with saved face data.</p>
-        </section>
       </div>
     </div>
   </main>
 </div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=44"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -112,16 +104,10 @@
     try {
       const d = await BL.api('/display/' + $('centerSel').value);
       const prio = d.waiting.filter((w) => w.tags.length).length;
-      const noPhoto = d.waiting.concat(d.arrived).filter((p) => !p.has_photo);
       $('sWait').textContent = d.waiting.length;
       $('sSafe').innerHTML = d.safe_total + ' <small>of ' + d.expected_total + '</small>';
       $('sSafeSub').textContent = d.expected_total ? Math.round(d.safe_total / d.expected_total * 100) + '% of registered residents' : 'No residents registered yet';
       $('sPrio').textContent = prio;
-      $('sNoPhoto').textContent = noPhoto.length;
-      $('npCount').textContent = noPhoto.length + ' resident(s)';
-      $('noPhoto').innerHTML = noPhoto.length
-        ? noPhoto.map((p) => '<li><strong style="color:var(--navy)">' + BL.esc(p.name) + '</strong><span style="color:var(--muted)">' + (p.time ? 'Arrived' : 'Not yet here') + '</span></li>').join('')
-        : '<li style="color:var(--muted)">Everyone shown on the display has a photo.</li>';
       $('loadError').hidden = true;
     } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
   }

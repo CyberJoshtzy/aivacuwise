@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>City Hall Access Request · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=11">
+<style>
+body { background: #F4F6FA; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; display: flex; flex-direction: column; gap: 18px; }
+.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.head h1 { font-size: 30px; font-weight: 800; margin: 0; }
+.head p { color: var(--muted); margin: 6px 0 0; }
+.card { background: #FFFFFF; border: 1px solid #E3E8F2; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 2px 10px rgba(11,31,77,.04); }
+.card-h { display: flex; gap: 14px; align-items: flex-start; }
+.card-h .n { width: 34px; height: 34px; border-radius: 10px; background: var(--navy); color: #FFFFFF; display: grid; place-items: center; font-weight: 800; flex-shrink: 0; }
+.card-h h2 { font-size: 18px; margin: 0; color: var(--navy); }
+.card-h p { font-size: 13px; color: var(--muted); margin: 2px 0 0; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.field-group { margin: 0; }
+select.input { width: 100%; max-width: 100%; text-overflow: ellipsis; }
+.meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+.meter i { height: 6px; border-radius: 3px; background: #DCE1EA; transition: background .2s; }
+.hint { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.confirm { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.5; color: #3D4659; cursor: pointer; }
+.confirm input { width: 20px; height: 20px; margin-top: 1px; flex-shrink: 0; accent-color: var(--navy); }
+.foot { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.note { padding: 12px 14px; border-radius: 12px; background: #EEF2FF; color: var(--navy); font-size: 13px; line-height: 1.5; }
+@media (max-width: 640px) { .row, .row3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="admin-signin.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Back to City Hall sign in</a>
+  <div id="error" class="form-error" role="alert" hidden></div>
+
+  <form id="form" novalidate style="display:flex;flex-direction:column;gap:18px">
+    <div class="card">
+      <div class="card-h"><span class="n">1</span><div><h2>Your information</h2><p>Use your name as it appears on your City Hall ID.</p></div></div>
+      <div class="row3">
+        <div class="field-group"><label for="first">First name</label><input id="first" class="input" placeholder="e.g., Juan" autocomplete="given-name"></div>
+        <div class="field-group"><label for="middle">Middle name <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="middle" class="input" placeholder="e.g., Santos" autocomplete="additional-name"></div>
+        <div class="field-group"><label for="last">Last name</label><input id="last" class="input" placeholder="e.g., Dela Cruz" autocomplete="family-name"></div>
+      </div>
+      <div class="row">
+        <div class="field-group"><label for="email">Official email address</label><input id="email" class="input" inputmode="email" autocomplete="email" placeholder="name@manila.gov.ph"></div>
+        <div class="field-group"><label for="mobile">Contact number</label><input id="mobile" class="input" inputmode="tel" placeholder="0917 123 4567"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="n">2</span><div><h2>Position in City Hall</h2><p>Choosing a position fills in the office for you.</p></div></div>
+      <div class="field-group"><label for="position">Position</label><select id="position" class="input"><option value="" disabled selected>Select Position</option></select></div>
+      <div class="row">
+        <div class="field-group"><label for="office">Office / Department</label><select id="office" class="input"><option value="" disabled selected>Select Office / Department</option></select></div>
+        <div class="field-group"><label for="emp">Employee ID number</label><input id="emp" class="input" placeholder="As printed on your City Hall ID"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="n">3</span><div><h2>Account security</h2><p>Use a password only you know.</p></div></div>
+      <div class="row">
+        <div class="field-group"><label for="pw">Password</label>
+          <div class="input-wrap"><input id="pw" class="input" type="password" autocomplete="new-password" placeholder="At least 8 characters"><button type="button" class="eye" id="eye1"></button></div>
+          <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <div class="hint" id="pwHint" style="color:var(--muted)">Use 8+ characters with letters and a number.</div>
+        </div>
+        <div class="field-group"><label for="pw2">Confirm password</label>
+          <div class="input-wrap"><input id="pw2" class="input" type="password" autocomplete="new-password" placeholder="Re-enter password"><button type="button" class="eye" id="eye2"></button></div>
+          <div class="hint" id="matchHint"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="confirm"><input type="checkbox" id="agree">I agree to handle evacuee data according to the Data Privacy Act of 2012 (RA 10173).</label>
+      <div class="foot">
+        <button class="btn btn-primary btn-lg" type="submit" id="submit">Submit Request</button>
+        <span style="font-size:14px;color:var(--muted)">Already have an account? <a href="admin-signin.html" style="font-weight:700">Sign in</a></span>
+      </div>
+    </div>
+  </form>
+</div>
+<script src="app.js?v=44"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  BL.eyeToggle($('pw'), $('eye1'));
+  BL.eyeToggle($('pw2'), $('eye2'));
+  const err = $('error');
+  const fail = (m) => { err.textContent = m; err.hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const officeFor = {};
+  try {
+    const cfg = await (await fetch('/admin/register/config')).json();
+    cfg.positions.forEach((p) => { officeFor[p.value] = p.office; $('position').add(new Option(p.label, p.value)); });
+    cfg.offices.forEach((o) => $('office').add(new Option(o.label, o.value)));
+  } catch (e) { fail('Cannot reach the server. Check the network connection.'); }
+  $('position').addEventListener('change', (e) => { $('office').value = officeFor[e.target.value] || ''; });
+
+  function strength() {
+    const pw = $('pw').value, pw2 = $('pw2').value;
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    const colors = ['#B91C1C', '#B45309', '#1D4ED8', '#15803D'], labels = ['Weak', 'Fair', 'Good', 'Strong'];
+    document.querySelectorAll('.meter i').forEach((el, i) => { el.style.background = i < score ? colors[score - 1] : '#DCE1EA'; });
+    $('pwHint').textContent = pw ? 'Strength: ' + labels[Math.max(score, 1) - 1] : 'Use 8+ characters with letters and a number.';
+    $('pwHint').style.color = pw ? colors[Math.max(score, 1) - 1] : 'var(--muted)';
+    $('matchHint').textContent = pw2 ? (pw2 === pw ? 'Passwords match' : 'Passwords do not match') : '';
+    $('matchHint').style.color = pw2 === pw ? 'var(--green)' : 'var(--red)';
+  }
+  $('pw').addEventListener('input', strength);
+  $('pw2').addEventListener('input', strength);
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.hidden = true;
+    const v = (id) => $(id).value.trim();
+    if (!v('first') || !v('last')) return fail('Enter your first and last name.');
+    if (!v('email')) return fail('Enter your official email address.');
+    if (!v('mobile')) return fail('Enter your contact number.');
+    if (!v('position')) return fail('Choose your position.');
+    if (!v('office')) return fail('Choose your office or department.');
+    if (!v('emp')) return fail('Enter your employee ID number.');
+    const pw = $('pw').value;
+    if (pw.length < 8 || !/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return fail('Use 8+ characters with letters and a number.');
+    if (pw !== $('pw2').value) return fail('The passwords do not match.');
+    if (!$('agree').checked) return fail('Please agree to the Data Privacy Act notice.');
+    const btn = $('submit'); btn.disabled = true; btn.textContent = 'Submitting...';
+    try {
+      const r = await fetch('/admin/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        first_name: v('first'), middle_name: v('middle'), last_name: v('last'), email: v('email'), mobile_number: v('mobile'),
+        position: v('position'), office: v('office'), employee_id: v('emp'), password: pw }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(Array.isArray(d.detail) ? d.detail.map((x) => x.msg).join(', ') : (d.detail || 'Something went wrong.'));
+      location.href = 'admin-signin.html?email=' + encodeURIComponent(d.email);
+    } catch (ex) { fail(ex.message); } finally { btn.disabled = false; btn.textContent = 'Submit Request'; }
+  });
+
+  // hide the Emergency Hotlines button on this page
+  const hide = () => { const b = document.getElementById('hotlineBtn'); if (b) b.remove(); };
+  hide(); new MutationObserver(hide).observe(document.body, { childList: true });
+})();
+</script>
+</body>
+</html>

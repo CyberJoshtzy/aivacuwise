@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Accounts · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=11">
+<style>
+.tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tools { flex-wrap: nowrap; }
+.tools .search { flex: 0 0 260px !important; width: 260px !important; max-width: 260px !important; margin: 0 !important; position: relative; }
+.tools .search .input { width: 100% !important; }
+.tools select.input { flex: 0 0 auto !important; width: 200px !important; height: 44px; margin: 0 !important; }
+@media (max-width: 1100px) { .tools { flex-wrap: wrap; } .tools .search, .tools select.input { flex: 1 1 100% !important; width: 100% !important; max-width: none !important; } }
+.st { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.st.pending { background: #FFF7ED; color: #B45309; } .st.active { background: #E8F7EE; color: #15803D; } .st.disabled, .st.rejected { background: #FDECEC; color: #B91C1C; }
+.acts { display: flex; gap: 6px; justify-content: flex-end; }
+.acts .btn { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.sumrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.sumrow .chip { font-size: 13px; padding: 5px 12px; }
+table.data td { vertical-align: middle; }
+.you { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: 10px; background: #EEF2FF; color: var(--navy); font-size: 13px; font-weight: 800; white-space: nowrap; }
+.aptab { border: 1.5px solid #E3E8F2; background: #FFFFFF; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--navy); }
+.aptab[aria-pressed="true"] { background: var(--navy); color: #FFFFFF; border-color: var(--navy); }
+.aptab .cnt { display: inline-block; min-width: 22px; padding: 0 7px; margin-left: 4px; border-radius: 999px; background: #FFF7ED; color: #B45309; font-size: 12px; }
+.aptab[aria-pressed="true"] .cnt { background: #F59E0B; color: #FFFFFF; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar city"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1>User Accounts</h1>
+        <p id="sub"></p>
+      </div>
+    </div>
+    <div id="err" class="form-error" role="alert" hidden></div>
+    <div class="sumrow" id="sum"></div>
+
+    <section class="panel" id="apPanel" hidden style="border-left:4px solid #F59E0B">
+      <div class="panel-head"><h2>Waiting for your approval</h2><span class="note" id="apNote"></span></div>
+      <div class="tabs" role="tablist" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="aptab" data-tab="acc" aria-pressed="true">Account verification <span id="nAcc" class="cnt">0</span></button>
+        <button type="button" class="aptab" data-tab="ctr" aria-pressed="false">Barangay requests (edit / delete) <span id="nCtr" class="cnt">0</span></button>
+        <button type="button" class="aptab" data-tab="done" aria-pressed="false">Recently reviewed</button>
+      </div>
+      <div id="apAcc">
+        <p style="font-size:13px;color:var(--muted);margin:0 0 8px">Check the name, position and employee ID against the official list before approving. Approved accounts can sign in right away.</p>
+        <div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Position / Barangay</th><th>Email and mobile</th><th>Employee ID</th><th>What the request adds</th><th style="text-align:right">Decision</th></tr></thead><tbody id="apAccRows"></tbody></table></div>
+      </div>
+      <div id="apCtr" hidden>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 8px">Barangay officials cannot edit or delete evacuation centers by themselves. Their requests wait here until you approve or reject them.</p>
+        <div class="table-wrap"><table class="data"><thead><tr><th>Center</th><th>Request</th><th>Requested by</th><th style="text-align:right">Decision</th></tr></thead><tbody id="apCtrRows"></tbody></table></div>
+      </div>
+      <div id="apDone" hidden>
+        <div class="table-wrap"><table class="data"><thead><tr><th>Center</th><th>Request</th><th>Requested by</th><th>Result</th></tr></thead><tbody id="apDoneRows"></tbody></table></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2 id="listTitle">All accounts</h2>
+        <div class="tools">
+          <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input id="q" class="input" type="search" placeholder="Search name or email" aria-label="Search accounts"></div>
+          <select id="fType" class="input" style="font-size:14px" aria-label="Filter by barangay"></select>
+          <select id="fStatus" class="input" style="font-size:14px" aria-label="Filter by status">
+            <option value="">All statuses</option><option value="pending">Pending</option><option value="active">Active</option><option value="disabled">Disabled</option><option value="rejected">Rejected</option></select>
+        </div></div>
+      <div class="table-wrap"><table class="data"><thead><tr><th scope="col">Name</th><th scope="col">Position / Barangay</th><th scope="col">Email</th><th scope="col">Mobile</th><th scope="col">Employee ID</th><th scope="col">Status</th><th scope="col" style="text-align:right">Action</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" class="empty" style="margin-top:12px" hidden>No account matches your filters.</div>
+    </section>
+    <section class="panel" id="logPanel">
+      <div class="panel-head"><h2>Sign-in history</h2><span class="note" id="logNote" style="font-size:13px;color:var(--muted)"></span></div>
+      <div class="table-wrap" style="max-height:520px;overflow-y:auto"><table class="data"><thead><tr><th>Date and time</th><th>Name</th><th>Position</th><th>Barangay / Office</th></tr></thead><tbody id="logRows"></tbody></table></div>
+    </section>
+    <section class="panel" id="actPanel" hidden>
+      <div class="panel-head"><h2>Activity log</h2><span class="note" style="font-size:13px;color:var(--muted)">Every add, edit and delete in the system (IT Administrator only)</span></div>
+      <div class="table-wrap" style="max-height:520px;overflow-y:auto"><table class="data"><thead><tr><th scope="col">Date and time</th><th scope="col">Account</th><th scope="col">What was done</th><th scope="col">Result</th></tr></thead><tbody id="actRows"></tbody></table></div>
+    </section>
+  </main>
+</div>
+<script src="app.js?v=44"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth({ role: 'city_admin' });
+  BL.renderSidebar(me, 'accounts.html');
+  const $ = (id) => document.getElementById(id);
+  let admin = {}, all = [], brgyNames = [], signup = {};
+  try { admin = await BL.api('/admin/me'); } catch (e) {}
+  if (!admin.is_superuser) {
+    $('sub').textContent = 'Only the City System Administrator can manage user accounts.';
+    document.querySelectorAll('section.panel').forEach((x) => { x.hidden = true; });
+    return;
+  }
+  const label = { pending: 'Pending', active: 'Active', disabled: 'Disabled', rejected: 'Rejected' };
+  const btn = (id, act, txt, cls) => '<button type="button" class="btn ' + cls + '" data-id="' + id + '" data-act="' + act + '">' + txt + '</button>';
+
+  async function load() {
+    try {
+      const [users, summary, sinfo] = await Promise.all([BL.api('/admin/users'), BL.api('/dashboard/summary').catch(() => ({})), BL.api('/admin/signup-info').catch(() => ({}))]);
+      signup = sinfo || {};
+      all = users || [];
+      brgyNames = ((summary && summary.barangays) || []).map((b) => b.name);
+      const withAcc = [...new Set(all.filter((u) => u.barangay).map((u) => u.barangay))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      const sel = $('fType'), keep = sel.value;
+      sel.innerHTML = '<option value="">All accounts (' + all.length + ')</option><option value="city">City Hall only (' + all.filter((u) => u.role === 'city_admin').length + ')</option>' +
+        withAcc.map((b) => '<option value="b:' + BL.esc(b) + '">' + BL.esc(b) + ' (' + all.filter((u) => u.barangay === b).length + ')</option>').join('');
+      sel.value = keep;
+      const pend = all.filter((u) => u.status === 'pending').length;
+      const none = brgyNames.filter((n) => !withAcc.includes(n));
+      $('sum').innerHTML = (pend ? '<span class="chip" style="background:#FFF7ED;color:#B45309">' + pend + ' pending approval</span>' : '') +
+        (none.length ? '<span class="chip" style="background:#FDECEC;color:#B91C1C">No account yet: ' + none.map(BL.esc).join(', ') + '</span>' : '');
+      $('err').hidden = true;
+      render();
+      drawApprovals();
+    } catch (e) { $('err').textContent = e.message; $('err').hidden = false; }
+  }
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase(), t = $('fType').value, s = $('fStatus').value;
+    const order = { pending: 0, active: 1, disabled: 2, rejected: 3 };
+    const list = all.filter((u) => (!t || (t === 'city' ? u.role === 'city_admin' : u.barangay === t.slice(2))) && (!s || u.status === s) &&
+      (!q || (String(u.full_name || '') + ' ' + String(u.email || '')).toLowerCase().includes(q)))
+      .sort((a, b) => (order[a.status] - order[b.status]) || ((a.role === 'city_admin' ? '' : a.barangay || '').localeCompare(b.role === 'city_admin' ? '' : b.barangay || '', undefined, { numeric: true })));
+    $('listTitle').textContent = t === 'city' ? 'City Hall accounts' : t ? t.slice(2) + ' accounts' : 'All accounts';
+    $('rows').innerHTML = list.map((u) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(u.full_name || '-') + '</strong>' + (u.is_superuser ? ' <span class="chip">System Admin</span>' : '') + '</td>' +
+      '<td>' + BL.esc(u.position || '-') + '<br><span style="color:var(--muted);font-size:12px">' + (u.role === 'city_admin' ? BL.esc(u.office || 'City Hall') : BL.esc(u.barangay || '-')) + '</span>' +
+      (u.status === 'pending' && signup[u.id] ? '<div style="font-size:12px;margin-top:4px;color:#B45309;font-weight:700">' + (signup[u.id].new_barangay ? 'New barangay' : 'Existing barangay') + (signup[u.id].centers.length ? ' &#183; Centers: ' + signup[u.id].centers.map(BL.esc).join(', ') : '') + '</div>' : '') + '</td>' +
+      '<td>' + BL.esc(u.email || '-') + '</td><td>' + BL.esc(u.mobile_number || '-') + '</td><td>' + BL.esc(u.employee_id || '-') + '</td>' +
+      '<td><span class="st ' + u.status + '">' + (label[u.status] || u.status) + '</span></td><td><div class="acts">' +
+      (u.id === me.id ? '<span class="you"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Your account</span>'
+        : u.status === 'pending' ? (admin.is_it_admin ? btn(u.id, 'approve', 'Approve', 'btn-primary') + btn(u.id, 'reject', 'Reject', 'btn-ghost') : '<span style="font-size:12px;color:var(--muted)">For IT Admin</span>')
+        : u.status === 'active' ? btn(u.id, 'disable', 'Disable', 'btn-ghost')
+        : btn(u.id, 'enable', 'Activate', 'btn-ghost')) + '</div></td></tr>').join('');
+    $('empty').hidden = list.length > 0;
+  }
+
+  $('q').addEventListener('input', render);
+  $('fType').addEventListener('change', render);
+  $('fStatus').addEventListener('change', render);
+  $('rows').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    if (b.dataset.act === 'reject') {
+      const u = all.find((x) => String(x.id) === b.dataset.id) || {};
+      const ok = await BL.confirmBox({ title: 'Reject this request?', text: (u.full_name || 'This person') + ' will not be able to sign in.' + (u.role === 'barangay_official' ? ' Any barangay or evacuation center added only by this request will also be removed.' : ''), ok: 'Reject Request', danger: true });
+      if (!ok) return;
+    }
+    b.disabled = true;
+    try { await BL.api('/admin/users/' + b.dataset.id + '/' + b.dataset.act, { method: 'POST' }); BL.toast('Account updated.'); }
+    catch (x) { $('err').textContent = x.message; $('err').hidden = false; }
+    load();
+  });
+
+  // ---- approvals: account verification and barangay change requests ----
+  let creqs = [];
+  const tabs = { acc: 'apAcc', ctr: 'apCtr', done: 'apDone' };
+  document.querySelectorAll('.aptab').forEach((t) => t.addEventListener('click', () => {
+    document.querySelectorAll('.aptab').forEach((x) => x.setAttribute('aria-pressed', x === t));
+    Object.entries(tabs).forEach(([k, id]) => { $(id).hidden = k !== t.dataset.tab; });
+  }));
+  const dt = (x) => x ? BL.dateTime(x) : '-';
+  function reqText(r) {
+    if (r.action === 'delete') return '<strong style="color:#B91C1C">Delete this center</strong>';
+    const lab = { name: 'Name', address: 'Address', capacity: 'Capacity' };
+    return '<strong>Edit</strong><div style="font-size:12px;color:var(--muted)">' + Object.keys(r.changes || {}).map((k) => lab[k] + ': ' + BL.esc(String(r.current ? r.current[k] : '-')) + ' &rarr; <strong style="color:var(--navy)">' + BL.esc(String(r.changes[k])) + '</strong>').join('<br>') + '</div>';
+  }
+  function drawApprovals() {
+    const pend = all.filter((u) => u.status === 'pending');
+    $('nAcc').textContent = pend.length;
+    $('apAccRows').innerHTML = pend.map((u) => { const si = signup[u.id];
+      return '<tr><td><strong style="color:var(--navy)">' + BL.esc(u.full_name || '-') + '</strong><div style="font-size:12px;color:var(--muted)">' + (u.role === 'city_admin' ? 'City Hall' : 'Barangay official') + '</div></td>' +
+        '<td>' + BL.esc(u.position || '-') + '<div style="font-size:12px;color:var(--muted)">' + BL.esc(u.role === 'city_admin' ? (u.office || 'City Hall') : (u.barangay || '-')) + '</div></td>' +
+        '<td style="font-size:13px">' + BL.esc(u.email || '-') + '<br>' + BL.esc(u.mobile_number || '-') + '</td><td><strong>' + BL.esc(u.employee_id || '-') + '</strong></td>' +
+        '<td style="font-size:13px">' + (si ? (si.new_barangay ? '<span class="chip">New barangay</span> ' : '') + (si.centers.length ? 'Centers: ' + si.centers.map(BL.esc).join(', ') : 'No new center') : '-') + '</td>' +
+        '<td style="text-align:right;white-space:nowrap"><button type="button" class="btn btn-primary btn-sm" data-id="' + u.id + '" data-act="approve">Approve</button> <button type="button" class="btn btn-ghost btn-sm" data-id="' + u.id + '" data-act="reject">Reject</button></td></tr>'; }).join('')
+      || '<tr><td colspan="6"><div class="empty">No account is waiting for verification.</div></td></tr>';
+    const pc = creqs.filter((r) => r.status === 'pending');
+    $('nCtr').textContent = pc.length;
+    $('apCtrRows').innerHTML = pc.map((r) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(r.center) + '</strong><div style="font-size:12px;color:var(--muted)">' + BL.esc(r.barangay || '') + '</div></td>' +
+      '<td>' + reqText(r) + (r.reason ? '<div style="font-size:12px;margin-top:4px">Reason: ' + BL.esc(r.reason) + '</div>' : '') + '</td>' +
+      '<td style="font-size:13px">' + BL.esc(r.requested_by || '-') + '<div style="font-size:12px;color:var(--muted)">' + dt(r.created_at) + '</div></td>' +
+      '<td style="text-align:right;white-space:nowrap"><button type="button" class="btn btn-primary btn-sm" data-rq="approve" data-rid="' + r.id + '">Approve</button> <button type="button" class="btn btn-ghost btn-sm" data-rq="reject" data-rid="' + r.id + '">Reject</button></td></tr>').join('')
+      || '<tr><td colspan="4"><div class="empty">No edit or delete request is waiting.</div></td></tr>';
+    const done = creqs.filter((r) => r.status !== 'pending').slice(0, 20);
+    $('apDoneRows').innerHTML = done.map((r) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(r.center) + '</strong><div style="font-size:12px;color:var(--muted)">' + BL.esc(r.barangay || '') + '</div></td><td>' + reqText(r) + '</td>' +
+      '<td style="font-size:13px">' + BL.esc(r.requested_by || '-') + '</td><td><span class="st ' + (r.status === 'approved' ? 'active' : 'rejected') + '">' + (r.status === 'approved' ? 'Approved' : 'Rejected') + '</span><div style="font-size:12px;color:var(--muted)">' + BL.esc(r.reviewed_by || '') + ', ' + dt(r.reviewed_at) + '</div></td></tr>').join('')
+      || '<tr><td colspan="4"><div class="empty">Nothing reviewed yet.</div></td></tr>';
+    const total = pend.length + pc.length;
+    $('apNote').textContent = total ? total + ' waiting' : 'Nothing waiting';
+  }
+  async function loadReqs() { try { creqs = await BL.api('/center-requests') || []; } catch (e) { creqs = []; } drawApprovals(); }
+  $('apAccRows').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const u = all.find((x) => String(x.id) === b.dataset.id) || {};
+    const ok = await BL.confirmBox(b.dataset.act === 'approve'
+      ? { title: 'Approve ' + (u.full_name || 'this account') + '?', text: 'They will be able to sign in to BilisLikas 2.0 right away. Make sure the employee ID matches the official list.', ok: 'Approve' }
+      : { title: 'Reject ' + (u.full_name || 'this account') + '?', text: 'They will not be able to sign in.' + (u.role === 'barangay_official' ? ' Any barangay or evacuation center added only by this request will also be removed.' : ''), ok: 'Reject', danger: true });
+    if (!ok) return;
+    try { await BL.api('/admin/users/' + b.dataset.id + '/' + b.dataset.act, { method: 'POST' }); BL.toast(b.dataset.act === 'approve' ? 'Account approved.' : 'Request rejected.'); }
+    catch (x) { $('err').textContent = x.message; $('err').hidden = false; }
+    load();
+  });
+  $('apCtrRows').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-rq]'); if (!b) return;
+    const r = creqs.find((x) => x.id === Number(b.dataset.rid)); if (!r) return;
+    const approve = b.dataset.rq === 'approve';
+    BL.confirmBox(approve
+      ? { title: (r.action === 'delete' ? 'Delete ' : 'Apply changes to ') + r.center + '?', text: r.action === 'delete' ? 'The center and its check-in history will be removed. This cannot be undone.' : 'The new details will be saved and shown to everyone.', ok: 'Approve', danger: r.action === 'delete',
+          action: () => BL.api('/center-requests/' + r.id + '/approve', { method: 'POST' }) }
+      : { title: 'Reject this request?', text: 'The center stays as it is. The barangay official will see that the request was rejected.', ok: 'Reject', danger: true,
+          action: () => BL.api('/center-requests/' + r.id + '/reject', { method: 'POST', json: {} }) })
+      .then((ok) => { if (ok) { BL.toast(approve ? 'Request approved.' : 'Request rejected.'); loadReqs(); } });
+  });
+
+  // ---- sign-in history ----
+  let logs = [];
+  const RES = { success: ['Signed in', '#E8F7EE', '#15803D'], failed: ['Wrong password', '#FDECEC', '#B91C1C'], blocked: ['Blocked', '#FFF7ED', '#B45309'] };
+  async function loadLogs() {
+    try { logs = await BL.api('/admin/login_logs') || []; } catch (e) { logs = []; }
+    drawLogs();
+  }
+  function drawLogs() {
+    const list = logs.filter((l) => l.result === 'success');
+
+    $('logRows').innerHTML = list.map((l) => { const t = BL.parseT(l.time);
+      return '<tr><td style="white-space:nowrap"><strong>' + t.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + '</strong><div style="font-size:12px;color:var(--muted)">' + t.toLocaleDateString('en-PH', { weekday: 'long' }) + ', ' + t.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }) + '</div></td>' +
+        '<td><strong style="color:var(--navy)">' + BL.esc(l.name || '-') + '</strong><div style="font-size:12px;color:var(--muted)">' + BL.esc(l.email || '') + '</div></td>' +
+        '<td>' + BL.esc(l.position || '-') + '</td><td>' + BL.esc(l.where) + '</td></tr>'; }).join('')
+      || '<tr><td colspan="4"><div class="empty">No sign-ins recorded yet.</div></td></tr>';
+  }
+  loadLogs();
+  await load();
+  $('apPanel').hidden = !admin.is_it_admin;  /* approvals: IT Administrator only */
+  if (admin.is_it_admin) loadReqs();
+  async function loadActivity() {
+    let rows = [];
+    try { rows = await BL.api('/admin/activity_logs?limit=300') || []; } catch (e) { rows = []; }
+    const verb = { POST: 'Added / ran', PUT: 'Edited', PATCH: 'Edited', DELETE: 'Deleted' };
+    $('actRows').innerHTML = rows.map(function (a) {
+      const ok = a.status < 400;
+      return '<tr><td>' + BL.esc(BL.dateTime(a.time)) + '</td><td>' + BL.esc(a.username || '-') + '</td>' +
+        '<td><strong style="color:var(--navy)">' + BL.esc(a.action || ((verb[a.method] || a.method) + ' ' + a.path)) + '</strong>' +
+        (a.details ? '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + BL.esc(a.details) + '</div>' : '') + '</td>' +
+        '<td><span style="font-weight:600;color:' + (ok ? '#15803D' : '#B91C1C') + '">' + (ok ? 'Done' : 'Not allowed / failed (' + a.status + ')') + '</span></td></tr>';
+    }).join('') || '<tr><td colspan="4"><div class="empty">No activity recorded yet.</div></td></tr>';
+  }
+  if (admin.is_it_admin) { $('actPanel').hidden = false; loadActivity(); }
+})();
+</script>
+</body>
+</html>

@@ -83,6 +83,9 @@ const BL = (() => {
     if (!opts.skipPrivacy && sessionStorage.getItem(PRIVACY) !== '1') {
       sessionStorage.setItem('bl_next', here); location.href = 'privacy.html'; return new Promise(() => {});
     }
+    if (me.role === 'city_admin' && /^(preregister|entrance|display|live)\.html/.test(here)) {
+      location.href = 'city.html'; return new Promise(() => {});
+    }
     if (opts.role && me.role !== opts.role) {
       location.href = homeFor(me); return new Promise(() => {});
     }
@@ -124,19 +127,19 @@ const BL = (() => {
       ['face', 'Pre-Registration', 'preregister.html'],
       ['center', 'Evacuation Centers', 'centers.html'],
       ['tracker', 'Trackers', 'trackers.html'],
-      ['pin', 'Barangays', 'barangays.html']
+      ['pin', 'Barangays', 'barangays.html'],
+      ['report', 'Relief & Medicine', 'relief.html'],
+      ['report', 'Evacuation History', 'history.html']
     ],
     city_admin: [
       ['globe', 'City Overview', 'city.html'],
       ['center', 'Evacuation Centers', 'centers.html'],
       ['people', 'Evacuees', 'evacuees.html'],
-      ['face', 'Pre-Registration', 'preregister.html'],
-      ['live', 'Live Evacuation', 'live.html'],
-      ['tv', 'Entrance Display', 'entrance.html'],
       ['tracker', 'Trackers', 'trackers.html'],
       ['pin', 'Barangays', 'barangays.html'],
-      ['report', 'Situation Reports', null],
-      ['users', 'User Accounts', null]
+      ['report', 'Relief & Medicine', 'relief.html'],
+      ['report', 'Evacuation History', 'history.html'],
+      ['users', 'User Accounts', 'accounts.html']
     ]
   };
 
@@ -159,7 +162,17 @@ const BL = (() => {
       '<div class="sync-badge" id="syncBadge" role="status" hidden><span class="sdot"></span><span><strong id="syncTitle"></strong><span id="syncSub"></span></span></div>' +
       '<nav class="nav signout" aria-label="Account"><a href="#" id="signout">' + svg('out') + 'Sign Out</a></nav>';
     document.getElementById('signout').addEventListener('click', (e) => { e.preventDefault(); logout(); });
-    startSyncBadge();
+    /* sync badge hidden */
+    if (city && active !== 'city.html' && !document.getElementById('bl-back-city')) {
+      const main = document.querySelector('main');
+      if (main) {
+        const b = document.createElement('a');
+        b.id = 'bl-back-city'; b.href = 'city.html'; b.className = 'no-print';
+        b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Back to City Overview';
+        b.style.cssText = 'align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;margin-bottom:4px;border-radius:10px;border:2px solid var(--navy);background:#FFFFFF;color:var(--navy);font-size:14px;font-weight:800;text-decoration:none;width:max-content';
+        main.insertBefore(b, main.firstChild);
+      }
+    }
   }
 
   // Cloud sync badge: shows whether this server's data has reached the city's cloud hub.
@@ -198,7 +211,7 @@ const BL = (() => {
     let t = document.querySelector('.toast');
     if (t) t.remove();
     t = document.createElement('div');
-    t.className = 'toast';
+    t.className = 'toast'; t.style.bottom = '92px'; t.style.zIndex = '1000';
     t.setAttribute('role', 'status');
     t.textContent = msg;
     document.body.appendChild(t);
@@ -313,13 +326,9 @@ const BL = (() => {
   // ---------- Emergency hotlines (available on every page) ----------
   const HOTLINES = [
     { group: 'Emergency', name: 'National Emergency Hotline', note: 'Police, fire, medical, rescue', nums: ['911'], main: true },
+    { group: 'Emergency', name: 'Bureau of Fire Protection (BFP)', note: 'Fire and rescue', nums: ['(02) 8426-0219', '(02) 8426-0246'] },
     { group: 'Emergency', name: 'Philippine Red Cross', note: 'Ambulance and rescue', nums: ['143', '(02) 8527-0000'] },
-    { group: 'Emergency', name: 'PNP (Police)', note: 'Crime, missing persons', nums: ['117', '(02) 8722-0650'] },
-    { group: 'Emergency', name: 'Bureau of Fire Protection (BFP)', note: 'Fire', nums: ['(02) 8426-0219', '(02) 8426-0246'] },
-    { group: 'Disaster', name: 'NDRRMC', note: 'National disaster operations center', nums: ['(02) 8911-1406', '(02) 8912-2665'] },
-    { group: 'Disaster', name: 'MMDA', note: 'Metro Manila flooding and road emergencies', nums: ['136', '(02) 8882-4151'] },
-    { group: 'Disaster', name: 'PAGASA', note: 'Weather and typhoon updates', nums: ['(02) 8284-0800'] },
-    { group: 'Protection', name: 'DSWD', note: 'Violence against women and children, social welfare', nums: ['(02) 8931-8101'] }
+    { group: 'Emergency', name: 'Philippine National Police (PNP)', note: 'Crime, missing persons', nums: ['117', '(02) 8722-0650'] }
   ];
   function telHref(n) {
     let d = String(n).replace(/\D/g, '');
@@ -338,7 +347,6 @@ const BL = (() => {
     const m = modal(
       '<div style="padding:24px 26px;display:flex;flex-direction:column;gap:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="font-size:22px;font-weight:800;color:#B91C1C">Emergency Hotlines</h2><button type="button" class="btn btn-ghost" data-close>Close</button></div>' +
-      '<p style="font-size:14px;color:#3D4659;margin:0">Tap a number to call it on a phone. On a laptop, press Copy and dial it on any phone. 911 works on all networks, even without load.</p>' +
       '<div style="display:flex;flex-direction:column;gap:8px;max-height:65vh;overflow-y:auto">' + rows + '</div></div>', 720);
     m.el.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied ' + b.dataset.copy); }
@@ -362,4 +370,12 @@ const BL = (() => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addHotlineButton); else addHotlineButton();
 
   return { showHotlines, nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
+})();
+
+/* live-badge-hidden: the green Live badges are hidden on every page */
+(function () {
+  if (/(display|entrance)\.html$/.test(location.pathname)) return;
+  var st = document.createElement('style');
+  st.textContent = '.live-badge { display: none !important; }';
+  document.head.appendChild(st);
 })();

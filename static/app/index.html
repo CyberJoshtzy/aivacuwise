@@ -53,6 +53,49 @@
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 </style>
+<style>
+.role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.role-card { display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 14px; border: 2px solid #E3E8F2; background: #FFFFFF; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.role-card:hover { border-color: var(--orange); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11,31,77,.10); }
+.role-card .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+.role-card .ico svg { width: 24px; height: 24px; fill: none; stroke: #FFFFFF; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.role-card.brgy .ico { background: var(--orange); }
+.role-card.city .ico { background: var(--navy); }
+.role-card strong { font-size: 17px; color: var(--navy); }
+.role-card span.d { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.role-btns { margin-top: auto; padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rb { min-height: 44px; display: grid; place-items: center; border-radius: 10px; font-size: 14px; font-weight: 800; text-decoration: none; border: 2px solid var(--navy); }
+.rb.fill { background: var(--navy); color: #FFFFFF; }
+.rb.line { background: #FFFFFF; color: var(--navy); }
+.brgy .rb { border-color: var(--orange); }
+.brgy .rb.fill { background: var(--orange); color: var(--navy); }
+.brgy .rb.line { color: #C2410C; }
+.rb:hover, .rb:focus-visible { filter: brightness(.95); outline: 3px solid rgba(245,158,11,.35); outline-offset: 2px; }
+@media (max-width: 700px) { .role-cards { grid-template-columns: 1fr; } }
+.role-card { font: inherit; text-align: left; cursor: pointer; }
+.role-card .go { margin-top: auto; padding-top: 4px; font-size: 14px; font-weight: 800; color: var(--navy); }
+.role-card.brgy .go { color: #C2410C; }
+.role-card:focus-visible { outline: 3px solid rgba(245,158,11,.45); outline-offset: 2px; }
+.role-next { display: flex; flex-direction: column; gap: 12px; padding: 22px; border-radius: 14px; border: 2px solid #E3E8F2; background: #FFFFFF; animation: pop .25s ease-out; }
+.role-next[hidden] { display: none; }
+.role-back { align-self: flex-start; background: none; border: none; padding: 0; font: inherit; font-size: 14px; font-weight: 700; color: var(--navy); cursor: pointer; }
+.role-head { display: flex; gap: 14px; align-items: center; margin-bottom: 4px; }
+.role-head strong { display: block; font-size: 18px; color: var(--navy); }
+.role-head .d { font-size: 13px; color: var(--muted); }
+.role-head .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+.role-head .ico svg { width: 24px; height: 24px; fill: none; stroke: #FFFFFF; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rb.big { min-height: 64px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; font-size: 16px; }
+.rb.big small { font-size: 12px; font-weight: 600; opacity: .85; }
+.role-next.brgy .rb { border-color: var(--orange); }
+.role-next.brgy .rb.fill { background: var(--orange); color: var(--navy); }
+.role-next.brgy .rb.line { color: #C2410C; }
+.role-cards { grid-template-columns: repeat(3, 1fr) !important; }
+.role-card.res .ico { background: #198754; }
+.role-card.res .go { color: #15803D; }
+.role-next.res .rb { border-color: #198754; }
+.role-next.res .rb.fill { background: #198754; color: #FFFFFF; }
+@media (max-width: 1200px) { .role-cards { grid-template-columns: 1fr !important; } }
+</style>
 </head>
 <body>
 <div id="splash" role="status" aria-live="polite" hidden>
@@ -72,18 +115,37 @@
     <img src="/static/logo.png" alt="BilisLikas 2.0, Kasama mo sa Paglikas">
   </section>
   <section class="home-copy">
-    <div style="font-size:13px;font-weight:800;color:var(--muted)">Overview</div>
+    
     <h1>Quick, smart evacuation tracking for every barangay.</h1>
-    <p class="lead">BilisLikas 2.0 helps barangay and city officials pre-register households, check evacuees in automatically through walk-through facial recognition, and monitor every evacuation center's occupancy live, even without internet.</p>
-    <a class="btn btn-primary btn-lg" href="signin.html" id="signinBtn">Sign In</a>
-    <div class="divider">or</div>
-    <div class="reg-card">
-      <div>
-        <strong>Is your barangay not yet in BilisLikas?</strong>
-        <p>Register your barangay account, then sign in right away with your email and password.</p>
-      </div>
-      <a class="btn btn-outline" href="register.html" style="white-space: nowrap; text-align: center; justify-content: center; flex-shrink: 0;">Register Barangay</a>
-    </div>
+    <p class="lead">BilisLikas 2.0 helps barangay and city officials pre-register households, check evacuees in automatically through walk-through facial recognition, and monitor every evacuation center's occupancy live.</p>
+    <div id="rolePick" class="role-cards">
+          <button type="button" class="role-card brgy" data-role="brgy">
+            <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M10 21v-6h4v6"/></svg></span>
+            <strong>Barangay Official</strong>
+            <span class="d">Barangay captain, kagawad, secretary or BDRRMC staff managing one barangay.</span>
+            <span class="go">Continue &rarr;</span>
+          </button>
+          <button type="button" class="role-card city" data-role="city">
+            <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M4 21V9h16v12"/><path d="M2 9l10-6 10 6"/><path d="M8 13v4M12 13v4M16 13v4"/></svg></span>
+            <strong>City Hall Administrator</strong>
+            <span class="d">City Mayor, CDRRMO, CSWDO, CHO and MIS personnel overseeing all barangays of Manila.</span>
+            <span class="go">Continue &rarr;</span>
+          </button>
+          <button type="button" class="role-card res" data-role="res">
+            <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5"/><path d="M15 15.2c.6-.2 1.3-.3 2-.3 2.2 0 3.9 1.5 4.5 4.6"/></svg></span>
+            <strong>Resident / Evacuee</strong>
+            <span class="d">Pre-registered residents checking their family's safety and records.</span>
+            <span class="go">Continue &rarr;</span>
+          </button>
+        </div>
+        <div id="roleNext" class="role-next" hidden>
+          <button type="button" class="role-back" id="roleBack">&larr; Change role</button>
+          <div class="role-head"><span class="ico" id="rnIco"></span><div><strong id="rnTitle"></strong><span class="d" id="rnSub"></span></div></div>
+          <a class="rb fill big" id="rnIn" href="#"><span>Sign In</span><small>I already have an account</small></a>
+          <a class="rb line big" id="rnUp" href="#"><span>Sign Up</span><small id="rnUpSub"></small></a>
+        </div>
+    
+    
   </section>
 </main>
 <footer class="home-foot">
@@ -131,7 +193,7 @@
     boot();
   })();
 </script>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=44"></script>
 <script>
   // Already signed in? Go straight to the right dashboard.
   const me = BL.cachedMe();
@@ -140,6 +202,47 @@
     b.textContent = 'Continue to Dashboard';
     b.href = BL.homeFor(me);
   }
+</script>
+<script>
+(function () {
+  function hide() {
+    document.querySelectorAll('button, a, div').forEach(function (el) {
+      if (el.children.length < 4 && /Emergency Hotlines/.test(el.textContent) && el.closest('main') === null) el.remove();
+    });
+  }
+  hide();
+  new MutationObserver(hide).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('keydown', function (e) { if (e.key === 'h' || e.key === 'H') e.stopImmediatePropagation(); }, true);
+})();
+</script>
+<script>
+(function () {
+  var pick = document.getElementById('rolePick'), next = document.getElementById('roleNext');
+  var R = {
+    brgy: { title: 'Barangay Official', sub: 'Captain, kagawad, secretary or BDRRMC staff', inn: 'signin.html', up: 'register.html', upSub: 'Register my barangay' },
+    res: { title: 'Resident / Evacuee', sub: 'Pre-registered by your barangay', inn: 'resident-signin.html', up: '', upSub: '' },
+    city: { title: 'City Hall Administrator', sub: 'Mayor, CDRRMO, CSWDO, CHO or MIS personnel', inn: 'admin-signin.html', up: 'admin-register.html', upSub: 'Request City Hall access' }
+  };
+  pick.querySelectorAll('.role-card').forEach(function (c) {
+    c.addEventListener('click', function () {
+      var r = R[c.dataset.role];
+      document.getElementById('rnIco').innerHTML = c.querySelector('.ico').innerHTML;
+      document.getElementById('rnIco').style.background = getComputedStyle(c.querySelector('.ico')).backgroundColor;
+      document.getElementById('rnTitle').textContent = r.title;
+      document.getElementById('rnSub').textContent = r.sub;
+      document.getElementById('rnIn').href = r.inn;
+      document.getElementById('rnUp').href = r.up || '#';
+      document.getElementById('rnUp').style.display = r.up ? '' : 'none';
+      document.getElementById('rnUpSub').textContent = r.upSub;
+      next.className = 'role-next ' + c.dataset.role;
+      pick.hidden = true; pick.style.display = 'none'; next.hidden = false;
+      document.getElementById('rnIn').focus();
+    });
+  });
+  document.getElementById('roleBack').addEventListener('click', function () {
+    next.hidden = true; pick.hidden = false; pick.style.display = '';
+  });
+})();
 </script>
 </body>
 </html>

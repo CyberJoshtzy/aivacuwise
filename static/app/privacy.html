@@ -40,10 +40,16 @@ body { background: var(--bg); }
           <li>Do not copy, photograph, print, or share evacuee data outside this system.</li>
           <li>Collect each evacuee's written consent before registering their face.</li>
           <li>Sign out whenever you leave the device.</li>
-          <li>Report any suspected data breach to the City Admin immediately.</li>
+          <li>Report any suspected data breach to the City Hall IT Administrator immediately.</li>
         </ul>
       </div>
-      <div><h2>Storage and retention</h2><p>Data is stored on the city's local server and is not sent to third-party cloud services. Records are kept for [RETENTION PERIOD, to be set by the City DRRM Office], then deleted.</p></div>
+      <div><h2>Storage and retention</h2><p>Data is stored on the barangay's local server. It is not sold or shared with third parties, and it is copied only to the city's secured server for City Hall monitoring.</p>
+        <ul>
+          <li>Evacuation, check-in and relief records are kept for <strong>three (3) years</strong> after the evacuation ends, for reporting and audit by the City DRRM Office, then securely deleted.</li>
+          <li>Facial recognition data and resident profiles are kept while the resident is registered in the barangay. They are deleted within <strong>thirty (30) days</strong> after the resident moves out or asks for deletion.</li>
+          <li>Tracker location data is deleted <strong>thirty (30) days</strong> after the evacuation ends.</li>
+        </ul>
+      </div>
     </div>
     <footer>
       <label class="check" style="font-size:15px;font-weight:600"><input type="checkbox" id="agree">I have read this notice and agree to comply with it.</label>
@@ -54,7 +60,7 @@ body { background: var(--bg); }
     </footer>
   </section>
 </div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=44"></script>
 <script>
   (async () => {
     const me = await BL.requireAuth({ skipPrivacy: true });

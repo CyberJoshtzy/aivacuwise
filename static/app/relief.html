@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relief &amp; Medicine · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=11">
+<style>
+.grid2 { display: grid; grid-template-columns: 400px 1fr; gap: 18px; align-items: start; }
+.form { display: flex; flex-direction: column; gap: 14px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.cat { border: 2px solid #E3E8F2; background: #FFFFFF; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 700; color: var(--navy); cursor: pointer; }
+.cat[aria-pressed="true"] { background: var(--navy); color: #FFFFFF; border-color: var(--navy); }
+.sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+.sugg button { border: 1px dashed #C2CAD8; background: #F6F8FD; border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; color: #1F2937; }
+.sugg button:hover { border-color: var(--orange); }
+.tag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.t-Food { background: #FFF4E5; color: #B45309; } .t-Water { background: #E0F2FE; color: #0369A1; }
+.t-Medicine { background: #FDECEC; color: #B91C1C; } .t-Hygiene { background: #E8F7EE; color: #15803D; } .t-Other { background: #EEF2FF; color: var(--navy); }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1>Relief &amp; Medicine</h1>
+        <p id="sub">Record the food, water, medicine and supplies given to evacuees.</p>
+      </div>
+    </div>
+    <div id="loadError" class="form-error" role="alert" hidden></div>
+    <div class="grid2">
+      <section class="panel">
+        <div class="panel-head"><h2>Record distribution</h2></div>
+        <div class="form">
+          <div id="fErr" class="form-error" hidden></div>
+          <div class="field-group" id="brgyWrap" hidden><label for="fBrgy">Barangay</label><select id="fBrgy" class="input"></select></div>
+          <div class="field-group"><label for="fCenter">Evacuation center</label><select id="fCenter" class="input"></select></div>
+          <div class="field-group"><span style="font-size:14px;font-weight:700">Category</span><div class="cats" id="cats"></div></div>
+          <div class="field-group"><label for="fItem">Item</label><input id="fItem" class="input" placeholder="e.g. Sopas, Biogesic" list="itemList"><datalist id="itemList"></datalist>
+            <div class="sugg" id="sugg"></div></div>
+          <div class="row2">
+            <div class="field-group"><label for="fQty">Quantity</label><input id="fQty" class="input" type="number" min="1" step="any" placeholder="e.g. 50"></div>
+            <div class="field-group"><label for="fUnit">Unit</label><select id="fUnit" class="input"></select></div>
+          </div>
+          <div class="row2">
+            <div class="field-group"><label for="fRec">Persons served</label><input id="fRec" class="input" type="number" min="0" placeholder="Optional"></div>
+            <div class="field-group"><label for="fWhen">Date and time given</label><input id="fWhen" class="input" type="datetime-local"></div>
+          </div>
+          <div class="field-group"><label for="fNotes">Notes</label><input id="fNotes" class="input" placeholder="Optional, e.g. donated by DSWD"></div>
+          <button type="button" class="btn btn-primary btn-lg" id="save">Save Record</button>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Distribution log</h2>
+          <div class="filters">
+            <select id="xBrgy" class="input" style="width:200px;height:40px;font-size:14px" hidden aria-label="Filter by barangay"></select>
+            <select id="xCat" class="input" style="width:160px;height:40px;font-size:14px" aria-label="Filter by category"><option value="">All categories</option></select>
+          </div>
+        </div>
+        <div class="table-wrap"><table class="data"><thead><tr><th scope="col">Date</th><th scope="col">Item</th><th scope="col">Quantity</th><th scope="col">Where</th><th scope="col">Served</th><th scope="col"></th></tr></thead><tbody id="rows"></tbody></table></div>
+        <div id="empty" class="empty" style="margin:12px 0 0" hidden>No relief or medicine recorded yet.</div>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="app.js?v=44"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const city = me.role === 'city_admin';
+  const $ = (id) => document.getElementById(id);
+  let cfg = { categories: [], items: {}, units: [] }, brgys = [], centers = [], rows = [], cat = 'Food';
+  try {
+    [cfg, brgys, centers] = await Promise.all([BL.api('/relief/items'), BL.api('/barangays'), BL.api('/evacuation_centers')]);
+  } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
+  const bName = {}; (brgys || []).forEach((b) => { bName[b.id] = b.name; });
+  BL.renderSidebar(me, 'relief.html', bName[me.barangay_id]);
+  if (city) { /* cityLogOnly: City Admin sees the log only */
+    document.querySelector('.grid2 > section.panel').style.display = 'none';
+    document.querySelector('.grid2').style.gridTemplateColumns = '1fr';
+    document.querySelector('h1').textContent = 'Relief & Medicine Log';
+    document.querySelectorAll('#rows').forEach(() => {});
+  }
+  if (city) {
+    $('brgyWrap').hidden = false; $('xBrgy').hidden = false;
+    const opts = brgys.slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map((b) => '<option value="' + b.id + '">' + BL.esc(b.name) + '</option>').join('');
+    $('fBrgy').innerHTML = '<option value="">Select barangay</option>' + opts;
+    $('xBrgy').innerHTML = '<option value="">All barangays</option>' + opts;
+    $('sub').textContent = 'Relief goods and medicine given by every barangay.';
+  }
+  const curBrgy = () => city ? Number($('fBrgy').value) || null : me.barangay_id;
+  function fillCenters() {
+    const b = curBrgy();
+    const list = centers.filter((c) => c.barangay_id === b);
+    $('fCenter').innerHTML = '<option value="">Not at a center / house-to-house</option>' + list.map((c) => '<option value="' + c.id + '">' + BL.esc(c.name) + '</option>').join('');
+  }
+  $('fBrgy').addEventListener('change', fillCenters);
+  fillCenters();
+  $('fUnit').innerHTML = cfg.units.map((u) => '<option>' + u + '</option>').join('');
+  $('xCat').innerHTML += cfg.categories.map((c) => '<option>' + c + '</option>').join('');
+  const unitFor = { Food: 'servings', Water: 'bottles', Medicine: 'tablets', Hygiene: 'kits', Other: 'pcs' };
+  function drawCats() {
+    $('cats').innerHTML = cfg.categories.map((c) => '<button type="button" class="cat" data-c="' + c + '" aria-pressed="' + (c === cat) + '">' + c + '</button>').join('');
+    const items = cfg.items[cat] || [];
+    $('sugg').innerHTML = items.map((i) => '<button type="button" data-i="' + BL.esc(i) + '">' + BL.esc(i) + '</button>').join('');
+    $('itemList').innerHTML = items.map((i) => '<option value="' + BL.esc(i) + '">').join('');
+    $('fUnit').value = unitFor[cat] || 'pcs';
+  }
+  $('cats').addEventListener('click', (e) => { const b = e.target.closest('.cat'); if (b) { cat = b.dataset.c; drawCats(); } });
+  $('sugg').addEventListener('click', (e) => { const b = e.target.closest('button[data-i]'); if (b) { $('fItem').value = b.dataset.i; $('fQty').focus(); } });
+  drawCats();
+  const pad = (n) => String(n).padStart(2, '0');
+  const nowLocal = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+  $('fWhen').value = nowLocal();
+
+  $('save').addEventListener('click', async () => {
+    const err = $('fErr'); err.hidden = true;
+    const btn = $('save'); btn.disabled = true;
+    try {
+      if (city && !curBrgy()) throw new Error('Choose the barangay.');
+      if (!$('fItem').value.trim()) throw new Error('Enter the item given.');
+      if (!(Number($('fQty').value) > 0)) throw new Error('Enter a quantity greater than zero.');
+      await BL.api('/relief', { method: 'POST', json: {
+        barangay_id: curBrgy(), evacuation_center_id: Number($('fCenter').value) || null, category: cat,
+        item: $('fItem').value.trim(), quantity: Number($('fQty').value), unit: $('fUnit').value,
+        recipients: Number($('fRec').value) || null, given_at: $('fWhen').value ? new Date($('fWhen').value).toISOString() : null,
+        notes: $('fNotes').value.trim() || null } });
+      $('fItem').value = ''; $('fQty').value = ''; $('fRec').value = ''; $('fNotes').value = ''; $('fWhen').value = nowLocal();
+      BL.toast('Record saved.');
+      load();
+    } catch (e) { err.textContent = e.message; err.hidden = false; }
+    btn.disabled = false;
+  });
+
+  async function load() {
+    try { rows = await BL.api('/relief') || []; $('loadError').hidden = true; render(); }
+    catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
+  }
+  function render() {
+    const fb = Number($('xBrgy').value) || null, fc = $('xCat').value;
+    const shown = rows.filter((r) => (!fb || r.barangay_id === fb) && (!fc || r.category === fc));
+    $('rows').innerHTML = shown.map((r) => '<tr><td style="white-space:nowrap">' + BL.dateTime(r.given_at) + '</td>' +
+      '<td><span class="tag t-' + BL.esc(r.category) + '">' + BL.esc(r.category) + '</span><div style="font-weight:700;color:var(--navy);margin-top:4px">' + BL.esc(r.item) + '</div>' + (r.notes ? '<div style="font-size:12px;color:var(--muted)">' + BL.esc(r.notes) + '</div>' : '') + '</td>' +
+      '<td style="white-space:nowrap"><strong>' + Number(r.quantity).toLocaleString() + '</strong> ' + BL.esc(r.unit) + '</td>' +
+      '<td>' + (city ? '<strong>' + BL.esc(r.barangay || '-') + '</strong><br>' : '') + '<span style="font-size:13px;color:var(--muted)">' + BL.esc(r.center || 'Not at a center') + '</span></td>' +
+      '<td>' + (r.recipients || '-') + '</td>' +
+      '<td style="text-align:right">' + (city ? '<span style="font-size:12px;color:var(--muted)">' + BL.esc(r.recorded_by || '') + '</span>' : '<button type="button" class="btn btn-del btn-sm" data-del="' + r.id + '">Remove</button>') + '</td></tr>').join('');
+    $('empty').hidden = shown.length > 0;
+  }
+  $('xBrgy').addEventListener('change', render);
+  $('xCat').addEventListener('change', render);
+  $('rows').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-del]'); if (!b) return;
+    BL.confirmBox({ title: 'Remove this record?', text: 'The distribution record will be deleted.', ok: 'Remove', danger: true,
+      action: async () => { await BL.api('/relief/' + b.dataset.del, { method: 'DELETE' }); } }).then((ok) => { if (ok) load(); });
+  });
+  await load();
+  BL.connectLive(() => load(), null);
+})();
+</script>
+</body>
+</html>

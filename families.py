@@ -28,6 +28,8 @@ try:  # add the new columns if this database was created before them
             conn.execute(text("ALTER TABLE evacuees ADD COLUMN IF NOT EXISTS home_barangay VARCHAR"))
             conn.execute(text("ALTER TABLE households ADD COLUMN IF NOT EXISTS member_count INTEGER"))
             conn.execute(text("ALTER TABLE incidents ADD COLUMN IF NOT EXISTS finished BOOLEAN"))
+            conn.execute(text("ALTER TABLE incidents ADD COLUMN IF NOT EXISTS active_seconds INTEGER"))
+            conn.execute(text("ALTER TABLE incidents ADD COLUMN IF NOT EXISTS resumed_at TIMESTAMP"))
 except Exception as exc:  # the app still starts; the error is shown in the server log
     print("families: could not add new columns:", exc)
 

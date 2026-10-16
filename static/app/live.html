@@ -41,6 +41,14 @@ body.tv .sidebar, body.tv #openDisplay, body.tv #openTv, body.tv #startBtn, body
 body.tv .main { zoom: 1.25; padding: 20px 28px; }
 body.tv .res { max-height: none; }
 @media (max-width: 1100px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: minmax(0, 1fr); } }
+.smsgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.smsgrid div { padding: 10px 14px; border-radius: 12px; background: var(--bg); }
+.smsgrid b { display: block; font-size: 24px; font-weight: 800; color: var(--navy); }
+.smsgrid span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.radio { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; }
+.radio:has(input:checked) { border-color: var(--navy); background: var(--tint); }
+.radio input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--navy); }
+@media (max-width: 800px) { .smsgrid { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -69,24 +77,41 @@ body.tv .res { max-height: none; }
           <div id="bTimes" hidden style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px"></div></div>
       </div>
       <div style="display:flex;align-items:center;gap:16px">
-        <div id="timerBox" hidden><div style="font-size:12px;font-weight:700;color:#FDE8E8;text-align:right">Elapsed</div><div class="timer" id="timer">00:00:00</div></div>
+        <div id="timerBox" hidden><div style="font-size:12px;font-weight:700;color:#FDE8E8;text-align:right">Active time</div><div class="timer" id="timer">00:00:00</div></div>
         <button type="button" class="btn btn-white" id="resumeBtn" hidden>Resume Evacuation</button>
         <button type="button" class="btn btn-primary" id="startBtn">Start Evacuation</button>
         <button type="button" class="btn btn-white" id="endBtn" hidden>End Evacuation</button>
       </div>
     </div>
 
+    <section class="panel" id="smsPanel">
+      <div class="panel-head" style="align-items:center;flex-wrap:wrap">
+        <h2 style="display:flex;align-items:center;gap:10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#142C6E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>SMS alerts to residents</h2>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <span class="chip" id="smsDev">Checking SMS device...</span>
+          <button type="button" class="btn btn-primary btn-sm" id="smsAgain" disabled>Send Alert Again</button>
+        </div>
+      </div>
+      <div class="smsgrid">
+        <div><b id="smsSent">0</b><span>Sent</span></div>
+        <div><b id="smsWait">0</b><span>Waiting to send</span></div>
+        <div><b id="smsFail" class="tone-red">0</b><span>Failed</span></div>
+        <div><b id="smsNum">0</b><span>Mobile numbers registered</span></div>
+      </div>
+      <p class="sub" id="smsNote" style="font-size:13px;color:var(--muted);margin:0">When you press Start Evacuation, every registered mobile number in your barangay automatically receives an evacuation alert.</p>
+    </section>
+
     <div class="stats">
       <div class="kpi"><div class="label">Evacuated</div><div class="value tone-green" id="kIn">0</div><div class="bar" style="margin-top:8px"><span id="kBar" style="width:0"></span></div></div>
       <div class="kpi"><div class="label">Not yet accounted for</div><div class="value" id="kOut">0</div></div>
-      <div class="kpi"><div class="label">Priority not yet here</div><div class="value tone-amber" id="kPrio">0</div><div class="sub">Seniors 60+ and children under 5</div></div>
+      <div class="kpi"><div class="label">Priority not yet here</div><div class="value tone-amber" id="kPrio">0</div><div class="sub">Seniors, children under 5, PWD, pregnant, medical</div></div>
       <div class="kpi"><div class="label">Arrivals this session</div><div class="value" id="kNew">0</div><div class="sub">Since this page was opened</div></div>
     </div>
 
     <div class="layout">
       <div style="display:flex;flex-direction:column;gap:16px">
         <section class="panel">
-          <div class="panel-head"><h2>Entrance camera</h2><span class="note">Raspberry Pi 4</span></div>
+          <div class="panel-head"><h2>Entrance camera</h2></div>
           <div class="latest" id="latest">
             <div class="meta">Waiting for the next evacuee</div>
             <div style="font-size:15px;color:#D6DDF0">Each person the camera identifies appears here within a second, and gets a green check in the list.</div>
@@ -111,10 +136,17 @@ body.tv .res { max-height: none; }
         <ul class="res" id="res"></ul>
         <div id="resEmpty" class="empty" hidden></div>
       </section>
+
+      <section class="panel" id="guestPanel">
+        <div class="panel-head"><h2>Evacuees from other barangays at your centers</h2><span class="note" id="guestCount"></span></div>
+        <p class="meta" style="margin:0 0 10px">These evacuees are registered in another barangay. Their home barangay is informed through BilisLikas that they are safe here. Only basic details are shown.</p>
+        <ul class="res" id="guests"></ul>
+        <div id="guestEmpty" class="empty">No evacuees from other barangays at your centers.</div>
+      </section>
     </div>
   </main>
 </div>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=44"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -149,8 +181,10 @@ body.tv .res { max-height: none; }
       const [summary, evacuees, act] = await Promise.all([
         BL.api('/dashboard/summary'), BL.api('/evacuees'),
         BL.api('/incidents?active=true').catch(() => null),
-        BL.api('/incidents').catch(() => [])
-      ]).then((r) => { allInc = r[3] || []; return r; });
+        BL.api('/incidents').catch(() => []),
+        BL.api('/evacuee_details').catch(() => []),
+        BL.api('/cross/status').catch(() => null)
+      ]).then((r) => { cross = r[5] || { away: [], guests: [] }; allInc = r[3] || []; needsOf = {}; (r[4] || []).forEach((d) => { needsOf[d.id] = d.special_needs || []; }); return r; });
       if (act === null) {
         $('loadError').textContent = 'The evacuation start/end feature needs the batch 3 backend update. Arrivals from the camera still work.';
         $('loadError').hidden = false;
@@ -163,6 +197,8 @@ body.tv .res { max-height: none; }
         if (b.id === brgyId) centers.push(c);
         (c.evacuees || []).forEach((p) => { where[p.id] = c; });
       }));
+      // Cross-barangay: our residents checked in at another barangay's center are accounted for
+      (cross.away || []).forEach((a) => { where[a.evacuee_id] = { id: a.center_id, name: a.center_name, away: true, brgy: a.center_barangay }; });
       residents = (evacuees || []).filter((e) => e.registered_barangay_id === brgyId);
       if (prevWhere) {
         residents.forEach((r) => {
@@ -170,7 +206,9 @@ body.tv .res { max-height: none; }
           if (now && (!before || before.id !== now.id)) {
             arrivals++;
             fresh.add(r.id);
-            feed.unshift({ text: '<strong>' + BL.esc(r.full_name) + '</strong> arrived at ' + BL.esc(now.name), time: BL.time(), dot: '#15803D' });
+            feed.unshift(now.away
+              ? { text: '<strong>' + BL.esc(r.full_name) + '</strong> evacuated to another barangay: ' + BL.esc(now.name) + (now.brgy ? ' (' + BL.esc(now.brgy) + ')' : ''), time: BL.time(), dot: '#B45309' }
+              : { text: '<strong>' + BL.esc(r.full_name) + '</strong> arrived at ' + BL.esc(now.name), time: BL.time(), dot: '#15803D' });
             showLatest(r, now);
           }
         });
@@ -192,14 +230,25 @@ body.tv .res { max-height: none; }
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
   }
 
-  const isPrio = (r) => { const a = BL.age(r.birthdate); return a !== null && (a >= 60 || a < 5); };
+  // Priority rule (same on every page): seniors 60+, children under 5, PWD, pregnant, medical condition
+  let needsOf = {}, cross = { away: [], guests: [] };
+  const prioTags = (r) => {
+    const a = BL.age(r.birthdate), n = needsOf[r.id] || [], t = [];
+    if ((a !== null && a >= 60) || n.includes('Senior citizen')) t.push('Senior');
+    if (a !== null && a < 5) t.push('Child under 5');
+    if (n.includes('PWD')) t.push('PWD');
+    if (n.includes('Pregnant')) t.push('Pregnant');
+    if (n.some((x) => String(x).startsWith('Medical'))) t.push('Medical');
+    return t;
+  };
+  const isPrio = (r) => prioTags(r).length > 0;
 
   function render() {
     // Banner and timer
     const on = !!incident;
     $('banner').className = 'banner' + (on ? ' on' : '');
     $('pulse').hidden = !on;
-    $('timerBox').hidden = !on;
+    $('timerBox').hidden = false;  /* shows 00:00:00 until Start Evacuation is pressed */
     $('startBtn').hidden = on;
     $('endBtn').hidden = !on;
     const canResume = !on && lastEnded && !lastEnded.finished && lastEnded.id === Math.max.apply(null, allInc.filter((x) => x.barangay_id === brgyId).map((x) => x.id));
@@ -210,19 +259,21 @@ body.tv .res { max-height: none; }
     $('bSub').textContent = on ? brgyName(brgyId) + (cName ? ' · center: ' + cName : '') + ' · started ' + BL.dateTime(incident.started_at)
       : (lastEnded ? (lastEnded.finished ? 'The last evacuation was finished and the evacuee list was reset. Start a new one when a disaster happens.' : 'The evacuation was paused. Press Resume Evacuation to continue it, or start a new one.') : 'Start it when a disaster happens so arrivals are tracked against everyone registered.');
     const fmtDate = (d) => BL.parseT(d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-    const dur = (a, b) => { const m = Math.max(0, Math.round((BL.parseT(b) - BL.parseT(a)) / 60000)); return (m >= 60 ? Math.floor(m / 60) + ' hr ' : '') + (m % 60) + ' min'; };
+    const dur = (inc) => { const m = Math.round((inc.active_seconds != null ? inc.active_seconds : Math.max(0, (BL.parseT(inc.ended_at) - BL.parseT(inc.started_at)) / 1000)) / 60); return (m >= 60 ? Math.floor(m / 60) + ' hr ' : '') + (m % 60) + ' min'; };
     const cell = (k, v) => '<div><div style="font-size:12px;font-weight:700;color:#FDE8E8;text-transform:uppercase;letter-spacing:.04em">' + k + '</div><div style="font-size:16px;font-weight:800">' + BL.esc(v) + '</div></div>';
     if (on) {
       $('bTimes').innerHTML = cell('Date', fmtDate(incident.started_at)) + cell('Time started', BL.time(incident.started_at)) + cell('Time ended', 'Ongoing');
       $('bTimes').hidden = false; $('bTimes').style.display = 'flex';
     } else if (lastEnded) {
-      $('bTimes').innerHTML = cell(lastEnded.finished ? 'Last evacuation (finished)' : 'Paused evacuation', lastEnded.disaster_type) + cell('Date', fmtDate(lastEnded.started_at)) + cell('Time started', BL.time(lastEnded.started_at)) + cell(lastEnded.finished ? 'Time ended' : 'Time paused', BL.time(lastEnded.ended_at) + (fmtDate(lastEnded.ended_at) !== fmtDate(lastEnded.started_at) ? ' (' + BL.parseT(lastEnded.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ')' : '')) + cell('Duration', dur(lastEnded.started_at, lastEnded.ended_at));
+      $('bTimes').innerHTML = cell(lastEnded.finished ? 'Last evacuation (finished)' : 'Paused evacuation', lastEnded.disaster_type) + cell('Date', fmtDate(lastEnded.started_at)) + cell('Time started', BL.time(lastEnded.started_at)) + cell(lastEnded.finished ? 'Time ended' : 'Time paused', BL.time(lastEnded.ended_at) + (fmtDate(lastEnded.ended_at) !== fmtDate(lastEnded.started_at) ? ' (' + BL.parseT(lastEnded.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ')' : ''));
       $('bTimes').hidden = false; $('bTimes').style.display = 'flex';
     } else { $('bTimes').hidden = true; $('bTimes').style.display = 'none'; }
     clearInterval(timerId);
+    if (!on) $('timer').textContent = '00:00:00';
+    const loadedAt = Date.now();  // active_seconds from the server already excludes paused time
     if (on) {
       const tick = () => {
-        const s = Math.max(0, Math.floor((Date.now() - BL.parseT(incident.started_at).getTime()) / 1000));
+        const s = Math.max(0, Math.floor((incident.active_seconds || 0) + (Date.now() - loadedAt) / 1000));
         const p = (n) => (n < 10 ? '0' : '') + n;
         $('timer').textContent = p(Math.floor(s / 3600)) + ':' + p(Math.floor(s / 60) % 60) + ':' + p(s % 60);
       };
@@ -245,28 +296,44 @@ body.tv .res { max-height: none; }
     $('kNew').textContent = arrivals;
 
     // Tabs
-    const tabs = [['not', 'Not yet (' + (residents.length - inN) + ')'], ['in', 'Evacuated (' + inN + ')'], ['all', 'All (' + residents.length + ')']];
+    const awayN = residents.filter((r) => where[r.id] && where[r.id].away).length;
+    const tabs = [['not', 'Not yet (' + (residents.length - inN) + ')'], ['in', 'Evacuated (' + inN + ')'], ['away', 'In other barangays (' + awayN + ')'], ['all', 'All (' + residents.length + ')']];
     $('tabs').innerHTML = tabs.map(([k, l]) => '<button type="button" role="tab" class="tab" data-t="' + k + '" aria-selected="' + (k === tab) + '">' + l + '</button>').join('');
 
     // Resident list: priority people first among those not yet here
     const q = $('q').value.trim().toLowerCase();
-    const list = residents.filter((r) => (tab === 'all' || (tab === 'in') === !!where[r.id]) && (!q || String(r.full_name).toLowerCase().includes(q)))
+    const list = residents.filter((r) => (tab === 'all' || (tab === 'away' ? !!(where[r.id] && where[r.id].away) : (tab === 'in') === !!where[r.id])) && (!q || String(r.full_name).toLowerCase().includes(q)))
       .sort((a, b) => (!!where[a.id] - !!where[b.id]) || (isPrio(b) - isPrio(a)) || String(a.full_name).localeCompare(String(b.full_name)));
     $('res').innerHTML = list.map((r) => {
       const a = BL.age(r.birthdate);
       const c = where[r.id];
-      const tag = a !== null && a >= 60 ? '<span class="chip">Senior</span>' : a !== null && a < 5 ? '<span class="chip">Child under 5</span>' : '';
-      const right = c
+      const tag = prioTags(r).map((x) => '<span class="chip">' + BL.esc(x) + '</span>').join(' ');
+      const right = c && c.away
+        ? '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#B45309">Evacuated in another barangay</div><div class="meta">' + BL.esc(c.name) + (c.brgy ? ' &#183; ' + BL.esc(c.brgy) : '') + '</div></div><span class="okdot" aria-hidden="true" style="background:#B45309"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>'
+        : c
         ? '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--green)">Evacuated</div><div class="meta">' + BL.esc(c.name) + '</div></div><span class="okdot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>'
         : '<span class="meta" style="font-weight:700">Not yet</span>';
       return '<li class="' + (fresh.has(r.id) ? 'new' : '') + '"><div><div class="name">' + BL.esc(r.full_name) + ' ' + tag + '</div><div class="meta">' + BL.esc(r.sex || '-') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + (r.identification_method === 'facial_recognition' ? ' &#183; Face ID' : ' &#183; Manual') + '</div></div><div class="right">' + right + '</div></li>';
     }).join('');
     fresh.clear();
     $('resEmpty').hidden = list.length > 0;
-    $('resEmpty').textContent = residents.length ? (tab === 'not' ? 'Everyone registered is accounted for.' : 'No residents match.') : 'No residents are registered in this barangay yet.';
+    renderGuests();
+    $('resEmpty').textContent = residents.length ? (tab === 'away' ? 'None of your residents are in another barangay\'s center.' : tab === 'not' ? 'Everyone registered is accounted for.' : 'No residents match.') : 'No residents are registered in this barangay yet.';
 
     $('feed').innerHTML = feed.slice(0, 40).map((f) => '<li><span class="dot" style="background:' + f.dot + '"></span><span>' + f.text + '</span><span class="time">' + f.time + '</span></li>').join('');
     $('feedEmpty').hidden = feed.length > 0;
+  }
+
+  // Evacuees from other barangays who are at this barangay's centers (basic details only, RA 10173)
+  function renderGuests() {
+    const g = cross.guests || [];
+    $('guestCount').textContent = g.length ? g.length + (g.length === 1 ? ' evacuee' : ' evacuees') : '';
+    $('guests').innerHTML = g.map((x) => {
+      const tag = (x.priority || []).map((t) => '<span class="chip">' + BL.esc(t) + '</span>').join(' ');
+      return '<li><div><div class="name">' + BL.esc(x.full_name) + ' ' + tag + '</div><div class="meta">' + BL.esc(x.sex || '-') + ', ' + (x.age === null ? 'age unknown' : x.age + ' yrs') + ' &#183; From <strong>' + BL.esc(x.home_barangay || 'another barangay') + '</strong></div></div>' +
+        '<div class="right"><div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#B45309">From another barangay</div><div class="meta">' + BL.esc(x.center_name) + ' &#183; ' + BL.time(x.checked_in_at) + '</div></div></div></li>';
+    }).join('');
+    $('guestEmpty').hidden = g.length > 0;
   }
 
   $('startBtn').addEventListener('click', () => {
@@ -340,7 +407,63 @@ body.tv .res { max-height: none; }
   });
 
   await load();
-  BL.connectLive(() => load(), $('live'));
+  // ---------- SMS alerts ----------
+  let smsOk = false;
+  async function loadSms() {
+    let st;
+    try { st = await BL.api('/sms/barangay-status' + (brgyId ? '?barangay_id=' + brgyId : '')); smsOk = true; }
+    catch (e) { smsOk = false; $('smsDev').textContent = 'SMS feature not installed'; $('smsDev').className = 'chip'; $('smsAgain').disabled = true; return; }
+    const c = st.counts || {};
+    $('smsSent').textContent = c.sent || 0;
+    $('smsWait').textContent = (c.queued || 0) + (c.sending || 0);
+    $('smsFail').textContent = c.failed || 0;
+    $('smsNum').textContent = st.with_number || 0;
+    $('smsDev').textContent = !st.enabled ? 'SMS sending is turned off on this server' : st.device_online ? 'SMS device online' : 'SMS device offline: messages will wait';
+    $('smsDev').className = 'chip ' + (st.enabled && st.device_online ? 'green' : 'red');
+    $('smsAgain').disabled = !st.active;
+    $('smsNote').textContent = st.active
+      ? 'Counts are for this evacuation.' + (st.last_sent ? ' Last text sent ' + BL.time(st.last_sent) + '.' : '') + ' Use Send Alert Again to remind residents who have not arrived yet.'
+      : 'When you press Start Evacuation, every registered mobile number in your barangay automatically receives an evacuation alert.';
+  }
+  $('smsAgain').addEventListener('click', () => {
+    const m = BL.modal('<form id="sf" novalidate style="display:contents"><div class="dialog-head"><h2>Send the evacuation alert again</h2>' +
+      '<button type="button" class="x-btn" data-close aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5368" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button></div>' +
+      '<div class="dialog-body" style="display:flex;flex-direction:column;gap:12px"><div class="form-error" id="sErr" hidden></div>' +
+      '<label class="radio"><input type="radio" name="tg" value="not_evacuated" checked><span><strong>Only residents not yet evacuated</strong><br><span style="font-size:13px;color:var(--muted)">Skips families whose members are all inside a center.</span></span></label>' +
+      '<label class="radio"><input type="radio" name="tg" value="all"><span><strong>Everyone in the barangay</strong><br><span style="font-size:13px;color:var(--muted)">All registered mobile numbers, including those already evacuated.</span></span></label>' +
+      '<div class="field-group"><label for="sMsg">Message <span style="font-weight:500;color:var(--muted)">(leave blank to use the standard reminder)</span></label>' +
+      '<textarea id="sMsg" class="input" rows="3" maxlength="300" style="height:auto;padding:10px 12px" placeholder="PAALALA: Patuloy po ang evacuation. Kung hindi pa kayo nakalilikas, pumunta na po sa evacuation center."></textarea>' +
+      '<div style="font-size:12px;color:var(--muted);margin-top:4px"><span id="sLen">0</span> / 300 characters. Long messages are sent as more than one text.</div></div></div>' +
+      '<div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="sGo">Send Alert</button></div></div></form>', 620);
+    const g = (id) => m.el.querySelector('#' + id);
+    g('sMsg').addEventListener('input', () => { g('sLen').textContent = g('sMsg').value.length; });
+    g('sf').addEventListener('submit', async (e) => {
+      e.preventDefault(); g('sGo').disabled = true;
+      try {
+        const r = await BL.api('/sms/resend', { method: 'POST', json: { target: m.el.querySelector('input[name=tg]:checked').value, message: g('sMsg').value.trim() || null, barangay_id: brgyId } });
+        m.close(); BL.toast(r.queued ? r.queued + ' text' + (r.queued === 1 ? '' : 's') + ' added to the sending list.' : 'Nobody needs the alert: everyone is already evacuated.');
+        loadSms();
+      } catch (ex) { g('sErr').textContent = ex.message; g('sErr').hidden = false; g('sGo').disabled = false; }
+    });
+  });
+  loadSms();
+  setInterval(loadSms, 5000);
+
+  BL.connectLive(() => { load(); loadSms(); }, $('live'));
+})();
+</script>
+<script>
+(function () {
+  var me = BL.cachedMe && BL.cachedMe();
+  function hide() {
+    var m = BL.cachedMe && BL.cachedMe();
+    if (!m || m.role !== 'city_admin') return;
+    document.querySelectorAll('main a, main button').forEach(function (b) {
+      if (/^(Open Entrance Display|Open TV Mode)$/.test(b.textContent.trim())) b.remove();
+    });
+  }
+  hide();
+  new MutationObserver(hide).observe(document.body, { childList: true, subtree: true });
 })();
 </script>
 </body>

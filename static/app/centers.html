@@ -31,13 +31,18 @@
         <p>Where evacuees can go, and how full each place is right now.</p>
       </div>
       <div class="toolbar">
-        <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
+        <span class="live-badge" id="live" style="display:none"><span class="dot"></span><span class="txt">Connecting</span></span>
         <select id="bFilter" class="input" style="width:220px;height:46px" hidden aria-label="Filter by barangay"></select>
-        <button type="button" class="btn btn-primary" id="add">Add Center</button>
+        <button type="button" class="btn btn-primary" id="add" hidden>Add Center</button>
       </div>
     </div>
 
     <div id="loadError" class="form-error" role="alert" hidden></div>
+
+    <section class="panel" id="reqPanel" hidden style="border-left:4px solid #F59E0B">
+      <div class="panel-head"><h2 id="reqTitle">Change requests</h2><span class="note" id="reqNote"></span></div>
+      <div class="table-wrap"><table class="data"><thead><tr><th scope="col">Center</th><th scope="col">Request</th><th scope="col">Requested by</th><th scope="col">Status</th><th scope="col" style="text-align:right">Action</th></tr></thead><tbody id="reqRows"></tbody></table></div>
+    </section>
 
     <div class="stats">
       <div class="kpi"><div class="label">Evacuees in centers</div><div class="value" id="sIn">0</div></div>
@@ -47,16 +52,59 @@
     </div>
 
     <div class="cards" id="cards"></div>
-    <div id="empty" class="empty" hidden>No evacuation centers yet. Add your barangay's first center.</div>
+    <div id="empty" class="empty" hidden>No evacuation centers yet. New centers are added by the City Hall IT Administrator.</div>
   </main>
 </div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=44"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
   const city = me.role === 'city_admin';
   const $ = (id) => document.getElementById(id);
-  let brgys = [], brgyNames = {}, centers = [], live = {};
+  let brgys = [], brgyNames = {}, centers = [], live = {}, reqs = [];
+  let itAdmin = false;
+  if (city) { try { itAdmin = !!(await BL.api('/admin/me')).is_it_admin; } catch (e) {} }
+  $('add').hidden = !itAdmin;
+  const pendingFor = (cid) => reqs.find((r) => r.center_id === cid && r.status === 'pending');
+
+  // ---- change requests (barangay officials ask, the IT Administrator approves) ----
+  const ST = { pending: ['Waiting for approval', '#FFF7ED', '#B45309'], approved: ['Approved', '#E8F7EE', '#15803D'], rejected: ['Rejected', '#FDECEC', '#B91C1C'] };
+  function describe(r) {
+    if (r.action === 'delete') return '<strong style="color:#B91C1C">Delete center</strong>';
+    const lab = { name: 'Name', address: 'Address', capacity: 'Capacity' };
+    return '<strong>Edit</strong><div style="font-size:12px;color:var(--muted)">' + Object.keys(r.changes || {}).map((k) =>
+      lab[k] + ': ' + BL.esc(String(r.current ? r.current[k] : '-')) + ' &rarr; <strong style="color:var(--navy)">' + BL.esc(String(r.changes[k])) + '</strong>').join('<br>') + '</div>';
+  }
+  async function loadReqs() {
+    if (city && !itAdmin) { $('reqPanel').hidden = true; return; }
+    try { reqs = await BL.api('/center-requests') || []; } catch (e) { reqs = []; }
+    const list = itAdmin ? reqs.filter((r) => r.status === 'pending') : reqs.slice(0, 8);
+    $('reqPanel').hidden = !list.length;
+    $('reqTitle').textContent = itAdmin ? 'Center changes waiting for your approval' : 'Your change requests';
+    $('reqNote').textContent = itAdmin ? list.length + ' pending' : 'Reviewed by the City Hall IT Administrator';
+    $('reqRows').innerHTML = list.map((r) => { const st = ST[r.status] || ST.pending;
+      return '<tr><td><strong style="color:var(--navy)">' + BL.esc(r.center) + '</strong><div style="font-size:12px;color:var(--muted)">' + BL.esc(r.barangay || '') + '</div></td>' +
+        '<td>' + describe(r) + (r.reason ? '<div style="font-size:12px;margin-top:4px">Reason: ' + BL.esc(r.reason) + '</div>' : '') + '</td>' +
+        '<td style="font-size:13px">' + BL.esc(r.requested_by || '-') + '<div style="font-size:12px;color:var(--muted)">' + BL.dateTime(r.created_at) + '</div></td>' +
+        '<td><span class="chip" style="background:' + st[1] + ';color:' + st[2] + '">' + st[0] + '</span>' + (r.review_note ? '<div style="font-size:12px;color:var(--muted)">' + BL.esc(r.review_note) + '</div>' : '') + '</td>' +
+        '<td style="text-align:right;white-space:nowrap">' + (itAdmin && r.status === 'pending'
+          ? '<button type="button" class="btn btn-primary btn-sm" data-rq="approve" data-rid="' + r.id + '">Approve</button> <button type="button" class="btn btn-ghost btn-sm" data-rq="reject" data-rid="' + r.id + '">Reject</button>' : '') + '</td></tr>'; }).join('');
+  }
+  $('reqRows').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-rq]'); if (!b) return;
+    const r = reqs.find((x) => x.id === Number(b.dataset.rid)); if (!r) return;
+    if (b.dataset.rq === 'approve') {
+      BL.confirmBox({ title: (r.action === 'delete' ? 'Delete ' : 'Apply changes to ') + r.center + '?',
+        text: r.action === 'delete' ? 'The center and its check-in history will be removed. This cannot be undone.' : 'The new details will be saved and shown to everyone.',
+        ok: 'Approve', danger: r.action === 'delete',
+        action: () => BL.api('/center-requests/' + r.id + '/approve', { method: 'POST' })
+      }).then((ok) => { if (ok) { BL.toast('Request approved.'); load(); } });
+    } else {
+      BL.confirmBox({ title: 'Reject this request?', text: 'The center stays as it is. The barangay official will see that the request was rejected.', ok: 'Reject', danger: true,
+        action: () => BL.api('/center-requests/' + r.id + '/reject', { method: 'POST', json: {} })
+      }).then((ok) => { if (ok) { BL.toast('Request rejected.'); load(); } });
+    }
+  });
 
   try { brgys = await BL.api('/barangays') || []; } catch (e) { brgys = []; }
   brgys.forEach((b) => { brgyNames[b.id] = b.name; });
@@ -74,6 +122,7 @@
       (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => { live[c.id] = c; }));
       centers = (list || []).filter((c) => city || c.barangay_id === me.barangay_id);
       $('loadError').hidden = true;
+      await loadReqs();
       render();
     } catch (e) {
       $('loadError').textContent = e.message; $('loadError').hidden = false;
@@ -105,8 +154,9 @@
         '<div style="font-size:12px;font-weight:600;margin-top:6px;color:' + (p >= 0.8 ? 'var(--orange-text)' : 'var(--muted)') + '">' + note + '</div></div>' +
         '<div class="actions">' +
         '<button type="button" class="btn btn-primary btn-sm" data-act="view" data-id="' + c.id + '">View Details</button>' +
+        (city && !itAdmin ? '' : pendingFor(c.id) ? '<span class="chip" style="background:#FFF7ED;color:#B45309;align-self:center">Change waiting for approval</span>' :
         '<button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + c.id + '" aria-label="Edit ' + BL.esc(c.name) + '">Edit</button>' +
-        '<button type="button" class="btn btn-del btn-sm" data-act="del" data-id="' + c.id + '" aria-label="Delete ' + BL.esc(c.name) + '">Delete</button>' +
+        '<button type="button" class="btn btn-del btn-sm" data-act="del" data-id="' + c.id + '" aria-label="Delete ' + BL.esc(c.name) + '">Delete</button>') +
         '</div></article>';
     }).join('');
     $('empty').hidden = shown.length > 0;
@@ -148,8 +198,10 @@
       '<div class="field-group span4"><label for="cAddr">Address *</label><input id="cAddr" class="input" value="' + BL.esc(editing ? (c.address || '') : '') + '"></div>' +
       '<div class="field-group"><label for="cCap">Capacity *</label><input id="cCap" type="number" min="1" class="input" value="' + (editing ? c.capacity : '') + '"></div>' +
       brgySelect +
+      (itAdmin ? '' : '<div class="field-group span4"><label for="cWhy">Reason for the change *</label><input id="cWhy" class="input" placeholder="e.g., The covered court was expanded"></div>' +
+        '<div class="span4" style="font-size:13px;color:var(--navy);background:#EEF2FF;border-radius:10px;padding:10px 12px">Your change will be sent to the City Hall IT Administrator. It takes effect only after it is approved.</div>') +
       '</div></div>' +
-      '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)" id="cHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="cSave">' + (editing ? 'Save Changes' : 'Add Center') + '</button></div></div>' +
+      '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)" id="cHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="cSave">' + (!itAdmin ? 'Send for Approval' : editing ? 'Save Changes' : 'Add Center') + '</button></div></div>' +
       '</form>', 640);
     const f = (id) => m.el.querySelector('#' + id);
     const sync = () => {
@@ -157,17 +209,21 @@
       if (!f('cName').value.trim()) miss.push('name');
       if (!f('cAddr').value.trim()) miss.push('address');
       if (!(Number(f('cCap').value) > 0)) miss.push('capacity');
+      if (!itAdmin && !f('cWhy').value.trim()) miss.push('reason');
       f('cSave').disabled = miss.length > 0;
       f('cHint').textContent = miss.length ? 'Required: ' + miss.join(', ') + '.' : 'Ready to save.';
     };
-    ['cName', 'cAddr', 'cCap'].forEach((id) => f(id).addEventListener('input', sync));
+    ['cName', 'cAddr', 'cCap'].concat(itAdmin ? [] : ['cWhy']).forEach((id) => f(id).addEventListener('input', sync));
     sync();
     f('cf').addEventListener('submit', async (e) => {
       e.preventDefault();
       f('cSave').disabled = true;
       const body = { name: f('cName').value.trim(), address: f('cAddr').value.trim(), capacity: Number(f('cCap').value) };
       try {
-        if (editing) {
+        if (!itAdmin) {
+          await BL.api('/center-requests', { method: 'POST', json: Object.assign({ center_id: c.id, action: 'edit', reason: f('cWhy').value.trim() }, body) });
+          BL.toast('Edit request sent for approval.');
+        } else if (editing) {
           await BL.api('/evacuation_centers/' + c.id, { method: 'PUT', json: body });
           BL.toast('Center information updated.');
         } else {
@@ -183,12 +239,36 @@
     });
   }
 
-  function del(c) {
+  async function del(c) {
+    if (!itAdmin) {
+      const m = BL.modal('<form id="df" novalidate style="display:contents"><div class="dialog-head"><h2>Request to delete ' + BL.esc(c.name) + '</h2>' + xBtn + '</div>' +
+        '<div class="dialog-body"><div class="form-error" id="dErr" hidden style="margin-bottom:12px"></div>' +
+        '<p style="font-size:15px;line-height:1.6;color:#3D4659;margin-bottom:12px">The City Hall IT Administrator will review this request. The center stays in the list until the request is approved.</p>' +
+        '<div class="field-group"><label for="dWhy">Reason for deleting *</label><input id="dWhy" class="input" placeholder="e.g., The school building is no longer available"></div></div>' +
+        '<div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-danger" id="dSend" disabled>Send Delete Request</button></div></div></form>', 560);
+      const g = (id) => m.el.querySelector('#' + id);
+      g('dWhy').addEventListener('input', () => { g('dSend').disabled = !g('dWhy').value.trim(); });
+      g('df').addEventListener('submit', async (e) => {
+        e.preventDefault(); g('dSend').disabled = true;
+        try { await BL.api('/center-requests', { method: 'POST', json: { center_id: c.id, action: 'delete', reason: g('dWhy').value.trim() } });
+          m.close(); BL.toast('Delete request sent for approval.'); load(); }
+        catch (ex) { g('dErr').textContent = ex.message; g('dErr').hidden = false; g('dSend').disabled = false; }
+      });
+      return;
+    }
+    let u = { inside: occOf(c), checkins: 0 };
+    try { u = await BL.api('/evacuation_centers/' + c.id + '/usage'); } catch (e) {}
+    if (u.inside > 0) {
+      BL.confirmBox({ title: 'Cannot delete ' + c.name + ' yet',
+        text: 'There are still ' + u.inside + (u.inside === 1 ? ' evacuee' : ' evacuees') + ' inside this center. Move them to another center first.', ok: 'OK' });
+      return;
+    }
     BL.confirmBox({
-      title: 'Delete ' + c.name + '?',
-      text: 'This removes the center from the list. Centers with evacuees inside, or with past check-ins, are kept for the records and cannot be deleted.',
-      ok: 'Delete Center', danger: true,
-      action: () => BL.api('/evacuation_centers/' + c.id, { method: 'DELETE' })
+      title: 'Are you sure you want to delete ' + c.name + '?',
+      text: u.checkins ? 'There are still ' + u.checkins + (u.checkins === 1 ? ' check-in record' : ' check-in records') + ' linked to this center. Deleting it will also remove these records from the history.'
+        : 'This center will be removed from the list. This cannot be undone.',
+      ok: 'Yes, Delete', danger: true,
+      action: () => BL.api('/evacuation_centers/' + c.id + '/force', { method: 'DELETE' })
     }).then((done) => { if (done) { BL.toast(c.name + ' was deleted.'); load(); } });
   }
 
@@ -198,3 +278,32 @@
 </script>
 </body>
 </html>
+<script>
+(function () {
+  function equalize() {
+    document.querySelectorAll('main button, main a').forEach(function (b) {
+      if (b.textContent.trim() !== 'View Details') return;
+      var row = b.parentElement;
+      var card = row;
+      while (card.parentElement && getComputedStyle(card.parentElement).display.indexOf('grid') === -1) card = card.parentElement;
+      var grid = card.parentElement;
+      if (!grid || grid.dataset.eq) return;
+      grid.dataset.eq = '1';
+      grid.style.alignItems = 'stretch';
+      grid.style.gridAutoRows = '1fr';
+      grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+    });
+    document.querySelectorAll('[data-eq="1"] > *').forEach(function (card) {
+      card.style.display = 'flex';
+      card.style.flexDirection = 'column';
+      card.style.height = '100%';
+      var h = card.querySelector('h2, h3, strong');
+      if (h) { h.style.display = '-webkit-box'; h.style.webkitLineClamp = '2'; h.style.webkitBoxOrient = 'vertical'; h.style.overflow = 'hidden'; }
+      var btn = Array.prototype.find.call(card.querySelectorAll('button, a'), function (x) { return x.textContent.trim() === 'View Details'; });
+      if (btn && btn.parentElement !== card) btn.parentElement.style.marginTop = 'auto';
+    });
+  }
+  new MutationObserver(equalize).observe(document.body, { childList: true, subtree: true });
+  equalize();
+})();
+</script>

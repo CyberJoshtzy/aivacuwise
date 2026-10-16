@@ -17,7 +17,19 @@
 .cap { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
 .stage { position: relative; aspect-ratio: 4 / 3; border-radius: 14px; background: #1B2233; overflow: hidden; }
 .stage video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
-.stage .oval { position: absolute; left: 50%; top: 46%; width: 42%; height: 70%; transform: translate(-50%, -50%); border: 3px dashed var(--orange); border-radius: 50%; pointer-events: none; }
+.stage .oval { position: absolute; left: 50%; top: 46%; width: 42%; height: 70%; transform: translate(-50%, -50%); border: 4px dashed var(--orange); border-radius: 50%; pointer-events: none; transition: border-color .2s, box-shadow .2s; }
+.stage .oval.bad { border: 5px solid #EF4444; box-shadow: 0 0 0 4px rgba(239,68,68,.25), inset 0 0 30px rgba(239,68,68,.25); }
+.stage .oval.good { border: 5px solid #22C55E; box-shadow: 0 0 0 4px rgba(34,197,94,.3), inset 0 0 30px rgba(34,197,94,.25); }
+.stage .say.bad { background: rgba(185,28,28,.92); }
+.stage .say.good { background: rgba(21,128,61,.92); }
+.stage .sample { position: absolute; top: 12px; right: 12px; width: 132px; padding: 8px; border-radius: 12px; background: rgba(255,255,255,.95); text-align: center; font-size: 12px; font-weight: 800; color: var(--navy); box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.stage .sample svg { display: block; margin: 0 auto 4px; }
+.stage .facestate { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 800; color: #FFFFFF; background: rgba(14,31,79,.8); }
+.stage .facestate i { width: 12px; height: 12px; border-radius: 50%; background: #9AA3B2; display: inline-block; }
+.stage .facestate.bad i { background: #EF4444; } .stage .facestate.good i { background: #22C55E; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
 .stage .say { position: absolute; left: 14px; right: 14px; bottom: 14px; padding: 12px 16px; border-radius: 12px; background: rgba(14,31,79,.85); color: #FFFFFF; font-size: 17px; font-weight: 700; text-align: center; }
 .stage .arrow { position: absolute; top: 46%; width: 60px; height: 60px; margin-top: -30px; border-radius: 50%; background: rgba(247,148,29,.2); display: flex; align-items: center; justify-content: center; }
 .stage .flash { position: absolute; inset: 0; background: #FFFFFF; animation: fl .45s ease-out forwards; }
@@ -25,8 +37,9 @@
 .off { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 24px; text-align: center; color: #FFFFFF; }
 .guides { display: flex; gap: 22px; align-items: flex-end; }
 .guides div { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #D6DDF0; }
-.guides span { width: 88px; height: 88px; border-radius: 14px; background: #2A3450; display: flex; align-items: center; justify-content: center; }
-.guides .mid span { width: 104px; height: 104px; border: 2px solid var(--orange); }
+.guides span { width: 104px; height: 112px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; }
+.guides .mid span { border: 3px solid var(--orange); }
+.guides small { font-weight: 600; color: #AEB8D4; }
 .slot { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; border: 2px solid var(--line-soft); background: #FFFFFF; }
 .slot.active { border-color: var(--orange); background: #FFF8EE; }
 .slot.ok { border-color: #BBE5C8; }
@@ -73,18 +86,17 @@
           <div class="arrow" id="arrowL" hidden style="left:24px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F7941D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></div>
           <div class="arrow" id="arrowR" hidden style="right:24px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F7941D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></div>
           <div class="say" id="say" hidden></div>
+          <div class="facestate" id="faceState" hidden><i></i><span>Checking face...</span></div>
+          <div class="sample" id="sample" hidden></div>
           <div class="off" id="off">
-            <div class="guides">
-              <div><span><svg width="60" height="60" viewBox="0 0 44 44"><g transform="translate(-3 0)"><ellipse cx="22" cy="18" rx="8" ry="10" fill="#8C9ACB"/><path d="M9 44c1-9 6-13 13-13s12 4 13 13z" fill="#8C9ACB"/></g></svg></span>1. Left side</div>
-              <div class="mid"><span><svg width="72" height="72" viewBox="0 0 44 44"><ellipse cx="22" cy="18" rx="8" ry="10" fill="#8C9ACB"/><path d="M9 44c1-9 6-13 13-13s12 4 13 13z" fill="#8C9ACB"/></svg></span>2. Front</div>
-              <div><span><svg width="60" height="60" viewBox="0 0 44 44"><g transform="translate(3 0)"><ellipse cx="22" cy="18" rx="8" ry="10" fill="#8C9ACB"/><path d="M9 44c1-9 6-13 13-13s12 4 13 13z" fill="#8C9ACB"/></g></svg></span>3. Right side</div>
-            </div>
+            <div class="guides" id="guides"></div>
             <div style="max-width:520px"><div style="font-size:19px;font-weight:800">Three photos will be taken: left side, front, and right side</div>
-            <div style="font-size:14px;line-height:1.55;color:#C3CCE4;margin-top:6px">Ask the evacuee to remove caps, sunglasses, and face masks, and sit about an arm's length from the laptop. Your browser will ask permission to use the camera.</div></div>
+            <div style="font-size:14px;line-height:1.55;color:#C3CCE4;margin-top:6px">Ask the evacuee to remove caps, sunglasses, and face masks, and sit about an arm's length from the laptop. The oval turns <strong style="color:#FCA5A5">red</strong> while the face is not ready and <strong style="color:#86EFAC">green</strong> when it can be captured.</div></div>
             <button type="button" class="btn btn-primary btn-lg" id="camOn">Turn On Camera</button>
           </div>
         </div>
         <div style="display:flex;justify-content:center"><button type="button" class="btn btn-primary btn-lg" id="shoot" hidden>Capture Photo</button></div>
+        <div class="legend"><span><i style="background:#EF4444"></i>Red: face not ready (covered, too far, wrong turn)</span><span><i style="background:#22C55E"></i>Green: face detected, ready to capture</span></div>
       </div>
       <div class="side">
         <section class="panel">
@@ -178,7 +190,7 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=44"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -222,6 +234,67 @@
 
   // ---------- Step 1: camera ----------
   const target = () => angles().find((a) => !shots[a.key]);
+
+  // Sample head drawings that show how far to turn (as seen on the mirrored screen)
+  function head(dir, size) {
+    const d = dir * 11;                      // -1 = turned to the screen's left, 1 = right
+    const ear = dir === 0 ? '<ellipse cx="13" cy="42" rx="4" ry="7" fill="#E8B58F"/><ellipse cx="67" cy="42" rx="4" ry="7" fill="#E8B58F"/>'
+      : '<ellipse cx="' + (dir < 0 ? 66 : 14) + '" cy="42" rx="4.5" ry="8" fill="#E8B58F"/>';
+    return '<svg width="' + size + '" height="' + Math.round(size * 1.1) + '" viewBox="0 0 80 88" aria-hidden="true">' +
+      '<path d="M14 88c2-14 12-20 26-20s24 6 26 20z" fill="#1F4FD8"/>' + '<rect x="33" y="60" width="14" height="12" fill="#E8B58F"/>' + ear +
+      '<ellipse cx="' + (40 + d * 0.4) + '" cy="40" rx="' + (dir ? 24 : 26) + '" ry="31" fill="#F2C7A5"/>' +
+      '<path d="M' + (15 + d * 0.3) + ' 34c0-18 11-26 25-26s25 8 25 26c-6-8-14-11-25-11s-19 3-25 11z" fill="#2B2B33"/>' +
+      '<ellipse cx="' + (30 + d) + '" cy="40" rx="3" ry="3.4" fill="#2B2B33"/><ellipse cx="' + (50 + d) + '" cy="40" rx="3" ry="3.4" fill="#2B2B33"/>' +
+      '<path d="M' + (40 + d * 1.3) + ' 44l' + (dir * 8 || 0) + ' 9h' + (-(dir * 8) || -4) + '" fill="none" stroke="#C98B66" stroke-width="2" stroke-linecap="round"/>' +
+      '<path d="M' + (33 + d) + ' 58q' + 7 + ' 5 14 0" fill="none" stroke="#B5524A" stroke-width="2.2" stroke-linecap="round"/>' +
+      '</svg>';
+  }
+  const GUIDE = { left: [-1, 'Turn slightly to the LEFT', 'about 30 to 45 degrees'], front: [0, 'Look straight ahead', 'face the camera'], right: [1, 'Turn slightly to the RIGHT', 'about 30 to 45 degrees'] };
+  $('guides').innerHTML = ANGLES.map((a, i) => '<div class="' + (a.key === 'front' ? 'mid' : '') + '"><span>' + head(GUIDE[a.key][0], 80) + '</span>' + (i + 1) + '. ' + a.label + '<small>' + GUIDE[a.key][2] + '</small></div>').join('');
+
+  // ---------- live face check: red until a full face is detected, then green ----------
+  let faceOk = false, faceTimer = null, faceBusy = false, faceCheckOn = true, okStreak = 0;
+  function setFace(state, msg) {
+    const o = $('oval'), say = $('say'), fs = $('faceState');
+    o.classList.toggle('bad', state === 'bad'); o.classList.toggle('good', state === 'good');
+    say.classList.toggle('bad', state === 'bad'); say.classList.toggle('good', state === 'good');
+    fs.className = 'facestate ' + (state === 'good' ? 'good' : state === 'bad' ? 'bad' : '');
+    fs.querySelector('span').textContent = state === 'good' ? 'Face detected' : state === 'bad' ? 'Face not ready' : 'Checking face...';
+    const t = target();
+    say.textContent = msg || (t ? t.say : 'All photos captured.');
+  }
+  async function checkFrame() {
+    const t = target();
+    if (!stream || !t || faceBusy || step !== 1) return;
+    if (!faceCheckOn) { faceOk = true; setFace('', t.say + ' (live face check unavailable, check the photo yourself)'); updateShoot(); return; }
+    const v = $('video'); if (!v.videoWidth) return;
+    const c = document.createElement('canvas'); c.width = 400; c.height = Math.round(400 * v.videoHeight / v.videoWidth);
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    faceBusy = true;
+    try {
+      const r = await BL.api('/faces/check', { method: 'POST', json: { image: c.toDataURL('image/jpeg', 0.7), angle: t.key } });
+      if (target() !== t) return;               // the photo was taken meanwhile
+      okStreak = r.ok ? okStreak + 1 : 0;
+      faceOk = okStreak >= 2;                   // green only after two good checks in a row (about half a second)
+      setFace(faceOk ? 'good' : 'bad', faceOk ? t.say + ': hold still and capture' : r.ok ? 'Hold still...' : r.message);
+    } catch (e) {
+      if (/404|503|not installed|Not Found/i.test(e.message)) faceCheckOn = false;
+      else { faceOk = false; setFace('bad', 'Face check failed: ' + e.message); }
+    } finally { faceBusy = false; updateShoot(); }
+  }
+  function updateShoot() {
+    const t = target(), need = !isInfant();
+    const ready = !need || faceOk;
+    $('shoot').disabled = !ready;
+    if (t) $('shoot').textContent = ready ? 'Capture ' + t.label + ' Photo' : 'Waiting for a clear face (' + t.label + ')';
+  }
+  function startFaceCheck() { stopFaceCheck(); faceOk = false; okStreak = 0; setFace('bad'); faceTimer = setInterval(checkFrame, 300); }
+  function stopFaceCheck() { clearInterval(faceTimer); faceTimer = null; faceOk = false; okStreak = 0; }
+  function showSample() {
+    const t = target();
+    $('sample').hidden = !stream || !t;
+    if (t) $('sample').innerHTML = head(GUIDE[t.key][0], 64) + 'Do this: ' + GUIDE[t.key][1].toLowerCase();
+  }
   function drawCapture() {
     const t = target();
     const n = angles().filter((a) => shots[a.key]).length;
@@ -231,7 +304,9 @@
     $('arrowL').hidden = !stream || !t || t.arrow !== 'L';
     $('arrowR').hidden = !stream || !t || t.arrow !== 'R';
     $('shoot').hidden = !stream || !t;
-    if (t) $('shoot').textContent = 'Capture ' + t.label + ' Photo';
+    showSample();
+    updateShoot();
+    if (stream && !t) { stopFaceCheck(); setFace('good', 'All photos captured.'); }
     $('slots').innerHTML = angles().map((a) => {
       const c = checks[a.key];
       const cls = c ? (c.ok ? 'ok' : 'bad') : (t && t.key === a.key && stream ? 'active' : '');
@@ -249,7 +324,8 @@
       stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
       const v = $('video');
       v.srcObject = stream; v.hidden = false; await v.play();
-      $('off').hidden = true; $('oval').hidden = false; $('say').hidden = false;
+      $('off').hidden = true; $('oval').hidden = false; $('say').hidden = false; $('faceState').hidden = false;
+      startFaceCheck();
       $('camBadge').className = 'live-badge on'; $('camBadge').querySelector('.txt').textContent = 'Camera on';
       drawCapture();
     } catch (e) {
@@ -260,13 +336,15 @@
   function stopCamera() {
     if (stream) stream.getTracks().forEach((t) => t.stop());
     stream = null;
-    $('video').hidden = true; $('oval').hidden = true; $('say').hidden = true; $('off').hidden = false;
+    stopFaceCheck();
+    $('video').hidden = true; $('oval').hidden = true; $('say').hidden = true; $('off').hidden = false; $('faceState').hidden = true; $('sample').hidden = true;
     $('camBadge').className = 'live-badge'; $('camBadge').querySelector('.txt').textContent = 'Camera off';
   }
   window.addEventListener('beforeunload', stopCamera);
 
   $('shoot').addEventListener('click', async () => {
     const t = target(); if (!t) return;
+    if (!isInfant() && !faceOk) { BL.toast('Wait until the oval turns green.'); return; }
     const v = $('video');
     const c = document.createElement('canvas');
     c.width = v.videoWidth || 640; c.height = v.videoHeight || 480;
@@ -274,6 +352,7 @@
     shots[t.key] = c.toDataURL('image/jpeg', 0.9);
     const f = document.createElement('div'); f.className = 'flash'; $('stage').appendChild(f); setTimeout(() => f.remove(), 500);
     embedding = null; checks = {};
+    faceOk = false; okStreak = 0; if (target()) setFace('bad');
     drawCapture();
     if (!target() && !isInfant()) await checkFaces();
     if (isInfant()) stopCamera();
@@ -284,6 +363,7 @@
     delete shots[b.dataset.retake];
     embedding = null; checks = {};
     $('checkMsg').hidden = true;
+    if (stream && !faceTimer) startFaceCheck();
     drawCapture();
   });
 

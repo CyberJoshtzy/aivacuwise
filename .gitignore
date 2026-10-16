@@ -8,3 +8,13 @@ __pycache__/
 *.bak_*
 data/
 sim/logs/
+
+# Local backups, logs, and database dumps
+backup-*/
+logs/
+*.bak
+*.sql
+*.dump
+
+# Local scripts with credentials (never commit)
+*.gz

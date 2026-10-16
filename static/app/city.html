@@ -7,166 +7,338 @@
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=11">
 <style>
-.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-.kpis .kpi .value { font-size: 28px; }
-.alerts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.alerts li { padding: 10px 12px; border-radius: 10px; display: flex; gap: 10px; font-size: 13px; line-height: 1.45; }
-.alerts .dot { width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; flex-shrink: 0; }
-.occ { display: flex; align-items: center; gap: 10px; min-width: 200px; }
-.occ .bar { flex-grow: 1; }
-.occ strong { width: 92px; text-align: right; font-size: 13px; }
-.filter-tag { display: inline-flex; align-items: center; gap: 8px; }
-@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+:root { --ok: #15803D; --warn: #B45309; --bad: #B91C1C; --line2: #E3E8F2; }
+.main { gap: 18px; }
+/* header */
+.hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.hero h1 { margin: 0; }
+.hero .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; background: #FFFFFF; border: 1px solid var(--line2); color: #3D4659; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: #C2CAD8; }
+.pill.on { background: #FFF7ED; border-color: #F59E0B; color: var(--warn); } .pill.on i { background: #F59E0B; animation: blink 1.4s infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+/* stat cards */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.stat { background: #FFFFFF; border: 1px solid var(--line2); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; transition: box-shadow .15s, transform .15s; }
+a.stat:hover { box-shadow: 0 8px 22px rgba(11,31,77,.10); transform: translateY(-2px); }
+.stat .lb { font-size: 13px; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; }
+.stat .lb span { opacity: .5; }
+.stat .big { font-size: 34px; font-weight: 800; line-height: 1.05; color: var(--navy); }
+.stat .big small { font-size: 15px; font-weight: 700; color: var(--muted); }
+.stat .sm { font-size: 13px; color: var(--muted); }
+.stat.hero-stat { border-top: 4px solid #15803D; }
+.stat.hero-stat .big { color: #15803D; }
+.meter { height: 6px; border-radius: 999px; background: #EEF1F6; overflow: hidden; }
+.meter b { display: block; height: 100%; border-radius: 999px; background: #15803D; }
+.mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mini a { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #FFFFFF; border: 1px solid var(--line2); border-radius: 14px; text-decoration: none; color: inherit; }
+.mini a:hover { border-color: var(--orange); }
+.mini .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #EEF2FF; color: var(--navy); flex-shrink: 0; }
+.mini .ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mini strong { font-size: 20px; color: var(--navy); display: block; line-height: 1.1; }
+.mini span { font-size: 12px; color: var(--muted); }
+/* layout */
+.cols { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.card { background: #FFFFFF; border: 1px solid var(--line2); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card-h h2 { font-size: 18px; margin: 0; }
+.card-h .note { font-size: 13px; color: var(--muted); }
+.h-link { color: var(--navy); text-decoration: none; }
+.h-link span { opacity: .45; transition: opacity .15s, margin .15s; }
+.h-link:hover { text-decoration: underline; } .h-link:hover span { opacity: 1; margin-left: 4px; }
+.scroll { max-height: 330px; overflow-y: auto; }
+.scroll thead th { position: sticky; top: 0; z-index: 1; background: #F4F6FA; }
+table.data td { vertical-align: middle; }
+.bar2 { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+.bar2 .t { flex-grow: 1; height: 8px; border-radius: 999px; background: #EEF1F6; overflow: hidden; }
+.bar2 .t b { display: block; height: 100%; border-radius: 999px; }
+.bar2 em { font-style: normal; font-size: 13px; font-weight: 800; min-width: 64px; text-align: right; }
+.stx { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: #EEF1F6; color: #6B7280; white-space: nowrap; }
+.stx.on { background: #FFF7ED; color: #B45309; }
+.subx { font-size: 12px; color: var(--muted); }
+tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
+.num-bad { color: var(--bad); font-weight: 800; } .num-ok { color: var(--ok); font-weight: 800; }
+/* alerts and lists */
+.alist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.alist li { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.45; }
+.alist li .d { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.ev { display: flex; flex-direction: column; gap: 8px; }
+.ev div { padding: 10px 12px; border-radius: 10px; background: #FFF7ED; border-left: 4px solid #F59E0B; font-size: 13px; }
+.ev strong { color: var(--navy); }
+.plist { display: flex; flex-direction: column; }
+.plist div { display: flex; justify-content: space-between; gap: 8px; padding: 9px 2px; border-bottom: 1px solid #EEF1F6; font-size: 13px; }
+.plist div:last-child { border-bottom: none; }
+.plist b { color: var(--navy); }
+.tg { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #FFF4E5; color: var(--warn); margin-left: 4px; white-space: nowrap; }
+.rel { display: flex; flex-direction: column; gap: 10px; }
+.rel .r { padding: 10px 12px; border-radius: 10px; background: #F6F8FD; }
+.rel .r strong { color: var(--navy); font-size: 14px; }
+.rel .r .sm { font-size: 12px; color: var(--muted); }
+.chip2 { display: inline-block; margin: 4px 4px 0 0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.emptyx { padding: 14px; border-radius: 10px; background: #F6F8FD; color: var(--muted); font-size: 13px; text-align: center; }
+.acc { display: flex; flex-direction: column; gap: 8px; }
+.acc div { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 13px; padding: 8px 10px; border-radius: 10px; background: #F6F8FD; }
+@media (max-width: 1200px) { .stats { grid-template-columns: 1fr 1fr; } .cols { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .stats, .mini { grid-template-columns: 1fr; } }
+@media print { .no-print { display: none !important; } .scroll { max-height: none; overflow: visible; } }
 </style>
 </head>
 <body>
 <div class="shell">
   <aside id="sidebar" class="sidebar city"></aside>
   <main class="main">
-    <div class="page-head">
+    <div class="hero">
       <div>
-        <div class="kicker">City overview</div>
-        <h1>Welcome, City Admin!</h1>
-        <p id="updated">Live summary from every barangay and evacuation center.</p>
+        <h1 id="hello">Welcome!</h1>
+        <div class="meta"><span class="pill" id="evPill"><i></i><span>No active evacuation</span></span><span class="pill" id="updated">Updating</span></div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center" class="no-print">
-        <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
-        <button type="button" class="btn btn-primary" id="print">Print Situation Report</button>
-      </div>
+      <button type="button" class="btn btn-primary no-print" id="print">Print Situation Report</button>
     </div>
-
     <div id="loadError" class="form-error" role="alert" hidden></div>
 
-    <div class="kpis">
-      <div class="kpi"><div class="label">Barangays</div><div class="value" id="kB">0</div><div class="sub">Registered in BilisLikas</div></div>
-      <div class="kpi"><div class="label">Evacuated</div><div class="value tone-green" id="kE">0</div><div class="sub" id="kESub"></div></div>
-      <div class="kpi"><div class="label">Unaccounted for</div><div class="value tone-red" id="kU">0</div><div class="sub" id="kUSub">Registered, not checked in</div></div>
-      <div class="kpi"><div class="label">Evacuation centers</div><div class="value" id="kC">0</div><div class="sub" id="kCSub"></div></div>
-      <div class="kpi"><div class="label">Trackers reporting</div><div class="value" id="kT">0</div><div class="sub">With a GPS position</div></div>
+    <div class="stats">
+      <a class="stat hero-stat" href="evacuees.html"><div class="lb">Accounted <span>&rarr;</span></div><div class="big" id="sA">0 <small>of 0</small></div><div class="meter"><b id="sAbar" style="width:0%"></b></div><div class="sm" id="sAs">No residents registered yet</div></a>
+      <a class="stat" style="border-top:4px solid #B91C1C" href="evacuees.html"><div class="lb">Unaccounted <span>&rarr;</span></div><div class="big" style="color:var(--bad)" id="sU">0</div><div class="sm">Registered, not checked in</div></a>
+      <a class="stat" style="border-top:4px solid #B45309" href="evacuees.html"><div class="lb">Priority unaccounted <span>&rarr;</span></div><div class="big" style="color:var(--bad)" id="sP">0</div><div class="sm">Senior, PWD, Pregnant, Child, Medical</div></a>
+      <a class="stat" style="border-top:4px solid #142C6E" href="centers.html"><div class="lb">Center capacity used <span>&rarr;</span></div><div class="big" id="sC">0%</div><div class="sm" id="sCs">0 of 0 spaces</div></a>
     </div>
 
-    <div class="grid grid-2">
-      <section class="panel">
-        <div class="panel-head"><h2>Barangays</h2><select id="distSel" class="input" style="width:200px;height:40px;font-size:14px" aria-label="Filter by district"><option value="">All districts</option></select></div>
-        <p style="font-size:13px;color:var(--muted);margin:0">Most unaccounted first. Click a row to filter the centers below.</p>
-        <div class="table-wrap"><table class="data"><thead><tr><th scope="col">Barangay</th><th scope="col">District</th><th scope="col">Evacuated</th><th scope="col">Unaccounted</th><th scope="col">Centers</th></tr></thead><tbody id="brgys"></tbody></table></div>
-      </section>
-      <section class="panel">
-        <div class="panel-head"><h2>Alerts needing action</h2><span class="note" id="alertCount"></span></div>
-        <ul class="alerts" id="alerts"></ul>
-      </section>
+    <div class="mini">
+      <a href="barangays.html"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><div><strong id="mB">0</strong><span>Barangays</span></div></a>
+      <a href="centers.html"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M10 21v-6h4v6"/></svg></span><div><strong id="mC">0</strong><span>Evacuation centers</span></div></a>
+      <a href="trackers.html"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8 8a5.6 5.6 0 0 0 0 8"/><path d="M16 8a5.6 5.6 0 0 1 0 8"/><path d="M5 5a10 10 0 0 0 0 14"/><path d="M19 5a10 10 0 0 1 0 14"/></svg></span><div><strong id="mT">0</strong><span>Trackers reporting</span></div></a>
     </div>
 
-    <section class="panel">
-      <div class="panel-head"><h2>Evacuation centers</h2><span class="note filter-tag" id="centerNote"></span></div>
-      <div class="table-wrap"><table class="data"><thead><tr><th scope="col">Center</th><th scope="col">Barangay</th><th scope="col">Occupancy</th><th scope="col">Evacuees inside</th></tr></thead><tbody id="centers"></tbody></table></div>
-    </section>
-
-    <p class="notice no-print">District grouping, shared centers, relief totals, and incident types from the design will appear here as those records are added to the backend.</p>
+    <div class="cols">
+      <div class="stack">
+        <section class="card">
+          <div class="card-h"><h2><a class="h-link" href="barangays.html">Barangay status <span>&rarr;</span></a></h2>
+            <select id="distSel" class="input no-print" style="width:190px;height:38px;font-size:13px" aria-label="Filter by district"><option value="">All districts</option></select></div>
+          <div class="table-wrap scroll"><table class="data"><thead><tr><th>Barangay</th><th>Status</th><th>Accounted</th><th>Unaccounted</th><th>Priority</th><th>Centers</th></tr></thead><tbody id="brgys"></tbody></table></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2><a class="h-link" href="centers.html">Evacuation centers <span>&rarr;</span></a></h2><span class="note">Fullest first</span></div>
+          <div class="table-wrap scroll"><table class="data"><thead><tr><th>Center</th><th>Barangay</th><th>Occupancy</th></tr></thead><tbody id="centers"></tbody></table></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Cross-barangay evacuees</h2><span class="note" id="crossNote"></span></div>
+          <div class="table-wrap scroll"><table class="data"><thead><tr><th>Center</th><th>Barangay</th><th>From other barangays</th><th>Home barangays</th></tr></thead><tbody id="cross"></tbody></table></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2><a class="h-link" href="history.html">Evacuation history <span>&rarr;</span></a></h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
+              <select id="hB" class="input" style="width:170px;height:38px;font-size:13px" aria-label="Filter by barangay"><option value="">All barangays</option></select>
+              <select id="hY" class="input" style="width:120px;height:38px;font-size:13px" aria-label="Filter by year"><option value="">All years</option></select>
+            </div></div>
+          <div class="table-wrap scroll"><table class="data"><thead><tr><th>Date</th><th>Barangay</th><th>Disaster</th><th>Evacuation center</th><th>Time</th><th>Duration</th><th>Status</th></tr></thead><tbody id="hist"></tbody></table></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2><a class="h-link" href="relief.html">Relief &amp; medicine <span>&rarr;</span></a></h2><span class="note" id="relNote"></span></div>
+          <div class="rel scroll" id="relief"></div>
+        </section>
+      </div>
+      <div class="stack">
+        <section class="card">
+          <div class="card-h"><h2>Alerts needing action</h2><span class="note" id="alertCount"></span></div>
+          <ul class="alist scroll" id="alerts"></ul>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Active evacuations</h2><span class="note" id="evNote"></span></div>
+          <div class="ev scroll" id="incidents"></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Priority still unaccounted</h2><a class="note no-print" href="trackers.html">Trackers map</a></div>
+          <div class="plist scroll" id="prio"></div>
+        </section>
+        <section class="card no-print" id="accCard" hidden>
+          <div class="card-h"><h2><a class="h-link" href="accounts.html">User accounts <span>&rarr;</span></a></h2><span class="note" id="accNote"></span></div>
+          <div class="acc scroll" id="acc"></div>
+        </section>
+      </div>
+    </div>
   </main>
 </div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=44"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'city_admin' });
   BL.renderSidebar(me, 'city.html');
   const $ = (id) => document.getElementById(id);
-  let filter = null;
-  let data = null;
-  let distFilter = '';
+  let admin = {}, data = null, distFilter = '';
   const districtOf = {};
+  try { admin = await BL.api('/admin/me'); } catch (e) {}
+  $('hello').textContent = 'Welcome, ' + ((admin.full_name || me.full_name || 'City Admin').split(' ')[0]) + '!';
   try {
     const [dl, bl] = await Promise.all([BL.api('/districts'), BL.api('/barangays')]);
     (bl || []).forEach((b) => { districtOf[b.id] = b.district || ''; });
-    document.getElementById('distSel').innerHTML += (dl || []).map((d) => '<option>' + BL.esc(d) + '</option>').join('');
-  } catch (e) { /* districts arrive with cloud sync phase 4 */ }
-  document.getElementById('distSel').addEventListener('change', (e) => { distFilter = e.target.value; filter = null; render(); });
-
-  document.getElementById('print').addEventListener('click', () => window.print());
+    $('distSel').innerHTML += (dl || []).map((d) => '<option>' + BL.esc(d) + '</option>').join('');
+  } catch (e) {}
+  $('distSel').addEventListener('change', (e) => { distFilter = e.target.value; render(); });
+  $('print').addEventListener('click', () => { window.open('report.html', '_blank'); });
+  const pad = (n) => String(n).padStart(2, '0');
 
   async function load() {
     try {
-      const [summary, evacuees] = await Promise.all([BL.api('/dashboard/summary'), BL.api('/evacuees')]);
-      data = { summary, evacuees: evacuees || [] };
+      const [summary, evacuees, det, inc, relief] = await Promise.all([BL.api('/dashboard/summary'), BL.api('/evacuees'),
+        BL.api('/evacuee_details').catch(() => []), BL.api('/incidents?active=true').catch(() => []), BL.api('/relief/summary').catch(() => [])]);
+      const details = {}; (det || []).forEach((d) => { details[d.id] = d; });
+      data = { summary, evacuees: evacuees || [], details, incidents: inc || [], relief: relief || [] };
       $('loadError').hidden = true;
       render();
-    } catch (e) {
-      $('loadError').textContent = e.message;
-      $('loadError').hidden = false;
-    }
+      loadCross();
+    } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
+  }
+
+  // Evacuees who went to a center outside their home barangay (cross-barangay check)
+  async function loadCross() {
+    let d; try { d = await BL.api('/cross/city'); } catch (e) { return; }
+    $('crossNote').textContent = d.outside_total + ' of ' + d.total_present + ' evacuees are outside their home barangay';
+    $('cross').innerHTML = (d.centers || []).map((c) => '<tr><td>' + BL.esc(c.center_name) + '</td><td>' + BL.esc(c.barangay) + '</td><td><strong>' + c.outside + '</strong> of ' + c.total + '</td><td>' +
+      c.from.map((f) => BL.esc(f.barangay) + ' (' + f.count + ')').join(', ') + '</td></tr>').join('') ||
+      '<tr><td colspan="4" class="meta">All evacuees are in centers of their own barangay.</td></tr>';
   }
 
   function render() {
+    if (!data) return;
     const brgys = data.summary.barangays || [];
-    const present = new Set();
-    const allCenters = [];
-    brgys.forEach((b) => (b.centers || []).forEach((c) => {
-      allCenters.push(Object.assign({ brgyName: b.name, brgyId: b.id }, c));
-      (c.evacuees || []).forEach((ev) => present.add(ev.id));
-    }));
-    const reg = data.evacuees;
-    const evac = reg.filter((ev) => present.has(ev.id)).length;
-    const occ = allCenters.reduce((a, c) => a + (c.occupancy || 0), 0);
-    const cap = allCenters.reduce((a, c) => a + (c.capacity || 0), 0);
-    const trackers = (data.summary.trackers || []).filter((t) => t.latitude != null);
+    const present = new Set(), allCenters = [], name = {};
+    brgys.forEach((b) => { name[b.id] = b.name; (b.centers || []).forEach((c) => { allCenters.push(Object.assign({ brgyName: b.name, brgyId: b.id }, c)); (c.evacuees || []).forEach((ev) => present.add(ev.id)); }); });
+    // affected barangays and active centers come from the active evacuations
+    const inc = data.incidents || [];
+    const affected = new Set(inc.map((i) => i.barangay_id));
+    const incOf = {}; inc.forEach((i) => { incOf[i.barangay_id] = i; });
+    const activeCenter = (c) => { const i = incOf[c.brgyId]; return !!i && (!i.evacuation_center_id || i.evacuation_center_id === c.id || (c.occupancy || 0) > 0); };
+    const any = inc.length > 0;
+    const reg = data.evacuees.filter((e) => affected.has(e.registered_barangay_id));
+    const ok = reg.filter((e) => present.has(e.id)).length;
+    const prioOf = (e) => { const n = (data.details[e.id] || {}).special_needs || [], a = BL.age(e.birthdate), o = [];
+      if (n.includes('Senior citizen') || (a !== null && a >= 60)) o.push('Senior'); if (n.includes('PWD')) o.push('PWD');
+      if (n.includes('Pregnant')) o.push('Pregnant'); if (a !== null && a < 5) o.push('Child'); if (n.some((x) => String(x).startsWith('Medical'))) o.push('Medical'); return o; };
+    const miss = reg.filter((e) => !present.has(e.id) && prioOf(e).length);
+    const actC = allCenters.filter(activeCenter);
+    const occ = actC.reduce((s, c) => s + (c.occupancy || 0), 0), cap = actC.reduce((s, c) => s + (c.capacity || 0), 0);
+    const pct = reg.length ? Math.round(ok / reg.length * 100) : 0;
+    if (any) {
+      $('sA').innerHTML = ok + ' <small>of ' + reg.length + '</small>';
+      $('sAbar').style.width = pct + '%';
+      $('sAs').textContent = pct + '% checked in at a center';
+      $('sU').textContent = reg.length - ok; $('sP').textContent = miss.length;
+      $('sC').textContent = (cap ? Math.round(occ / cap * 100) : 0) + '%'; $('sCs').textContent = occ + ' of ' + cap + ' spaces in active centers';
+    } else {
+      $('sA').innerHTML = '&ndash;'; $('sAbar').style.width = '0%'; $('sAs').textContent = 'No active evacuation';
+      $('sU').textContent = '–'; $('sP').textContent = '–'; $('sC').textContent = '–'; $('sCs').textContent = 'No active evacuation center';
+    }
+    $('mB').textContent = brgys.length; $('mC').textContent = allCenters.length;
+    $('mT').textContent = (data.summary.trackers || []).filter((t) => t.latitude != null).length;
+    const d = new Date();
+    $('updated').textContent = d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · updated ' + BL.time();
 
-    $('kB').textContent = brgys.length;
-    $('kE').innerHTML = evac + ' <small>of ' + reg.length + '</small>';
-    $('kESub').textContent = reg.length ? Math.round(evac / reg.length * 100) + '% of registered residents' : 'No residents registered yet';
-    $('kU').textContent = reg.length - evac;
-    $('kC').textContent = allCenters.length;
-    $('kCSub').textContent = cap ? occ + ' of ' + cap + ' spaces used (' + Math.round(occ / cap * 100) + '%)' : 'No capacity recorded';
-    $('kT').textContent = trackers.length;
-    $('updated').textContent = 'Live summary from every barangay and evacuation center. Updated ' + BL.time() + '.';
+    // barangay status: affected barangays first and live, the rest on standby
+    const rows = brgys.map((b) => { const r = data.evacuees.filter((e) => e.registered_barangay_id === b.id), k = r.filter((e) => present.has(e.id)).length;
+      return { id: b.id, name: b.name, district: districtOf[b.id] || '', on: affected.has(b.id), inc: incOf[b.id], reg: r.length, ok: k, miss: r.length - k,
+        prio: r.filter((e) => !present.has(e.id) && prioOf(e).length).length, centers: (b.centers || []).length }; })
+      .filter((r) => !distFilter || r.district === distFilter)
+      .sort((a, b) => (b.on - a.on) || (b.miss - a.miss) || a.name.localeCompare(b.name, undefined, { numeric: true }));
+    $('brgys').innerHTML = rows.map((r) => {
+      const st = r.on ? '<span class="stx on">Evacuating</span>' : '<span class="stx">Standby</span>';
+      const sub = r.on ? BL.esc(r.inc.disaster_type || '') + ' &middot; since ' + BL.dateTime(r.inc.started_at) : (r.district ? BL.esc(r.district) : '');
+      if (!r.on) return '<tr class="idle"><td><strong>' + BL.esc(r.name) + '</strong>' + (sub ? '<div class="subx">' + sub + '</div>' : '') + '</td><td>' + st + '</td><td colspan="3" class="subx">' + r.reg + ' registered, no movement</td><td>' + r.centers + '</td></tr>';
+      const p = r.reg ? r.ok / r.reg : 0, col = p >= 0.8 ? '#15803D' : p >= 0.5 ? '#B45309' : '#B91C1C';
+      return '<tr><td><strong style="color:var(--navy)">' + BL.esc(r.name) + '</strong><div class="subx">' + sub + '</div></td><td>' + st + '</td>' +
+        '<td><div class="bar2"><div class="t"><b style="width:' + Math.round(p * 100) + '%;background:' + col + '"></b></div><em>' + r.ok + '/' + r.reg + '</em></div></td>' +
+        '<td class="' + (r.miss ? 'num-bad' : 'num-ok') + '">' + r.miss + '</td><td class="' + (r.prio ? 'num-bad' : '') + '">' + r.prio + '</td><td>' + r.centers + '</td></tr>'; }).join('')
+      || '<tr><td colspan="6"><div class="emptyx">No barangays in this view.</div></td></tr>';
 
-    // Barangay table
-    const rows = brgys.map((b) => {
-      const residents = reg.filter((ev) => ev.registered_barangay_id === b.id);
-      const ok = residents.filter((ev) => present.has(ev.id)).length;
-      return { id: b.id, name: b.name, district: districtOf[b.id] || '', reg: residents.length, ok: ok, miss: residents.length - ok, centers: (b.centers || []).length };
-    }).filter((r) => !distFilter || r.district === distFilter).sort((a, b) => b.miss - a.miss);
-    $('brgys').innerHTML = rows.map((r) =>
-      '<tr class="clickable' + (filter === r.id ? ' selected' : '') + '" data-id="' + r.id + '" tabindex="0">' +
-      '<td><strong style="color:var(--navy)">' + BL.esc(r.name) + '</strong></td>' +
-      '<td>' + (r.district ? BL.esc(r.district) : '<span style="color:var(--muted)">Not set</span>') + '</td>' +
-      '<td>' + r.ok + ' / ' + r.reg + (r.reg ? ' (' + Math.round(r.ok / r.reg * 100) + '%)' : '') + '</td>' +
-      '<td class="' + (r.miss ? 'tone-red' : 'tone-green') + '" style="font-weight:800">' + r.miss + '</td>' +
-      '<td>' + r.centers + '</td></tr>').join('') || '<tr><td colspan="5"><div class="empty">No barangays in this view.</div></td></tr>';
-    document.querySelectorAll('#brgys tr.clickable').forEach((tr) => {
-      const pick = () => { const id = Number(tr.dataset.id); filter = filter === id ? null : id; render(); };
-      tr.addEventListener('click', pick);
-      tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
-    });
+    // centers: active ones first with live occupancy, the rest on standby
+    $('centers').innerHTML = allCenters.map((c) => Object.assign({ on: activeCenter(c) }, c))
+      .sort((a, b) => (b.on - a.on) || ((b.occupancy / (b.capacity || 1)) - (a.occupancy / (a.capacity || 1)))).map((c) => {
+        if (!c.on) return '<tr class="idle"><td><strong>' + BL.esc(c.name) + '</strong></td><td>' + BL.esc(c.brgyName) + '</td><td><span class="stx">Standby</span> <span class="subx">capacity ' + c.capacity + '</span></td></tr>';
+        const p = c.capacity ? c.occupancy / c.capacity : 0, t = BL.tone(p);
+        return '<tr><td><strong style="color:var(--navy)">' + BL.esc(c.name) + '</strong> <span class="stx on">Active</span></td><td style="font-size:13px">' + BL.esc(c.brgyName) + '</td>' +
+          '<td><div class="bar2"><div class="t"><b style="width:' + Math.min(100, Math.round(p * 100)) + '%;background:' + BL.TONE_HEX[t] + '"></b></div><em class="tone-' + t + '">' + c.occupancy + '/' + c.capacity + '</em></div></td></tr>'; }).join('')
+      || '<tr><td colspan="3"><div class="emptyx">No evacuation centers yet.</div></td></tr>';
 
-    // Alerts, computed from live data
+    // alerts (only affected barangays and active centers)
     const alerts = [];
-    allCenters.forEach((c) => {
-      const p = c.capacity ? c.occupancy / c.capacity : 0;
-      if (p >= 0.95) alerts.push({ lvl: 'red', title: c.name + ' is ' + Math.round(p * 100) + '% full', detail: 'Barangay ' + c.brgyName + '. Redirect new arrivals to another center.' });
-      else if (p >= 0.8) alerts.push({ lvl: 'amber', title: c.name + ' is almost full (' + Math.round(p * 100) + '%)', detail: (c.capacity - c.occupancy) + ' spaces left.' });
-    });
-    rows.filter((r) => r.reg && r.miss / r.reg >= 0.5 && r.ok > 0).forEach((r) => alerts.push({ lvl: 'amber', title: r.miss + ' residents of ' + r.name + ' are unaccounted for', detail: 'Only ' + Math.round(r.ok / r.reg * 100) + '% have checked in.' }));
-    const colors = { red: ['#FDECEC', '#B91C1C'], amber: ['#FFF7ED', '#B45309'] };
+    actC.forEach((c) => { const p = c.capacity ? c.occupancy / c.capacity : 0;
+      if (p >= 0.95) alerts.push(['red', c.name + ' is ' + Math.round(p * 100) + '% full', c.brgyName + '. Redirect new arrivals.']);
+      else if (p >= 0.8) alerts.push(['amber', c.name + ' is almost full', (c.capacity - c.occupancy) + ' spaces left.']); });
+    rows.filter((r) => r.on && r.reg && r.miss / r.reg >= 0.5).forEach((r) => alerts.push(['amber', r.miss + ' residents of ' + r.name + ' are unaccounted for', Math.round(r.ok / r.reg * 100) + '% have checked in.']));
+    if (miss.length) alerts.unshift(['red', miss.length + ' priority residents not yet in a center', 'Check the Trackers map for their last location.']);
+    const C = { red: ['#FDECEC', '#B91C1C'], amber: ['#FFF7ED', '#B45309'] };
     $('alertCount').textContent = alerts.length + ' active';
-    $('alerts').innerHTML = alerts.length ? alerts.map((a) => '<li style="background:' + colors[a.lvl][0] + '"><span class="dot" style="background:' + colors[a.lvl][1] + '"></span><span><strong>' + BL.esc(a.title) + '</strong><br>' + BL.esc(a.detail) + '</span></li>').join('') : '<li class="empty" style="display:block">No alerts. All centers have space.</li>';
+    $('alerts').innerHTML = alerts.map((a) => '<li style="background:' + C[a[0]][0] + '"><span class="d" style="background:' + C[a[0]][1] + '"></span><span><strong>' + BL.esc(a[1]) + '</strong><br>' + BL.esc(a[2]) + '</span></li>').join('')
+      || '<li class="emptyx" style="display:block">' + (any ? 'No alerts. Active centers have space.' : 'No alerts. No evacuation is running.') + '</li>';
 
-    // Centers table, fullest first
-    const list = allCenters.filter((c) => (!filter || c.brgyId === filter) && (!distFilter || districtOf[c.brgyId] === distFilter)).sort((a, b) => (b.occupancy / (b.capacity || 1)) - (a.occupancy / (a.capacity || 1)));
-    const fname = filter ? (rows.find((r) => r.id === filter) || {}).name : null;
-    $('centerNote').innerHTML = (fname ? 'Showing ' + BL.esc(fname) + ' <button type="button" class="btn btn-ghost" style="min-height:32px;padding:0 10px;font-size:12px" id="clear">Show all</button>' : 'All barangays, fullest first');
-    const clr = document.getElementById('clear');
-    if (clr) clr.addEventListener('click', () => { filter = null; render(); });
-    $('centers').innerHTML = list.map((c) => {
-      const p = c.capacity ? c.occupancy / c.capacity : 0;
-      const t = BL.tone(p);
-      return '<tr><td><strong style="color:var(--navy)">' + BL.esc(c.name) + '</strong></td><td>' + BL.esc(c.brgyName) + '</td>' +
-        '<td><div class="occ"><div class="bar"><span style="width:' + Math.min(100, Math.round(p * 100)) + '%;background:' + BL.TONE_HEX[t] + '"></span></div><strong class="tone-' + t + '">' + c.occupancy + '/' + c.capacity + '</strong></div></td>' +
-        '<td>' + (c.evacuees || []).length + '</td></tr>';
-    }).join('') || '<tr><td colspan="4"><div class="empty">No evacuation centers yet.</div></td></tr>';
+    // active evacuations
+    const cName = {}; allCenters.forEach((c) => { cName[c.id] = c.name; });
+    const ev = $('evPill');
+    ev.className = 'pill' + (any ? ' on' : '');
+    ev.querySelector('span').textContent = any ? inc.length + ' barangay' + (inc.length > 1 ? 's' : '') + ' evacuating' : 'No active evacuation';
+    $('evNote').textContent = inc.length + ' ongoing';
+    $('incidents').innerHTML = inc.map((i) => { const m = i.active_seconds != null ? Math.floor(i.active_seconds / 60) : Math.max(0, Math.floor((Date.now() - BL.parseT(i.started_at).getTime()) / 60000));
+      return '<div><strong>' + BL.esc(name[i.barangay_id] || '-') + '</strong> &middot; ' + BL.esc(i.disaster_type || '-') + '<br>' + BL.esc(cName[i.evacuation_center_id] || 'All centers') + ' &middot; started ' + BL.dateTime(i.started_at) + ' &middot; ' + Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm</div>'; }).join('')
+      || '<div class="emptyx" style="border:none;background:#F6F8FD">No evacuation is running right now.</div>';
+
+    // priority (affected barangays only)
+    $('prio').innerHTML = miss.slice(0, 100).map((e) => '<div><span><b>' + BL.esc(e.full_name) + '</b><br><span style="color:var(--muted)">' + BL.esc(name[e.registered_barangay_id] || '-') + ', ' + (BL.age(e.birthdate) ?? '-') + ' yrs</span></span><span>' + prioOf(e).map((x) => '<span class="tg">' + x + '</span>').join('') + '</span></div>').join('')
+      || '<div class="emptyx" style="display:block">' + (any ? 'All priority residents are accounted for.' : 'No active evacuation.') + '</div>';
+
+    // relief
+    const COL = { Food: ['#FFF4E5', '#B45309'], Water: ['#E0F2FE', '#0369A1'], Medicine: ['#FDECEC', '#B91C1C'], Hygiene: ['#E8F7EE', '#15803D'], Other: ['#EEF2FF', '#142C6E'] };
+    const rel = data.relief.slice().sort((a, b) => String(name[a.barangay_id] || '').localeCompare(String(name[b.barangay_id] || ''), undefined, { numeric: true }));
+    $('relNote').textContent = rel.length ? rel.reduce((s, r) => s + (r.recipients || 0), 0) + ' persons served' : '';
+    $('relief').innerHTML = rel.map((r) => '<div class="r"><div style="display:flex;justify-content:space-between;gap:8px"><strong>' + BL.esc(name[r.barangay_id] || 'Barangay #' + r.barangay_id) + '</strong><span class="sm">' + (r.recipients || 0) + ' served' + (r.last_given ? ' &middot; ' + BL.dateTime(r.last_given) : '') + '</span></div><div>' +
+      r.items.slice(0, 6).map((i) => { const k = COL[i.category] || COL.Other; return '<span class="chip2" style="background:' + k[0] + ';color:' + k[1] + '">' + BL.esc(i.item) + ' ' + Number(i.quantity).toLocaleString() + ' ' + BL.esc(i.unit) + '</span>'; }).join('') +
+      (r.items.length > 6 ? '<a href="relief.html" class="chip2" style="background:#FFFFFF;color:var(--navy)">+' + (r.items.length - 6) + ' more</a>' : '') + '</div></div>').join('')
+      || '<div class="emptyx">No relief or medicine recorded yet.</div>';
   }
 
+  async function loadAccounts() {
+    if (!admin.is_superuser) return;
+    $('accCard').hidden = false;
+    try {
+      const users = await BL.api('/admin/users');
+      const pend = users.filter((u) => u.status === 'pending');
+      $('accNote').textContent = users.length + ' accounts';
+      $('acc').innerHTML = pend.length ? pend.map((u) => '<div><span><strong style="color:var(--navy)">' + BL.esc(u.full_name || u.email) + '</strong><br><span style="color:var(--muted);font-size:12px">' + BL.esc(u.position || '-') + '</span></span><a class="btn btn-primary btn-sm" href="accounts.html">Review</a></div>').join('')
+        : '<div class="emptyx" style="display:block">No requests waiting for approval.</div>';
+    } catch (e) {}
+  }
+
+
+  // evacuation history (finished evacuations only, newest first)
+  let hist = [];
+  async function loadHist() {
+    try { hist = (await BL.api('/incidents') || []).filter((i) => !i.active && i.finished); } catch (e) { hist = []; }
+    const names = {}; ((data && data.summary && data.summary.barangays) || []).forEach((b) => { names[b.id] = b.name; });
+    const cn = {}; ((data && data.summary && data.summary.barangays) || []).forEach((b) => (b.centers || []).forEach((c) => { cn[c.id] = c.name; }));
+    hist.forEach((i) => { i._b = names[i.barangay_id] || 'Barangay #' + i.barangay_id; i._c = cn[i.evacuation_center_id] || 'All centers'; i._y = String(BL.parseT(i.started_at).getFullYear()); });
+    const fill = (id, vals, first) => { const el = $(id), keep = el.value; el.innerHTML = '<option value="">' + first + '</option>' + vals.map((v) => '<option>' + BL.esc(v) + '</option>').join(''); el.value = keep; };
+    fill('hB', [...new Set(hist.map((i) => i._b))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), 'All barangays');
+    fill('hY', [...new Set(hist.map((i) => i._y))].sort().reverse(), 'All years');
+    drawHist();
+  }
+  function drawHist() {
+    const fb = $('hB').value, fy = $('hY').value;
+    const list = hist.filter((i) => (!fb || i._b === fb) && (!fy || i._y === fy));
+    const t = (x) => BL.parseT(x).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+    $('hist').innerHTML = list.map((i) => {
+      const a = BL.parseT(i.started_at), b = i.ended_at ? BL.parseT(i.ended_at) : null, m = i.active_seconds != null ? Math.round(i.active_seconds / 60) : b ? Math.max(0, Math.round((b - a) / 60000)) : 0;
+      return '<tr><td style="white-space:nowrap"><strong>' + a.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + '</strong><div class="subx">' + a.toLocaleDateString('en-PH', { weekday: 'long' }) + '</div></td>' +
+        '<td><strong style="color:var(--navy)">' + BL.esc(i._b) + '</strong></td><td>' + BL.esc(i.disaster_type || '-') + '</td><td style="font-size:13px">' + BL.esc(i._c) + '</td>' +
+        '<td style="white-space:nowrap;font-size:13px">' + t(i.started_at) + (b ? ' &ndash; ' + t(i.ended_at) : '') + '</td><td style="white-space:nowrap">' + (b ? Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm' : '-') + '</td>' +
+        '<td>' + '<span class="stx" style="background:#E8F7EE;color:#15803D">Finished</span>' + '</td></tr>';
+    }).join('') || '<tr><td colspan="7"><div class="emptyx">No past evacuations recorded yet.</div></td></tr>';
+  }
+  $('hB').addEventListener('change', drawHist);
+  $('hY').addEventListener('change', drawHist);
   await load();
-  BL.connectLive(() => load(), $('live'));
+  loadAccounts();
+  loadHist();
+  BL.connectLive(() => { load(); loadAccounts(); loadHist(); }, null);
+  setInterval(render, 60000);
 })();
 </script>
 </body>

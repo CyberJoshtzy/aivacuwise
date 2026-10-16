@@ -33,7 +33,11 @@ def list_barangays(db: Session = Depends(get_db)):
     return db.query(models.Barangay).all()
 
 @app.post("/evacuation_centers", response_model=schemas.EvacuationCenterOut)
-def create_center(center: schemas.EvacuationCenterCreate, db: Session = Depends(get_db)):
+def create_center(center: schemas.EvacuationCenterCreate, db: Session = Depends(get_db),
+                  current_user=Depends(auth.get_current_user)):
+    import approvals
+    if not approvals.is_it_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the City Hall IT Administrator can add evacuation centers.")
     db_center = models.EvacuationCenter(**center.model_dump())
     db.add(db_center)
     db.commit()
@@ -66,6 +70,14 @@ async def checkin_evacuee(record: schemas.CheckinCreate, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Evacuation center not found")
     db_record = models.CheckinRecord(**record.model_dump())
     db.add(db_record)
+    if record.event_type == "check_in":
+        # Infants (no face data) are checked in together with their parent or guardian.
+        for infant in db.query(models.Evacuee).filter(models.Evacuee.guardian_evacuee_id == evacuee.id).all():
+            last = (db.query(models.CheckinRecord).filter(models.CheckinRecord.evacuee_id == infant.id)
+                    .order_by(models.CheckinRecord.id.desc()).first())
+            if last is None or last.event_type != "check_in" or last.evacuation_center_id != center.id:
+                db.add(models.CheckinRecord(evacuee_id=infant.id, evacuation_center_id=center.id,
+                                            event_type="check_in", timestamp=datetime.utcnow()))
     db.commit()
     db.refresh(db_record)
     await manager.broadcast({"type": "occupancy_update", "barangay_id": center.barangay_id})
@@ -118,11 +130,24 @@ def admin_create_user(user: schemas.UserCreate, current_user: models.User = Depe
     db.refresh(db_user)
     return db_user
 
+from fastapi import Request as _LLRequest
+import login_log
+
+
 @app.post("/login", response_model=schemas.Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(request: _LLRequest, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(or_(models.User.username == form_data.username, models.User.email == form_data.username.strip().lower())).first()
     if not user or not auth.verify_password(form_data.password, user.password_hash):
+        login_log.record(db, request, user, form_data.username, "failed", "Wrong email or password")
         raise HTTPException(status_code=401, detail="Incorrect username or password")
+    status = getattr(user, "account_status", None) or "active"
+    if status == "pending":
+        login_log.record(db, request, user, form_data.username, "blocked", "Waiting for approval")
+        raise HTTPException(status_code=403, detail="Your account is waiting for approval by the City Hall IT Administrator.")
+    if status in ("rejected", "disabled"):
+        login_log.record(db, request, user, form_data.username, "blocked", "Account " + status)
+        raise HTTPException(status_code=403, detail="This account is not active. Contact the City Hall IT Administrator.")
+    login_log.record(db, request, user, form_data.username, "success")
     access_token = auth.create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -483,6 +508,8 @@ class BLEvacueeUpdate(_BLBaseModel):
     civil_status: _BLOptional[str] = None
     special_needs: _BLOptional[list] = None
     emergency_contact: _BLOptional[str] = None
+    guardian_evacuee_id: _BLOptional[int] = None
+    home_barangay: _BLOptional[str] = None
 
 
 class BLCenterUpdate(_BLBaseModel):
@@ -513,6 +540,8 @@ def _bl_evacuee_dict(e):
         'civil_status': getattr(e, 'civil_status', None),
         'special_needs': [x for x in (getattr(e, 'special_needs', None) or '').split(',') if x],
         'emergency_contact': getattr(e, 'emergency_contact', None),
+        'guardian_evacuee_id': getattr(e, 'guardian_evacuee_id', None),
+        'home_barangay': getattr(e, 'home_barangay', None),
     }
 
 
@@ -564,6 +593,7 @@ async def bl_delete_evacuee(evacuee_id: int,
     Checkin = _bl_model('checkin_records')
     db.query(Tracker).filter(Tracker.assigned_evacuee_id == e.id).update({Tracker.assigned_evacuee_id: None}, synchronize_session=False)
     db.query(Household).filter(Household.head_of_family_evacuee_id == e.id).update({Household.head_of_family_evacuee_id: None}, synchronize_session=False)
+    db.query(Evacuee).filter(Evacuee.guardian_evacuee_id == e.id).update({Evacuee.guardian_evacuee_id: None}, synchronize_session=False)
     db.query(Transfer).filter(Transfer.evacuee_id == e.id).delete(synchronize_session=False)
     db.query(Checkin).filter(Checkin.evacuee_id == e.id).delete(synchronize_session=False)
     barangay_id = e.registered_barangay_id
@@ -582,8 +612,9 @@ async def bl_update_center(center_id: int, payload: BLCenterUpdate,
     c = db.query(Center).filter(Center.id == center_id).first()
     if not c:
         raise _BLHTTPException(status_code=404, detail='Evacuation center not found.')
-    if not _bl_can_edit(user, c.barangay_id):
-        raise _BLHTTPException(status_code=403, detail='You can only edit your own barangay\'s centers.')
+    import approvals
+    if not approvals.is_it_admin(user):
+        raise _BLHTTPException(status_code=403, detail='Changes to evacuation centers need approval. Send an edit request to the City Hall IT Administrator.')
     data = payload.model_dump(exclude_unset=True)
     if 'name' in data and not (data['name'] or '').strip():
         raise _BLHTTPException(status_code=422, detail='Center name cannot be empty.')
@@ -609,8 +640,9 @@ async def bl_delete_center(center_id: int,
     c = db.query(Center).filter(Center.id == center_id).first()
     if not c:
         raise _BLHTTPException(status_code=404, detail='Evacuation center not found.')
-    if not _bl_can_edit(user, c.barangay_id):
-        raise _BLHTTPException(status_code=403, detail='You can only delete your own barangay\'s centers.')
+    import approvals
+    if not approvals.is_it_admin(user):
+        raise _BLHTTPException(status_code=403, detail='Deleting an evacuation center needs approval. Send a delete request to the City Hall IT Administrator.')
     occ = _bl_occupancy(db, c.id)
     if occ > 0:
         raise _BLHTTPException(status_code=409, detail='%d evacuees are inside this center. Move them to another center before deleting it.' % occ)
@@ -645,6 +677,10 @@ class BLIncidentStart(_BLBaseModel):
     barangay_id: _BLOptional[int] = None
 
 
+class BLIncidentEnd(_BLBaseModel):
+    finish: bool = False
+
+
 class BLBarangayUpdate(_BLBaseModel):
     name: str
 
@@ -658,6 +694,8 @@ def _bl_incident_dict(i):
         'id': i.id, 'barangay_id': i.barangay_id, 'evacuation_center_id': i.evacuation_center_id,
         'disaster_type': i.disaster_type, 'started_at': _bl_iso(i.started_at), 'ended_at': _bl_iso(i.ended_at),
         'started_by': i.started_by, 'ended_by': i.ended_by, 'active': i.ended_at is None,
+        'finished': bool(getattr(i, 'finished', False)),
+        'active_seconds': models.incident_active_seconds(i),
     }
 
 
@@ -689,8 +727,9 @@ async def bl_start_incident(payload: BLIncidentStart, db: _BLSession = _BLDepend
         raise _BLHTTPException(status_code=404, detail='Evacuation center not found.')
     if db.query(Incident).filter(Incident.barangay_id == brgy_id, Incident.ended_at.is_(None)).first():
         raise _BLHTTPException(status_code=409, detail='An evacuation is already active for this barangay. End it before starting a new one.')
+    _now = _BL3dt.utcnow()
     i = Incident(barangay_id=brgy_id, evacuation_center_id=payload.evacuation_center_id, disaster_type=kind,
-                 started_at=_BL3dt.utcnow(), started_by=user.id)
+                 started_at=_now, started_by=user.id, active_seconds=0, resumed_at=_now)
     db.add(i)
     db.commit()
     db.refresh(i)
@@ -699,7 +738,7 @@ async def bl_start_incident(payload: BLIncidentStart, db: _BLSession = _BLDepend
 
 
 @app.post('/incidents/{incident_id}/end')
-async def bl_end_incident(incident_id: int, db: _BLSession = _BLDepends(get_db),
+async def bl_end_incident(incident_id: int, payload: _BLOptional[BLIncidentEnd] = None, db: _BLSession = _BLDepends(get_db),
                           user=_BLDepends(auth.get_current_user)):
     Incident = _bl_model('incidents')
     i = db.query(Incident).filter(Incident.id == incident_id).first()
@@ -709,8 +748,56 @@ async def bl_end_incident(incident_id: int, db: _BLSession = _BLDepends(get_db),
         raise _BLHTTPException(status_code=403, detail='You can only end your own barangay\'s evacuation.')
     if i.ended_at is not None:
         raise _BLHTTPException(status_code=409, detail='This evacuation has already ended.')
-    i.ended_at = _BL3dt.utcnow()
+    now = _BL3dt.utcnow()
+    i.active_seconds = models.incident_active_seconds(i, now)  # add the time since start or last resume
+    i.ended_at = now
     i.ended_by = user.id
+    if payload is not None and payload.finish:
+        # Finished for good: everyone still inside is checked out, so the next evacuation starts from zero.
+        # Their check-in records stay in each evacuee's movement history.
+        i.finished = True
+        Center = _bl_model('evacuation_centers')
+        Evacuee = _bl_model('evacuees')
+        Checkin = _bl_model('checkin_records')
+        ids = {}
+        for c in db.query(Center).filter(Center.barangay_id == i.barangay_id).all():
+            for e in _get_current_evacuees_at_center(db, c.id):
+                ids[e.id] = c.id
+        for e in db.query(Evacuee).filter(Evacuee.registered_barangay_id == i.barangay_id).all():
+            last = db.query(Checkin).filter(Checkin.evacuee_id == e.id).order_by(Checkin.id.desc()).first()
+            if last is not None and last.event_type == 'check_in':
+                ids.setdefault(e.id, last.evacuation_center_id)
+        for ev_id, center_id in ids.items():
+            db.add(Checkin(evacuee_id=ev_id, evacuation_center_id=center_id, event_type='check_out', timestamp=now))
+    db.commit()
+    db.refresh(i)
+    await _bl_notify(i.barangay_id)
+    return _bl_incident_dict(i)
+
+
+@app.post('/incidents/{incident_id}/resume')
+async def bl_resume_incident(incident_id: int, db: _BLSession = _BLDepends(get_db),
+                             user=_BLDepends(auth.get_current_user)):
+    Incident = _bl_model('incidents')
+    i = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not i:
+        raise _BLHTTPException(status_code=404, detail='Evacuation not found.')
+    if not _bl_can_edit(user, i.barangay_id):
+        raise _BLHTTPException(status_code=403, detail='You can only resume your own barangay\'s evacuation.')
+    if i.ended_at is None:
+        raise _BLHTTPException(status_code=409, detail='This evacuation is still active.')
+    if getattr(i, 'finished', False):
+        raise _BLHTTPException(status_code=409, detail='This evacuation was finished and cannot be resumed. Start a new evacuation instead.')
+    if db.query(Incident).filter(Incident.barangay_id == i.barangay_id, Incident.ended_at.is_(None)).first():
+        raise _BLHTTPException(status_code=409, detail='Another evacuation is already active for this barangay.')
+    latest = db.query(Incident).filter(Incident.barangay_id == i.barangay_id).order_by(Incident.id.desc()).first()
+    if latest.id != i.id:
+        raise _BLHTTPException(status_code=409, detail='Only the most recent evacuation can be resumed.')
+    if getattr(i, 'active_seconds', None) is None:  # older record: count its first running period
+        i.active_seconds = int((i.ended_at - i.started_at).total_seconds())
+    i.resumed_at = _BL3dt.utcnow()
+    i.ended_at = None
+    i.ended_by = None
     db.commit()
     db.refresh(i)
     await _bl_notify(i.barangay_id)
@@ -867,6 +954,8 @@ def bl_evacuee_details(db: _BLSession = _BLDepends(get_db), user=_BLDepends(auth
     return [{
         'id': e.id, 'civil_status': e.civil_status, 'emergency_contact': e.emergency_contact,
         'special_needs': [x for x in (e.special_needs or '').split(',') if x],
+        'home_barangay': getattr(e, 'home_barangay', None),
+        'guardian_evacuee_id': getattr(e, 'guardian_evacuee_id', None),
     } for e in q.all()]
 
 
@@ -989,6 +1078,10 @@ def bl_display(center_id: int, db: _BLSession = _BLDepends(get_db), user=_BLDepe
             tags.append('PWD')
         if 'Pregnant' in needs:
             tags.append('Pregnant')
+        if age is not None and age < 5:
+            tags.append('Child under 5')
+        if any(x.startswith('Medical') for x in needs):
+            tags.append('Medical')
         waiting.append({'id': e.id, 'name': _bl_short_name(e.full_name), 'tags': tags,
                         'has_photo': _bl_os.path.exists(_bl_photo_path(e.id))})
     waiting.sort(key=lambda w: (0 if w['tags'] else 1, w['name'].lower()))
@@ -1035,6 +1128,9 @@ class BLRegister(_BLBaseModel):
     password: str
     registration_code: _BLOptional[str] = None
     district: _BLOptional[str] = None
+    zone: _BLOptional[str] = None
+    employee_id: _BLOptional[str] = None
+    evacuation_centers: _BLOptional[list] = None
 
 
 def _bl_required_code():
@@ -1075,6 +1171,9 @@ async def bl_register(payload: BLRegister, db: _BLSession = _BLDepends(get_db)):
     pw = payload.password or ''
     if len(pw) < 8 or not _bl_re.search(r'[A-Za-z]', pw) or not _bl_re.search(r'\d', pw):
         raise _BLHTTPException(status_code=422, detail='Use a password with at least 8 characters, including letters and a number.')
+    emp = ' '.join((payload.employee_id or '').split())
+    if len(emp) < 3:
+        raise _BLHTTPException(status_code=422, detail='Enter your barangay employee ID number.')
     User = models.User
     Barangay = _bl_model('barangays')
     taken = db.query(User).filter(_BL3func.lower(User.email) == email).first() or db.query(User).filter(_BL3func.lower(User.username) == email).first()
@@ -1087,11 +1186,41 @@ async def bl_register(payload: BLRegister, db: _BLSession = _BLDepends(get_db)):
         db.add(b)
         db.flush()
         created = True
+    elif not getattr(b, 'district', None) and payload.district in MANILA_DISTRICTS:
+        b.district = payload.district
+    if (payload.zone or '').strip():
+        import barangay_info as _bz
+        from sqlalchemy import text as _zt
+        db.execute(_zt("UPDATE barangays SET zone = COALESCE(zone, :z) WHERE id = :i"), {'z': _bz.clean_zone(payload.zone), 'i': b.id})
     u = User(username=email, email=email, password_hash=auth.get_password_hash(pw), role='barangay_official',
-             barangay_id=b.id, full_name=person, designation=designation, mobile_number=digits)
+             barangay_id=b.id, full_name=person, designation=designation, mobile_number=digits, employee_id=emp,
+             account_status='pending')
     db.add(u)
+    new_center_ids = []
+    Center = _bl_model('evacuation_centers')
+    added = 0
+    for c in (payload.evacuation_centers or []):
+        try:
+            cname = ' '.join(str(c.get('name') or '').split())
+            caddr = ' '.join(str(c.get('address') or '').split())
+            ccap = int(c.get('capacity') or 0)
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if not cname or not caddr or ccap <= 0:
+            raise _BLHTTPException(status_code=422, detail='Each evacuation center needs a name, an address and a capacity.')
+        if db.query(Center).filter(Center.barangay_id == b.id, _BL3func.lower(Center.name) == cname.lower()).first():
+            continue
+        nc = Center(name=cname, address=caddr, capacity=ccap, barangay_id=b.id)
+        db.add(nc)
+        db.flush()
+        new_center_ids.append(nc.id)
+        added += 1
+    db.flush()
+    import approvals
+    approvals.remember_signup(db, u.id, b.id, created, new_center_ids)
     db.commit()
-    return {'id': u.id, 'email': email, 'barangay_id': b.id, 'barangay': b.name, 'new_barangay': created}
+    return {'id': u.id, 'email': email, 'barangay_id': b.id, 'barangay': b.name, 'new_barangay': created,
+            'centers_added': added, 'status': 'pending'}
 
 # ---- BilisLikas 2.0: cloud sync phase 1 (sync-ready records) ----
 @app.get('/sync/status')
@@ -1231,6 +1360,60 @@ def sync_info(db: Session = Depends(get_db), current_user=Depends(auth.get_curre
     return {'role': 'server', 'server_id': models.SERVER_ID, 'configured': bool(st.get('last_pull_at')),
             'last_push_at': st.get('last_push_at'), 'last_pull_at': st.get('last_pull_at'), 'waiting': waiting}
 
+# ---- BilisLikas 2.0: families, infants, home barangay ----
+import families
+app.include_router(families.router)
+
 # ---- BilisLikas 2.0: forgot password ----
 import password_reset
 app.include_router(password_reset.router)
+
+import admin_auth
+app.include_router(admin_auth.router)
+
+import resident
+app.include_router(resident.router)
+
+
+# no-cache for app pages: browsers always check for updated HTML and JS
+@app.middleware("http")
+async def _bl_no_cache(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/app/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+import barangay_info
+app.include_router(barangay_info.router)
+
+import relief
+app.include_router(relief.router)
+
+import center_delete
+app.include_router(center_delete.router)
+
+import barangay_delete
+app.include_router(barangay_delete.router)
+
+import history
+app.include_router(history.router)
+
+app.include_router(login_log.router)
+
+import approvals
+app.include_router(approvals.router)
+
+import face_check
+app.include_router(face_check.router)
+
+import sms
+app.include_router(sms.router)
+
+
+# ISO/IEC 25010 quality safeguards (security, accountability, reliability, performance)
+import iso_quality
+iso_quality.install(app)
+
+# ---- BilisLikas 2.0: cross-barangay evacuee tracking ----
+import cross_barangay
+app.include_router(cross_barangay.router)

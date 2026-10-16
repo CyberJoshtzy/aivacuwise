@@ -36,6 +36,11 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False)
     barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=True)
+    position = Column(String, nullable=True)
+    office = Column(String, nullable=True)
+    employee_id = Column(String, nullable=True)
+    account_status = Column(String, nullable=True, default="active")
+    is_superuser = Column(Boolean, nullable=True, default=False)
 
 
 class Evacuee(Base):
@@ -127,8 +132,23 @@ from sqlalchemy.orm import object_session as _sync_object_session
 
 SERVER_ID = _sync_os.getenv('BILISLIKAS_SERVER_ID', 'local')
 
+class ReliefRecord(Base):
+    __tablename__ = "relief_records"
+    id = Column(Integer, primary_key=True)
+    barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=False, index=True)
+    evacuation_center_id = Column(Integer, ForeignKey("evacuation_centers.id"), nullable=True)
+    category = Column(String, nullable=False)
+    item = Column(String, nullable=False)
+    quantity = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)
+    recipients = Column(Integer, nullable=True)
+    given_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    recorded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    notes = Column(String, nullable=True)
+
+
 SYNCED_MODELS = [Barangay, EvacuationCenter, User, Household, Evacuee, CheckinRecord,
-                 Transfer, Tracker, TrackerPing, GpsPing, Incident]
+                 Transfer, Tracker, TrackerPing, GpsPing, Incident, ReliefRecord]
 
 for _cls in SYNCED_MODELS:
     _cls.uuid = Column(String(36), unique=True, index=True, nullable=True)
@@ -137,6 +157,27 @@ for _cls in SYNCED_MODELS:
     _cls.sync_dirty = Column(Boolean, nullable=True, default=False, index=True)
 
 Barangay.district = Column(String, nullable=True)
+
+# Family details (pre-registration update): infant guardian link, typed home barangay, family size
+Evacuee.guardian_evacuee_id = Column(Integer, ForeignKey("evacuees.id"), nullable=True)
+Evacuee.home_barangay = Column(String, nullable=True)
+Household.member_count = Column(Integer, nullable=True)
+Incident.finished = Column(Boolean, nullable=True, default=False)
+# Active time only: paused periods are not counted in the evacuation duration
+Incident.active_seconds = Column(Integer, nullable=True)
+Incident.resumed_at = Column(DateTime, nullable=True)
+
+
+def incident_active_seconds(i, now=None):
+    """Seconds the evacuation was actually running (pauses excluded)."""
+    now = now or datetime.utcnow()
+    base = getattr(i, 'active_seconds', None)
+    if i.ended_at is not None:
+        if base is not None:
+            return max(0, int(base))
+        return max(0, int((i.ended_at - i.started_at).total_seconds()))  # older records
+    since = getattr(i, 'resumed_at', None) or i.started_at
+    return max(0, int((base or 0) + (now - since).total_seconds()))
 
 
 class SyncTombstone(Base):

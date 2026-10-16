@@ -50,6 +50,17 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
 .ft .conn { font-weight: 700; }
 @keyframes arrive { 0% { opacity: 0; transform: translateX(-40px) scale(.92); background: #DCFCE7; } 60% { opacity: 1; transform: none; } 100% { background: #FFFFFF; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.tile, .arr { cursor: pointer; }
+.tile:hover, .arr:hover, .tile.sel, .arr.sel { border-color: #142C6E; box-shadow: 0 0 0 3px rgba(20,44,110,.25); }
+#info { position: absolute; z-index: 50; width: 460px; padding: 22px; border-radius: 18px; background: #FFFFFF; box-shadow: 0 20px 60px rgba(0,0,0,.45); border: 3px solid #142C6E; animation: fade .15s ease-out both; }
+#info .top { display: flex; gap: 16px; align-items: center; }
+#info .face { width: 96px; height: 96px; font-size: 34px; }
+#info h3 { font-size: 28px; font-weight: 800; color: #142C6E; margin: 0; line-height: 1.15; padding-right: 30px; }
+#info .st { margin-top: 6px; display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 17px; font-weight: 800; }
+#info dl { display: grid; grid-template-columns: 150px 1fr; gap: 8px 12px; margin: 16px 0 0; font-size: 19px; }
+#info dt { font-weight: 700; color: #4A5368; }
+#info dd { margin: 0; font-weight: 700; color: #1B2233; }
+#info .x { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border: none; border-radius: 50%; background: #F4F6FA; font-size: 22px; cursor: pointer; }
 #picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #F4F6FA; }
 </style>
 </head>
@@ -70,25 +81,26 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
       <div class="title" id="cName">Evacuation Center</div>
       <div class="status off" id="status"><span class="dot"></span><span id="statusText">Evacuation mode is off</span></div>
     </div>
-    <div><div class="label">Arrived</div><div class="big" id="count">0<small> / 0</small></div></div>
+    <div><div class="label">Accounted</div><div class="big" id="count">0<small> / 0</small></div></div>
     <div style="width:2px;height:80px;background:rgba(255,255,255,.2)"></div>
     <div style="min-width:190px"><div class="label" id="date"></div><div class="clock" id="clock"></div></div>
   </header>
   <div class="bd">
     <section class="col" style="flex-grow:1">
-      <div class="colbar" style="background:#F7941D;color:#142C6E"><b>Not yet here</b><span id="waitCount"></span></div>
+      <div class="colbar" style="background:#F7941D;color:#142C6E"><b>Unaccounted</b><span id="waitCount"></span></div>
       <div class="grid" id="grid"></div>
       <div class="pager" id="pager"></div>
     </section>
     <section class="col" style="width:560px;flex-shrink:0">
-      <div class="colbar" style="background:#15803D;color:#FFFFFF"><b>Just arrived</b><span style="display:inline-flex;align-items:center;gap:8px;font-size:20px;color:#DCFCE7"><span id="liveDot" style="width:10px;height:10px;border-radius:50%;background:#DCFCE7"></span><span id="liveText">Connecting</span></span></div>
+      <div class="colbar" style="background:#15803D;color:#FFFFFF"><b>Accounted</b><span style="display:inline-flex;align-items:center;gap:8px;font-size:20px;color:#DCFCE7"><span id="liveDot" style="width:10px;height:10px;border-radius:50%;background:#DCFCE7"></span><span id="liveText">Connecting</span></span></div>
       <div class="list" id="list"></div>
     </section>
   </div>
+  <div id="info" hidden></div>
   <footer class="ft"><span>Photos shown with consent under the Data Privacy Act of 2012 (RA 10173).</span></footer>
 </div>
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=44"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -139,11 +151,82 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
     }));
   }
 
-  let data = null, page = 0, seen = null;
+  let data = null, page = 0, seen = null, people = {}, details = {}, pinned = null, hovered = null;
+  async function loadPeople() {
+    try {
+      const [ev, det] = await Promise.all([BL.api('/evacuees'), BL.api('/evacuee_details').catch(() => [])]);
+      people = {}; (ev || []).forEach((e) => { people[e.id] = e; });
+      details = {}; (det || []).forEach((d) => { details[d.id] = d; });
+    } catch (e) { /* the card falls back to the name only */ }
+  }
+  function ageText(d) {
+    const a = BL.age(d); if (a === null) return '-';
+    if (a >= 1) return a + (a === 1 ? ' year old' : ' years old');
+    const b = new Date(String(d).slice(0, 10)), t = new Date();
+    const mo = Math.max(0, (t.getFullYear() - b.getFullYear()) * 12 + t.getMonth() - b.getMonth() - (t.getDate() < b.getDate() ? 1 : 0));
+    return mo + (mo === 1 ? ' month old' : ' months old');
+  }
+  function needsText(id, tags) {
+    const n = (details[id] || {}).special_needs || [];
+    const meds = n.filter((x) => x.startsWith('Medical: ')).map((x) => x.slice(9));
+    const out = n.filter((x) => x !== 'Medical condition' && !x.startsWith('Medical: '));
+    if (n.includes('Medical condition') || meds.length) out.push('Medical condition' + (meds.length ? ': ' + meds.join(', ') : ''));
+    (tags || []).forEach((t) => { if (t === 'Senior' && !out.includes('Senior citizen')) out.unshift('Senior citizen'); });
+    return out.join('; ') || 'None';
+  }
+  function showInfo(id, el) {
+    const box = $('info');
+    const w = data.waiting.find((x) => x.id === id), a = data.arrived.find((x) => x.id === id);
+    const p = w || a; if (!p || !el) { box.hidden = true; return; }
+    const e = people[id] || {}, d = details[id] || {};
+    let fam = '-';
+    if (e.household_id) { const head = Object.values(people).find((x) => x.household_id === e.household_id && x.is_head_of_family); fam = head ? 'Family of ' + head.full_name : 'Family #' + e.household_id; if (e.is_head_of_family) fam += ' (head)'; }
+    const guard = d.guardian_evacuee_id && people[d.guardian_evacuee_id] ? people[d.guardian_evacuee_id].full_name : null;
+    const status = a ? '<span class="st" style="background:#DCFCE7;color:#15803D">Accounted at ' + BL.esc(data.center.name) + ' since ' + BL.time(a.time) + '</span>' : '<span class="st" style="background:#FDECEC;color:#B91C1C">Unaccounted</span>';
+    box.innerHTML = '<button type="button" class="x" aria-label="Close" id="infoX">&#215;</button>' +
+      '<div class="top"><div class="face">' + faceHTML(p) + '</div><div style="min-width:0"><h3>' + BL.esc(e.full_name || p.name) + '</h3>' + status + '</div></div>' +
+      '<dl><dt>Age</dt><dd>' + BL.esc(ageText(e.birthdate)) + '</dd><dt>Sex</dt><dd>' + BL.esc(e.sex || '-') + '</dd>' +
+      '<dt>Barangay</dt><dd>' + BL.esc(d.home_barangay || data.barangay || '-') + '</dd><dt>Family</dt><dd>' + BL.esc(fam) + '</dd>' +
+      (guard ? '<dt>Parent or guardian</dt><dd>' + BL.esc(guard) + '</dd>' : '') +
+      '<dt>Special needs</dt><dd>' + BL.esc(needsText(id, p.tags)) + '</dd></dl>';
+    box.hidden = false;
+    $('infoX').hidden = pinned !== id;
+    $('infoX').addEventListener('click', (ev) => { ev.stopPropagation(); closeInfo(); });
+    const k = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    const sr = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
+    const x = (r.left - sr.left) / k, y = (r.top - sr.top) / k, w2 = r.width / k;
+    let left = x + w2 + 16; if (left + 460 > 1900) left = x - 476;
+    box.style.left = Math.max(20, left) + 'px';
+    box.style.top = Math.max(20, Math.min(y, 1080 - box.offsetHeight - 20)) + 'px';
+  }
+  function closeInfo() { pinned = null; hovered = null; $('info').hidden = true; document.querySelectorAll('.sel').forEach((x) => x.classList.remove('sel')); }
+  const cardOf = (t) => t && t.closest ? t.closest('[data-id]') : null;
+  document.addEventListener('mouseover', (ev) => {
+    const c = cardOf(ev.target); if (!c || pinned) return;
+    hovered = Number(c.dataset.id); showInfo(hovered, c);
+  });
+  document.addEventListener('mouseout', (ev) => {
+    const c = cardOf(ev.target); if (!c || pinned) return;
+    if (c.contains(ev.relatedTarget)) return;
+    hovered = null; $('info').hidden = true;
+  });
+  document.addEventListener('click', (ev) => {
+    if (ev.target.closest('#info')) return;
+    const c = cardOf(ev.target);
+    if (!c) { if (pinned) closeInfo(); return; }
+    const id = Number(c.dataset.id);
+    if (pinned === id) { closeInfo(); return; }
+    closeInfo(); pinned = id; c.classList.add('sel'); showInfo(id, c);
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') closeInfo();
+    if (ev.key === 'Enter') { const c = cardOf(document.activeElement); if (c) c.click(); }
+  });
 
   async function load() {
     try {
       const d = await BL.api('/display/' + centerId);
+      await loadPeople();
       await loadPhotos(d.waiting.concat(d.arrived));
       const fresh = new Set();
       if (seen) d.arrived.forEach((a) => { if (!seen.has(a.id)) fresh.add(a.id); });
@@ -152,6 +235,8 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
       drawHeader();
       drawArrived(fresh);
       drawGrid();
+      if (pinned) { const c = document.querySelector('[data-id="' + pinned + '"]'); if (c) { c.classList.add('sel'); showInfo(pinned, c); } else closeInfo(); }
+      else if (hovered) { $('info').hidden = true; hovered = null; }
     } catch (e) {
       $('liveText').textContent = 'Reconnecting';
     }
@@ -163,7 +248,7 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
     $('status').className = 'status ' + (i ? 'on' : 'off');
     $('statusText').textContent = i ? 'EVACUATION ACTIVE · ' + String(i.disaster_type).toUpperCase() : 'Evacuation mode is off';
     $('count').innerHTML = data.safe_total + '<small> / ' + data.expected_total + '</small>';
-    $('waitCount').textContent = data.waiting.length + ' still expected';
+    $('waitCount').textContent = data.waiting.length + ' unaccounted';
   }
 
   function drawGrid() {
@@ -171,7 +256,7 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
     if (page >= pages) page = 0;
     const slice = data.waiting.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
     $('grid').innerHTML = slice.length ? slice.map((p) =>
-      '<div class="tile' + (p.tags.length ? ' prio' : '') + '">' + (p.tags.length ? '<span class="tag">' + BL.esc(p.tags[0]) + '</span>' : '') +
+      '<div class="tile' + (p.tags.length ? ' prio' : '') + (pinned === p.id ? ' sel' : '') + '" data-id="' + p.id + '" tabindex="0">' + (p.tags.length ? '<span class="tag">' + BL.esc(p.tags[0]) + '</span>' : '') +
       '<div class="face">' + faceHTML(p) + '</div><div class="nm">' + BL.esc(p.name) + '</div></div>').join('')
       : '<div class="empty-big" style="grid-column:1/-1">Everyone registered has arrived or is safe at an evacuation center.</div>';
     $('pager').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, k) => '<i class="' + (k === page ? 'on' : '') + '"></i>').join('') : '';
@@ -181,12 +266,12 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
     const list = data.arrived.slice(0, 7);
     const check = '<span class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>';
     $('list').innerHTML = list.length ? list.map((a) =>
-      '<div class="arr' + (fresh.has(a.id) ? ' new' : '') + '"><div class="face">' + faceHTML(a) + '</div>' +
-      '<div style="min-width:0"><div class="nm">' + BL.esc(a.name) + '</div><div class="tm">Arrived ' + BL.time(a.time) + '</div></div>' + check + '</div>').join('')
+      '<div class="arr' + (fresh.has(a.id) ? ' new' : '') + (pinned === a.id ? ' sel' : '') + '" data-id="' + a.id + '" tabindex="0"><div class="face">' + faceHTML(a) + '</div>' +
+      '<div style="min-width:0"><div class="nm">' + BL.esc(a.name) + '</div><div class="tm">Accounted ' + BL.time(a.time) + '</div></div>' + check + '</div>').join('')
       : '<div class="empty-big">Arrivals will appear here as the camera identifies them.</div>';
   }
 
-  setInterval(() => { if (data) { page++; drawGrid(); } }, PAGE_SECONDS * 1000);
+  setInterval(() => { if (data && !pinned && !hovered) { page++; drawGrid(); } }, PAGE_SECONDS * 1000);
   setInterval(load, 30000); // safety refresh in case a live update is missed
 
   await load();

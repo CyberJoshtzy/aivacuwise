@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resident Sign In · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=11">
+<style>
+.signin { min-height: 100vh; display: flex; }
+.signin aside { width: 520px; flex-shrink: 0; background: linear-gradient(160deg, #0F5132, #198754); color: #FFFFFF; padding: 56px 64px; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; }
+.signin aside .tile { align-self: flex-start; padding: 20px 24px; background: #FFFFFF; border-radius: 20px; }
+.signin aside .tile img { width: 280px; max-width: 100%; height: auto; display: block; }
+.signin aside h2 { color: #FFFFFF; font-size: 30px; font-weight: 800; }
+.points { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; color: #D7F0E2; font-size: 16px; }
+.points div { display: flex; gap: 12px; }
+.points b { color: #FFD166; }
+.signin main { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.signin form { width: min(460px, 100%); display: flex; flex-direction: column; gap: 18px; animation: pop .35s ease-out; }
+.signin h1 { font-size: 30px; font-weight: 800; }
+.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.bday { display: grid; grid-template-columns: 1.4fr 1fr 1.1fr; gap: 10px; }
+.help { padding: 14px 16px; background: var(--tint); border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.btn-res { background: #198754; color: #FFFFFF; border-color: #198754; }
+@media (max-width: 900px) { .signin { flex-direction: column; } .signin aside { width: 100%; padding: 28px 24px; } .signin aside .points, .signin aside .foot { display: none; } }
+</style>
+<style id="side-v2">
+.signin aside { justify-content: center !important; align-items: center; text-align: center; gap: 24px !important; position: relative; padding: 48px 56px !important;
+  background: radial-gradient(circle at 20% 15%, rgba(245,158,11,.15), transparent 40%), radial-gradient(circle at 85% 90%, rgba(52,211,153,.22), transparent 45%), linear-gradient(160deg, #0F5132, #198754) !important; }
+.signin aside .tile { align-self: center !important; padding: 18px 22px !important; border-radius: 22px !important; box-shadow: 0 18px 40px rgba(0,0,0,.25); }
+.signin aside .tile img { width: 240px !important; }
+.signin aside h2 { margin: 0; }
+.signin aside > div:not(.tile):not(.foot) { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 440px; width: 100%; }
+.points { margin-top: 18px !important; gap: 10px !important; width: 100%; }
+.points div { align-items: center !important; text-align: left; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
+.points b { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: rgba(255,209,102,.18); flex-shrink: 0; }
+.signin aside .foot { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 12px !important; }
+</style>
+</head>
+<body>
+<div class="signin">
+  <aside>
+    <div class="tile"><img src="/static/logo.png" alt="BilisLikas 2.0, Kasama mo sa Paglikas"></div>
+    <div>
+      <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:var(--orange);color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:.08em;margin-bottom:8px">RESIDENT PORTAL</span>
+      <h2>Para sa mga residente</h2>
+      <div class="points">
+        <div><b>1</b><span>Check if you and your family are safe in an evacuation center</span></div>
+        <div><b>2</b><span>See your check-in and check-out history</span></div>
+        <div><b>3</b><span>View your pre-registration information</span></div>
+      </div>
+    </div>
+    <div class="foot" style="font-size:13px;color:#BFE5CF">Protected under the Data Privacy Act of 2012 (RA 10173)</div>
+  </aside>
+  <main>
+    <form id="form" novalidate>
+      <a class="back" href="index.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Back to home</a>
+      <div>
+        <h1>Resident sign in</h1>
+        <p style="color:var(--muted);margin-top:8px">Use the details you gave during pre-registration at your barangay.</p>
+      </div>
+      <div id="error" class="form-error" role="alert" hidden></div>
+      <div class="field-group"><label for="first">First name</label><input id="first" class="input" autocomplete="given-name" placeholder="e.g. Juan"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field-group"><label for="middle">Middle name <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="middle" class="input" autocomplete="additional-name" placeholder="e.g. Santos"></div>
+        <div class="field-group"><label for="last">Last name</label><input id="last" class="input" autocomplete="family-name" placeholder="e.g. Dela Cruz"></div>
+      </div>
+      <div class="field-group"><label>Birthday</label>
+        <div class="bday">
+          <select id="bm" class="input" aria-label="Month"><option value="">Month</option></select>
+          <select id="bd" class="input" aria-label="Day"><option value="">Day</option></select>
+          <select id="by" class="input" aria-label="Year"><option value="">Year</option></select>
+        </div>
+      </div>
+      <div class="field-group"><label for="mobile">Mobile number</label><input id="mobile" class="input" inputmode="tel" placeholder="0917 123 4567">
+        <div style="font-size:13px;color:var(--muted)">Children without a phone can use the head of family's number.</div></div>
+      <button class="btn btn-res btn-lg" type="submit" id="submit">Sign In</button>
+      <p class="help">No account to create. Your barangay already registered you. If you cannot sign in, visit your barangay office to check your details.</p>
+    </form>
+  </main>
+</div>
+<script src="app.js?v=44"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var M = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  M.forEach(function (m, i) { $('bm').add(new Option(m, i + 1)); });
+  for (var d = 1; d <= 31; d++) $('bd').add(new Option(d, d));
+  for (var y = new Date().getFullYear(); y >= 1900; y--) $('by').add(new Option(y, y));
+  var err = $('error');
+  function fail(m) { err.textContent = m; err.hidden = false; }
+  $('form').addEventListener('submit', async function (e) {
+    e.preventDefault(); err.hidden = true;
+    var last = $('last').value.trim(), m = $('bm').value, d = $('bd').value, y = $('by').value, mob = $('mobile').value.trim();
+    if (!$('first').value.trim()) return fail('Enter your first name.');
+    if (!last) return fail('Enter your last name.');
+    if (!m || !d || !y) return fail('Choose your complete birthday.');
+    if (!mob) return fail('Enter your mobile number.');
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var b = $('submit'); b.disabled = true; b.textContent = 'Signing in...';
+    try {
+      var r = await fetch('/resident/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ first_name: $('first').value.trim(), middle_name: $('middle').value.trim(), last_name: last, birthdate: y + '-' + pad(m) + '-' + pad(d), mobile_number: mob }) });
+      var data = await r.json().catch(function () { return {}; });
+      if (!r.ok) throw new Error(Array.isArray(data.detail) ? data.detail.map(function (x) { return x.msg; }).join(', ') : (data.detail || 'Something went wrong.'));
+      try { sessionStorage.setItem('bl_resident', data.token); } catch (x) { window.name = 'blr:' + data.token; }
+      location.href = 'resident.html';
+    } catch (ex) { fail(ex.message); } finally { b.disabled = false; b.textContent = 'Sign In'; }
+  });
+  $('first').focus();
+})();
+</script>
+</body>
+</html>

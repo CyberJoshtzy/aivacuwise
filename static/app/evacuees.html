@@ -6,6 +6,54 @@
 <title>Evacuees · BilisLikas 2.0</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=11">
+<style>
+.bpick { display: flex; flex-direction: column; gap: 12px; }
+.bpick .bsearch { max-width: 360px; }
+.bopt { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; border: none; border-bottom: 1px solid #EEF1F6; background: #FFFFFF; font: inherit; text-align: left; cursor: pointer; }
+.bopt:hover { background: #EEF2FF; }
+.bopt strong { color: var(--navy); }
+.bopt span { font-size: 12px; color: var(--muted); }
+.bcard { text-align: left; font: inherit; cursor: pointer; padding: 12px 14px; border-radius: 12px; border: 2px solid #E3E8F2; background: #FFFFFF; display: flex; flex-direction: column; gap: 4px; transition: border-color .15s, box-shadow .15s; }
+.bcard:hover { border-color: var(--orange); box-shadow: 0 6px 16px rgba(11,31,77,.08); }
+.bcard[aria-pressed="true"] { border-color: var(--navy); background: #EEF2FF; }
+.bcard strong { color: var(--navy); font-size: 15px; }
+.bcard span { font-size: 12px; color: var(--muted); }
+.bcard .bad { color: #B91C1C; font-weight: 700; }
+.filters-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; width: 100%; }
+
+.bwrap { position: relative; }
+.bwrap .search { max-width: none; }
+.bgrid { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 50; display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; border: 1px solid #E3E8F2; border-radius: 10px; background: #FFFFFF; box-shadow: 0 10px 24px rgba(11,31,77,.12); }
+.bgrid[hidden] { display: none; }
+.bnote { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.bnote strong { color: var(--navy); }
+.toolbar { flex-direction: column; align-items: stretch; }
+.fam { display: flex; flex-direction: column; gap: 8px; }
+.fam .m { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); cursor: pointer; border: none; font: inherit; text-align: left; width: 100%; }
+.fam .m:hover { background: #EEF2FF; }
+.fam .m strong { color: var(--navy); }
+.fam .m small { color: var(--muted); font-size: 12px; display: block; }
+/* search boxes side by side */
+.filters-row { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 12px !important; }
+.filters-row > .bwrap { flex: 0 0 300px !important; width: 300px !important; max-width: none !important; margin: 0 !important; }
+.filters-row > .search { flex: 0 0 260px !important; width: 260px !important; max-width: none !important; margin: 0 !important; }
+.filters-row .search .input { width: 100% !important; }
+@media (max-width: 700px) { .filters-row { flex-wrap: wrap !important; } .filters-row > .bwrap, .filters-row > .search { flex: 1 1 100% !important; width: 100% !important; } }
+/* evacuee table layout */
+table.data td { vertical-align: middle; padding-top: 12px; padding-bottom: 12px; }
+table.data .nm { font-weight: 800; color: var(--navy); font-size: 15px; line-height: 1.3; }
+table.data .fm { font-weight: 600; color: #1F2937; font-size: 14px; line-height: 1.3; }
+table.data .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+table.data .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+table.data .tg { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #FFF4E5; color: #B45309; white-space: nowrap; }
+table.data .st { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+table.data .st i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+table.data .st.in { color: #15803D; } table.data .st.in i { background: #15803D; }
+table.data .st.out { color: var(--muted); } table.data .st.out i { background: #C2CAD8; }
+table.data .row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
+table.data .row-actions .btn { min-height: 36px; padding: 0 12px; font-size: 13px; }
+table.data tbody tr:hover td { background: #F6F8FD; }
+</style>
 </head>
 <body>
 <div class="shell">
@@ -16,14 +64,22 @@
         <h1>Registered Evacuees</h1>
         <p id="count">Loading residents.</p>
       </div>
-      <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
+      <span class="live-badge" id="live" style="display:none"><span class="dot"></span><span class="txt">Connecting</span></span>
     </div>
 
     <div class="toolbar">
+      <div class="filters-row">
+      <div class="bwrap" id="bpick" hidden>
+        <div class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <input id="bq" class="input" type="search" placeholder="Search barangay, e.g. 200" aria-label="Search barangay" autocomplete="off">
+        </div>
+              </div>
       <div class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <label for="q" class="sr-only">Search evacuees</label>
         <input id="q" class="input" type="search" placeholder="Search by name or address">
+      </div>
       </div>
       <div class="pills" role="group" aria-label="Filter evacuees" id="pills"></div>
     </div>
@@ -41,7 +97,7 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=44"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -49,6 +105,9 @@
   const $ = (id) => document.getElementById(id);
   let brgyNames = {}, centerNames = {}, where = {}, list = [], listAll = [], extra = {}, trackerOf = {};
   let filter = 'all';
+  let pickedBrgy = null;
+  const hasMed = (e) => ((extra[e.id] || {}).special_needs || []).some((x) => x === 'Medical condition' || x.startsWith('Medical: '));
+  const surname = (n) => String(n || '').trim().split(/\s+/).pop().toLowerCase();
 
   try {
     const [brgys, centers] = await Promise.all([BL.api('/barangays'), BL.api('/evacuation_centers')]);
@@ -87,12 +146,13 @@
   const homeBrgy = (ev) => (extra[ev.id] || {}).home_barangay || brgyNames[ev.registered_barangay_id] || '-';
   const FILTERS = [
     ['all', 'All', () => true],
-    ['in', 'Evacuated', (e) => !!where[e.id]],
-    ['out', 'Not yet', (e) => !where[e.id]],
+    ['in', 'Accounted', (e) => !!where[e.id]],
+    ['out', 'Unaccounted', (e) => !where[e.id]],
     ['kids', 'Children', (e) => { const a = BL.age(e.birthdate); return a !== null && a < 18; }],
     ['seniors', 'Seniors', (e) => { const a = BL.age(e.birthdate); return a !== null && a >= 60; }],
     ['pwd', 'PWD', (e) => ((extra[e.id] || {}).special_needs || []).includes('PWD')],
-    ['preg', 'Pregnant', (e) => ((extra[e.id] || {}).special_needs || []).includes('Pregnant')]
+    ['preg', 'Pregnant', (e) => ((extra[e.id] || {}).special_needs || []).includes('Pregnant')],
+    ['med', 'Medical condition', hasMed]
   ];
   $('pills').innerHTML = FILTERS.map(([k, label]) => '<button type="button" class="pill" data-f="' + k + '" aria-pressed="' + (k === filter) + '">' + label + '</button>').join('');
   $('pills').addEventListener('click', (e) => {
@@ -110,6 +170,9 @@
       try { trackerOf = {}; (await BL.api('/trackers') || []).forEach((t) => { if (t.assigned_evacuee_id) trackerOf[t.assigned_evacuee_id] = t.device_id; }); } catch (e) {}
       where = {};
       (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => (c.evacuees || []).forEach((ev) => { where[ev.id] = c.name; })));
+      if (!city) {  // residents checked in at another barangay's center are accounted for
+        try { ((await BL.api('/cross/status')) || {}).away.forEach((x) => { where[x.evacuee_id] = x.center_name + (x.center_barangay ? ' (' + x.center_barangay + ')' : ''); }); } catch (e) {}
+      }
       listAll = evacuees || [];
       list = listAll.filter((e) => city || e.registered_barangay_id === me.barangay_id);
       $('loadError').hidden = true;
@@ -123,19 +186,25 @@
   function render() {
     const q = $('q').value.trim().toLowerCase();
     const test = FILTERS.find((f) => f[0] === filter)[2];
-    const shown = list.filter((e) => test(e) && (!q || (String(e.full_name) + ' ' + String(e.address || '')).toLowerCase().includes(q)))
+    renderBrgys();
+    const bq = $('bq').value.trim().toLowerCase();
+    const base = !bq ? list : list.filter((e) => (String(brgyNames[e.registered_barangay_id] || '') + ' ' + String(homeBrgy(e))).toLowerCase().includes(bq));
+    const shown = base.filter((e) => test(e) && (!q || (String(e.full_name) + ' ' + String(e.address || '')).toLowerCase().includes(q)))
       .sort((a, b) => String(a.full_name).localeCompare(String(b.full_name)));
     const inCount = list.filter((e) => where[e.id]).length;
     $('count').textContent = list.length + (list.length === 1 ? ' resident is' : ' residents are') + ' registered' + (city ? ' across all barangays' : ' in ' + (brgyNames[me.barangay_id] || 'your barangay')) + '. ' + inCount + ' are at an evacuation center now.';
+    if (bq) $('count').textContent = base.length + (base.length === 1 ? ' resident matches' : ' residents match') + ' barangay "' + $('bq').value.trim() + '". ' + base.filter((e) => where[e.id]).length + ' are at an evacuation center now.';
+    FILTERS.forEach(([k, label, t]) => { const b = document.querySelector('.pill[data-f="' + k + '"]'); if (b) b.textContent = label + ' (' + base.filter(t).length + ')'; });
     $('rows').innerHTML = shown.map((e) => {
       const a = BL.age(e.birthdate);
-      const face = e.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>';
-      const status = where[e.id] ? '<span class="chip green">At ' + BL.esc(where[e.id]) + '</span>' : '<span class="chip" style="background:var(--line-soft);color:var(--muted)">Not checked in</span>';
+      const face = '';
+      const status = where[e.id] ? '<span class="st in" title="' + BL.esc(where[e.id]) + '"><i></i>' + BL.esc(where[e.id]) + '</span>' : '<span class="st out"><i></i>Not checked in</span>';
       const head = e.household_id ? listAll.find((x) => x.household_id === e.household_id && x.is_head_of_family) : null;
-      const hh = e.household_id ? BL.esc(head ? 'Family of ' + head.full_name : 'Family #' + e.household_id) + (e.is_head_of_family ? ' <span class="chip navy">Head</span>' : '') : '<span style="color:var(--muted)">None</span>';
+      const hh = e.household_id ? '<div class="fm">' + BL.esc(head ? head.full_name : 'Family #' + e.household_id) + '</div><div class="sub">' + (e.is_head_of_family ? 'Head of family' : 'Member') + '</div>' : '<span style="color:var(--muted)">None</span>';
       return '<tr>' +
-        '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(e.full_name) + '</strong> ' + face +
-        '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + BL.esc(e.sex || 'Sex not set') + ', ' + (a === null ? 'age unknown' : (a >= 1 ? a + ' yrs' : ageText(e.birthdate))) + ' ' + needsList(e).map((n) => '<span class="chip">' + BL.esc(n) + '</span>').join(' ') + '</div></td>' +
+        '<td><div class="nm">' + BL.esc(e.full_name) + '</div>' +
+        '<div class="sub">' + BL.esc(e.sex || 'Sex not set') + ' &middot; ' + (a === null ? 'age unknown' : (a >= 1 ? a + ' yrs' : ageText(e.birthdate))) + '</div>' +
+        (needsList(e).length ? '<div class="tags">' + needsList(e).map((n) => '<span class="tg">' + BL.esc(n) + '</span>').join('') + '</div>' : '') + '</td>' +
         (city ? '<td>' + BL.esc(homeBrgy(e)) + '</td>' : '') +
         '<td>' + hh + '</td><td>' + status + '</td>' +
         '<td><div class="row-actions">' +
@@ -147,6 +216,11 @@
     $('empty').hidden = shown.length > 0;
     $('empty').textContent = list.length ? 'No evacuees match your search or filter.' : 'No residents are registered yet. Households registered at the kiosk will appear here.';
   }
+
+  function renderBrgys() {
+    if (city) $('bpick').hidden = false;
+  }
+  $('bq').addEventListener('input', render);
 
   $('rows').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-act]'); if (!b) return;
@@ -177,10 +251,12 @@
       '<div><div class="k">Civil status</div><div class="v">' + BL.esc((extra[ev.id] || {}).civil_status || '-') + '</div></div>' +
       '<div><div class="k">Special needs</div><div class="v">' + BL.esc(needsList(ev).join('; ') || 'None') + '</div></div>' +
       '</div>' +
+      familyBlock(ev) +
       '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Movement history</h3><ul class="timeline" id="hist"><li style="color:var(--muted)">Loading history.</li></ul></div>' +
       '</div>' +
       '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)">Every check-in and check-out, newest first.</span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Close</button><button type="button" class="btn btn-primary" id="toEdit">Edit Information</button></div></div>', 820);
     m.el.querySelector('#toEdit').addEventListener('click', () => { m.close(); edit(ev); });
+    m.el.querySelectorAll('[data-fam]').forEach((b) => b.addEventListener('click', () => { const o = listAll.find((x) => x.id === Number(b.dataset.fam)); if (o) { m.close(); view(o); } }));
     fetch('/evacuees/' + ev.id + '/photo', { headers: { Authorization: 'Bearer ' + BL.token() } }).then((r) => r.ok ? r.blob() : null).then((b) => { if (b) m.el.querySelector('#vPhoto').innerHTML = '<img alt="Photo of ' + BL.esc(ev.full_name) + '" src="' + URL.createObjectURL(b) + '" style="width:100%;height:100%;object-fit:cover">'; }).catch(() => {});
     try {
       const hist = await BL.api('/evacuees/' + ev.id + '/history');
@@ -192,6 +268,22 @@
     } catch (e) {
       m.el.querySelector('#hist').innerHTML = '<li class="form-error" style="display:block;width:100%">' + BL.esc(e.message) + '</li>';
     }
+  }
+
+  function familyBlock(ev) {
+    const sn = surname(ev.full_name);
+    const house = ev.household_id ? listAll.filter((x) => x.id !== ev.id && x.household_id === ev.household_id) : [];
+    const same = listAll.filter((x) => x.id !== ev.id && !house.includes(x) && x.registered_barangay_id === ev.registered_barangay_id && surname(x.full_name) === sn);
+    const row = (x, tag) => {
+      const a = BL.age(x.birthdate);
+      return '<button type="button" class="m" data-fam="' + x.id + '"><span><strong>' + BL.esc(x.full_name) + '</strong>' + (x.is_head_of_family ? ' <span class="chip navy">Head</span>' : '') +
+        '<small>' + BL.esc(x.sex || '-') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + (needsList(x).length ? ' &middot; ' + BL.esc(needsList(x).join(', ')) : '') + ' &middot; ' + tag + '</small></span>' +
+        (where[x.id] ? '<span class="chip green">At ' + BL.esc(where[x.id]) + '</span>' : '<span class="chip" style="background:#FDECEC;color:#B91C1C">Not checked in</span>') + '</button>';
+    };
+    const body = house.map((x) => row(x, 'Same family')).join('') + same.map((x) => row(x, 'Same surname, ' + BL.esc(homeBrgy(x)))).join('');
+    return '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Family members (' + (house.length + same.length) + ')</h3><div class="fam">' +
+      (body || '<p class="empty" style="margin:0">No other family members or residents with the surname "' + BL.esc(ev.full_name.trim().split(/\s+/).pop()) + '" in this barangay.</p>') +
+      '</div><p style="font-size:12px;color:var(--muted);margin:6px 0 0">Click a name to open that person.</p></div>';
   }
 
   function edit(ev) {

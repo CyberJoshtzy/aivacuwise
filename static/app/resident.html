@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Family · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=11">
+<style>
+body { background: #F4F6FA; }
+.top { background: #FFFFFF; border-bottom: 1px solid #E3E8F2; }
+.top .in { max-width: 1080px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top img { height: 40px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 60px; display: flex; flex-direction: column; gap: 18px; }
+.hero { border-radius: 18px; padding: 24px; color: #FFFFFF; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.hero.safe { background: linear-gradient(135deg, #0F5132, #198754); }
+.hero.out { background: linear-gradient(135deg, #7A2E0E, #C2410C); }
+.hero.idle { background: linear-gradient(135deg, #0B1F4D, #13306E); }
+.hero h1 { color: #FFFFFF; font-size: 26px; font-weight: 800; margin: 0; }
+.hero p { margin: 4px 0 0; color: rgba(255,255,255,.88); }
+.hero .big { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.18); display: grid; place-items: center; font-size: 30px; flex-shrink: 0; }
+.alert { padding: 16px 18px; border-radius: 14px; background: #FFF7ED; border: 2px solid #F59E0B; }
+.alert strong { color: #B45309; }
+.cols { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
+.card { background: #FFFFFF; border: 1px solid #E3E8F2; border-radius: 16px; padding: 20px; }
+.card h2 { font-size: 18px; margin: 0 0 12px; color: var(--navy); }
+.kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; font-size: 14px; }
+.kv dt { color: var(--muted); font-weight: 600; }
+.kv dd { margin: 0; font-weight: 600; color: #1F2937; }
+.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #EEF2FF; color: var(--navy); margin: 0 4px 4px 0; }
+.chip.ok { background: #E8F7EE; color: #15803D; } .chip.no { background: #FDECEC; color: #B91C1C; }
+.member { border: 1px solid #E3E8F2; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+.member .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.member .nm { font-weight: 800; color: var(--navy); }
+.member .meta { font-size: 13px; color: var(--muted); }
+.member details summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--navy); margin-top: 6px; }
+.tl { list-style: none; margin: 0; padding: 0; }
+.tl li { position: relative; padding: 0 0 14px 22px; font-size: 14px; }
+.tl li::before { content: ''; position: absolute; left: 4px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #198754; }
+.tl li.out::before { background: #C2410C; }
+.tl li::after { content: ''; position: absolute; left: 8px; top: 18px; bottom: 0; width: 2px; background: #E3E8F2; }
+.tl li:last-child::after { display: none; }
+.tl .t { font-size: 12px; color: var(--muted); }
+.empty { color: var(--muted); font-size: 14px; }
+.note { font-size: 13px; color: var(--muted); }
+.tips li { margin-bottom: 6px; font-size: 14px; }
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .kv { grid-template-columns: 120px 1fr; } }
+@media print { .top button, #hotlinesHide { display: none; } }
+/* v2 layout */
+body { background: linear-gradient(180deg, #EEF2FA 0, #F4F6FA 320px); }
+.top { position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #E3E8F2; }
+.top img { height: 46px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand b { font-size: 15px; color: var(--navy); display: block; }
+.brand span { font-size: 12px; color: var(--muted); }
+.wrap { max-width: 1120px; gap: 20px; }
+.hero { padding: 28px 30px; border-radius: 22px; box-shadow: 0 12px 30px rgba(11,31,77,.18); }
+.hero h1 { font-size: 28px; }
+.cols { gap: 20px; }
+.card { border-radius: 18px; padding: 22px 24px; box-shadow: 0 2px 10px rgba(11,31,77,.04); }
+.card h2 { display: flex; align-items: center; gap: 10px; font-size: 17px; margin-bottom: 14px; }
+.card h2 i { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: #EEF2FF; font-style: normal; font-size: 16px; }
+.prof { display: flex; gap: 14px; align-items: center; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #EEF1F6; }
+.prof .av { width: 56px; height: 56px; border-radius: 50%; background: var(--navy); color: #FFFFFF; display: grid; place-items: center; font-size: 20px; font-weight: 800; flex-shrink: 0; }
+.prof strong { font-size: 18px; color: var(--navy); display: block; }
+.prof span { font-size: 13px; color: var(--muted); }
+.kv { grid-template-columns: 1fr 1fr !important; gap: 14px 18px !important; }
+.kv > div { min-width: 0; }
+.kv dt { font-size: 11px !important; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.kv dd { font-size: 14px !important; word-break: break-word; }
+.kv .full { grid-column: 1 / -1; }
+.member { border-radius: 14px !important; padding: 14px 16px !important; background: #FAFBFE; }
+.member .av2 { width: 40px; height: 40px; border-radius: 50%; background: #EEF2FF; color: var(--navy); display: grid; place-items: center; font-weight: 800; flex-shrink: 0; }
+.member .who { display: flex; gap: 12px; align-items: center; }
+.famsum { display: flex; gap: 10px; margin-bottom: 14px; }
+.famsum div { flex: 1; padding: 10px 12px; border-radius: 12px; background: #F6F8FD; text-align: center; }
+.famsum b { display: block; font-size: 22px; color: var(--navy); }
+.famsum span { font-size: 12px; color: var(--muted); }
+.tl li.empty::before, .tl li.empty::after { display: none; }
+.tips { list-style: none; padding: 0 !important; display: flex; flex-direction: column; gap: 8px; }
+.tips li { display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #F6F8FD; margin: 0 !important; font-size: 14px; }
+.tips li::before { content: '\2713'; color: #15803D; font-weight: 800; }
+/* logo-v3 */ .top img { height: 58px !important; } .brand b { font-size: 17px !important; }
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="brand"><img src="/static/logo.png" alt="BilisLikas 2.0"><div><b>BilisLikas 2.0</b><span>Resident portal</span></div></div>
+  <div style="display:flex;gap:10px;align-items:center"><span class="note" id="who"></span><button type="button" class="btn btn-ghost" id="out">Sign Out</button></div>
+</div></header>
+<div class="wrap">
+  <div id="loadError" class="form-error" role="alert" hidden></div>
+  <section class="hero idle" id="hero"><div class="big" id="heroIco">&#8987;</div><div><h1 id="heroTitle">Loading...</h1><p id="heroSub"></p></div></section>
+  <div class="alert" id="evac" hidden></div>
+  <div class="cols">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <section class="card"><h2><i>&#128106;</i>My family</h2><div id="family"></div></section>
+      <section class="card"><h2><i>&#128339;</i>My evacuation history</h2><ul class="tl" id="hist"></ul></section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <section class="card"><h2><i>&#128100;</i>My information</h2><div class="prof" id="prof"></div><dl class="kv" id="info"></dl>
+        <p class="note" style="margin-top:12px">Wrong details? Visit your barangay office to correct them. Residents cannot edit records online.</p></section>
+      <section class="card" id="trk" hidden><h2><i>&#128225;</i>My GPS tracker</h2><dl class="kv" id="trkInfo"></dl></section>
+      <section class="card"><h2><i>&#9888;</i>When evacuating</h2><ul class="tips" style="margin:0;padding-left:18px">
+        <li>Walk slowly past the entrance camera and face it so you are checked in automatically.</li>
+        <li>Keep your GPS tracker on and with you at all times.</li>
+        <li>Bring IDs, medicine, water, a flashlight and a charged phone.</li>
+        <li>Do not leave the evacuation center without telling the barangay staff.</li>
+        <li>For emergencies, press the Emergency Hotlines button.</li></ul></section>
+    </div>
+  </div>
+</div>
+<script src="app.js?v=44"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var tok = null;
+  try { tok = sessionStorage.getItem('bl_resident'); } catch (x) { /* storage blocked */ }
+  if (!tok && window.name.indexOf('blr:') === 0) tok = window.name.slice(4);
+  if (!tok) { location.href = 'resident-signin.html'; return; }
+  function signOut() { try { sessionStorage.removeItem('bl_resident'); } catch (x) {} window.name = ''; location.href = 'index.html'; }
+  $('out').addEventListener('click', signOut);
+  var parse = function (t) { return t ? new Date(/Z|[+-]\d\d:?\d\d$/.test(t) ? t : t + 'Z') : null; };
+  var fmt = function (t) { var d = parse(t); return d ? d.toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '-'; };
+  function timeline(list) {
+    return list.length ? list.map(function (h) { return '<li class="' + (h.event === 'Checked out' ? 'out' : '') + '"><strong>' + esc(h.event) + '</strong> &middot; ' + esc(h.center || '-') + '<div class="t">' + fmt(h.time) + '</div></li>'; }).join('')
+      : '<li class="empty" style="padding-left:0;color:var(--muted)">No check-ins yet.</li>';
+  }
+  async function load() {
+    try {
+      var r = await fetch('/resident/me', { headers: { Authorization: 'Resident ' + tok } });
+      if (r.status === 401) return signOut();
+      var d = await r.json();
+      if (!r.ok) throw new Error(d.detail || 'Could not load your records.');
+      $('loadError').hidden = true;
+      var p = d.profile, s = d.status;
+      $('who').textContent = p.full_name;
+      var h = $('hero');
+      if (s.accounted) { h.className = 'hero safe'; $('heroIco').innerHTML = '&#10003;'; $('heroTitle').textContent = 'You are checked in and accounted for'; $('heroSub').textContent = s.center + (s.center_address ? ', ' + s.center_address : '') + ' since ' + fmt(s.since); }
+      else if (d.evacuation) { h.className = 'hero out'; $('heroIco').innerHTML = '!'; $('heroTitle').textContent = 'You are not yet checked in'; $('heroSub').textContent = 'Go to the evacuation center and pass the entrance camera.'; }
+      else { h.className = 'hero idle'; $('heroIco').innerHTML = '&#8962;'; $('heroTitle').textContent = 'Hello, ' + p.full_name.split(' ')[0] + '!'; $('heroSub').textContent = 'There is no active evacuation in your barangay right now.'; }
+      var ev = d.evacuation;
+      $('evac').hidden = !ev;
+      if (ev) $('evac').innerHTML = '<strong>Evacuation in progress: ' + esc(ev.disaster_type) + '</strong><br>Started ' + fmt(ev.started_at) + (ev.center ? '. Go to <strong>' + esc(ev.center) + '</strong>' + (ev.center_address ? ', ' + esc(ev.center_address) : '') + '.' : '.');
+      var safe = d.family.filter(function (m) { return m.accounted; }).length;
+      $('family').innerHTML = (d.family.length ? '<div class="famsum"><div><b>' + d.family.length + '</b><span>Family members</span></div><div><b style="color:#15803D">' + safe + '</b><span>Accounted</span></div><div><b style="color:#B91C1C">' + (d.family.length - safe) + '</b><span>Unaccounted</span></div></div>' : '') +
+        (d.family.map(function (m) {
+          return '<div class="member"><div class="row"><div class="who"><span class="av2">' + esc((m.name || '?').charAt(0)) + '</span><div><span class="nm">' + esc(m.name) + '</span>' + (m.head ? ' <span class="chip">Head of family</span>' : '') +
+            '<div class="meta">' + (m.age != null ? m.age + ' yrs' : '') + (m.sex ? ' &middot; ' + esc(m.sex) : '') + (m.accounted ? ' &middot; at ' + esc(m.center) + ' since ' + fmt(m.since) : '') + '</div></div>' +
+            '</div><span class="chip ' + (m.accounted ? 'ok">Accounted' : 'no">Unaccounted') + '</span></div>' +
+            '<details><summary>Show logs</summary><ul class="tl" style="margin-top:10px">' + timeline(m.history) + '</ul></details></div>';
+        }).join('') || '<p class="empty">No other family members are registered with you.</p>');
+      $('hist').innerHTML = timeline(d.history);
+      var bd = p.birthdate ? new Date(p.birthdate + 'T00:00:00').toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '-';
+      var rows = [['Full name', esc(p.full_name)], ['Birthday', bd + (p.age != null ? ' (' + p.age + ' yrs)' : '')], ['Sex', esc(p.sex || '-')], ['Civil status', esc(p.civil_status || '-')],
+        ['Barangay', esc(p.barangay || '-')], ['Address', esc(p.address || '-')], ['Mobile number', esc(p.contact_number || '-')],
+        ['Family role', p.head_of_family ? 'Head of family' : 'Member'],
+        ['Special needs', p.special_needs.length ? p.special_needs.map(function (x) { return '<span class="chip">' + esc(x) + '</span>'; }).join('') : 'None'],
+        ['Face ID', p.face_registered ? '<span class="chip ok">Registered</span>' : '<span class="chip no">Not registered</span>']];
+      var ini = p.full_name.split(' ').filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+      $('prof').innerHTML = '<span class="av">' + esc(ini) + '</span><div><strong>' + esc(p.full_name) + '</strong><span>' + esc(p.barangay || '') + ' &middot; ' + (p.head_of_family ? 'Head of family' : 'Family member') + '</span></div>';
+      $('info').innerHTML = rows.filter(function (r) { return ['Full name', 'Barangay', 'Family role'].indexOf(r[0]) === -1; }).map(function (r) { return '<div' + (r[0] === 'Address' || r[0] === 'Special needs' ? ' class="full"' : '') + '><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>'; }).join('');
+      $('trk').hidden = !d.tracker;
+      if (d.tracker) $('trkInfo').innerHTML = '<dt>Tracker ID</dt><dd>' + esc(d.tracker.device_id) + '</dd><dt>Battery</dt><dd>' + (d.tracker.battery != null ? d.tracker.battery + '%' : '-') + '</dd><dt>Last signal</dt><dd>' + fmt(d.tracker.last_signal) + '</dd>';
+    } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
+  }
+  load();
+  setInterval(load, 30000);
+})();
+</script>
+</body>
+</html>

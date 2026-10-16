@@ -47,6 +47,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(models.User).filter(models.User.username == username).first()
     if user is None:
         raise credentials_exception
+    # ISO/IEC 25010 Security: a disabled, rejected or pending account loses access right away
+    if (getattr(user, "account_status", None) or "active") != "active":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="This account is not active. Contact the City Hall IT Administrator.")
     return user
 
 def require_role(role: str):

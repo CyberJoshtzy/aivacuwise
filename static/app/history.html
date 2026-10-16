@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evacuation History · BilisLikas 2.0</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=11">
+<style>
+.tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tools select.input { width: 190px; height: 44px; font-size: 14px; margin: 0; }
+.sumrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 760px; }
+table.data td { vertical-align: middle; }
+.dlink { background: none; border: none; padding: 0; font: inherit; text-align: left; cursor: pointer; color: var(--navy); }
+.dlink strong { text-decoration: underline; text-underline-offset: 3px; }
+.dlink:hover strong { color: var(--orange-text, #C2410C); }
+.subx { font-size: 12px; color: var(--muted); }
+.stx { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: #EEF1F6; color: #6B7280; }
+.stx.on { background: #FFF7ED; color: #B45309; }
+.acts { display: flex; gap: 6px; justify-content: flex-end; }
+.acts .btn { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.tl { list-style: none; margin: 0; padding: 0; }
+.tl li { position: relative; padding: 0 0 14px 26px; font-size: 14px; }
+.tl li::before { content: ''; position: absolute; left: 5px; top: 5px; width: 11px; height: 11px; border-radius: 50%; background: #9AA3B2; }
+.tl li::after { content: ''; position: absolute; left: 10px; top: 19px; bottom: 0; width: 2px; background: #E3E8F2; }
+.tl li:last-child::after { display: none; }
+.tl li.check_in::before { background: #15803D; } .tl li.check_out::before { background: #1D4ED8; }
+.tl li.relief::before { background: #F59E0B; } .tl li.start::before, .tl li.end::before { background: #142C6E; }
+.tl .t { font-size: 12px; color: var(--muted); }
+.mini4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.mini4 div { padding: 10px 12px; border-radius: 10px; background: #F6F8FD; }
+.mini4 b { display: block; font-size: 20px; color: var(--navy); }
+.mini4 span { font-size: 12px; color: var(--muted); }
+.fbtns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.fbtns button { border: 1.5px solid #E3E8F2; background: #FFFFFF; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--navy); }
+.fbtns button[aria-pressed="true"] { background: var(--navy); color: #FFFFFF; border-color: var(--navy); }
+@media (max-width: 700px) { .sumrow { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside id="sidebar" class="sidebar city"></aside>
+  <main class="main">
+    <div class="page-head">
+      <div><h1>Evacuation History</h1><p>Every finished evacuation. Click View to see everything that happened during it.</p></div>
+    </div>
+    <div id="err" class="form-error" role="alert" hidden></div>
+    <div class="sumrow">
+      <div class="kpi"><div class="label">Past evacuations</div><div class="value" id="kN">0</div></div>
+      <div class="kpi"><div class="label">Most frequent disaster</div><div class="value" id="kD" style="font-size:20px;margin-top:8px">-</div></div>
+    </div>
+    <section class="panel">
+      <div class="panel-head"><h2 id="listTitle">All evacuations</h2>
+        <div class="tools">
+          <select id="fB" class="input" aria-label="Filter by barangay"><option value="">All barangays</option></select>
+          <select id="fD" class="input" aria-label="Filter by disaster"><option value="">All disasters</option></select>
+          <select id="fY" class="input" aria-label="Filter by year" style="width:130px"><option value="">All years</option></select>
+          <select id="fM" class="input" aria-label="Filter by month" style="width:150px"><option value="">All months</option></select>
+        </div></div>
+      <div class="table-wrap"><table class="data"><thead><tr><th>Date</th><th>Barangay</th><th>Disaster</th><th>Evacuation center</th><th>Time</th><th>Duration</th><th>Evacuees</th><th>Status</th><th style="text-align:right">Action</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" class="empty" style="margin-top:12px" hidden>No evacuation matches your filters.</div>
+    </section>
+  </main>
+</div>
+<script src="app.js?v=44"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const city = me.role === 'city_admin'; /* brgyView */
+  BL.renderSidebar(me, 'history.html');
+  if (!city) { document.getElementById('fB').style.display = 'none'; }
+  const $ = (id) => document.getElementById(id);
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const dur = (m) => Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm';
+  const tm = (x) => BL.parseT(x).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+  let all = [];
+
+  async function load() {
+    try {
+      all = (await BL.api('/history/incidents') || []).filter((i) => i.finished);  /* finished evacuations only */
+      all.forEach((i) => { const a = BL.parseT(i.started_at), b = BL.parseT(i.ended_at); i._a = a; i._m = i.active_seconds != null ? Math.round(i.active_seconds / 60) : Math.max(0, Math.round((b - a) / 60000)); i._y = String(a.getFullYear()); i._mo = String(a.getMonth()); });
+      const fill = (id, vals, first, lab) => { const el = $(id), keep = el.value; el.innerHTML = '<option value="">' + first + '</option>' + vals.map((v) => '<option value="' + BL.esc(v) + '">' + BL.esc(lab ? lab(v) : v) + '</option>').join(''); el.value = keep; };
+      fill('fB', [...new Set(all.map((i) => i.barangay || '-'))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), 'All barangays');
+      fill('fD', [...new Set(all.map((i) => i.disaster_type || '-'))].sort(), 'All disasters');
+      fill('fY', [...new Set(all.map((i) => i._y))].sort().reverse(), 'All years');
+      fill('fM', [...new Set(all.map((i) => i._mo))].sort((a, b) => a - b), 'All months', (v) => MONTHS[v]);
+      $('err').hidden = true;
+      render();
+    } catch (e) { $('err').textContent = e.message; $('err').hidden = false; }
+  }
+
+  function render() {
+    const fb = $('fB').value, fd = $('fD').value, fy = $('fY').value, fm = $('fM').value;
+    const list = all.filter((i) => (!fb || (i.barangay || '-') === fb) && (!fd || (i.disaster_type || '-') === fd) && (!fy || i._y === fy) && (!fm || i._mo === fm));
+    $('listTitle').textContent = list.length + (list.length === 1 ? ' evacuation' : ' evacuations') + (fb ? ' in ' + fb : '');
+    $('kN').textContent = list.length;
+    const cnt = {}; list.forEach((i) => { cnt[i.disaster_type] = (cnt[i.disaster_type] || 0) + 1; });
+    const top = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+    $('kD').textContent = top ? top + ' (' + cnt[top] + ')' : '-';
+    $('rows').innerHTML = list.map((i) => '<tr>' +
+      '<td style="white-space:nowrap"><strong style="color:var(--navy)">' + i._a.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + '</strong><div class="subx">' + i._a.toLocaleDateString('en-PH', { weekday: 'long' }) + '</div></td>' +
+      '<td><strong style="color:var(--navy)">' + BL.esc(i.barangay || '-') + '</strong></td><td>' + BL.esc(i.disaster_type || '-') + '</td>' +
+      '<td style="font-size:13px">' + BL.esc(i.center || 'All centers') + '</td>' +
+      '<td style="white-space:nowrap;font-size:13px">' + tm(i.started_at) + ' &ndash; ' + tm(i.ended_at) + '</td><td style="white-space:nowrap">' + dur(i._m) + '</td>' +
+      '<td>' + i.evacuees + '</td><td>' + '<span class="stx" style="background:#E8F7EE;color:#15803D">Finished</span>' + '</td>' +
+      '<td><div class="acts"><button type="button" class="btn btn-ghost" data-open="' + i.id + '">View</button>' + (city ? '<button type="button" class="btn btn-del" data-del="' + i.id + '">Delete</button>' : '') + '</div></td></tr>').join('');
+    $('empty').hidden = list.length > 0;
+  }
+
+  ['fB', 'fD', 'fY', 'fM'].forEach((id) => $(id).addEventListener('change', render));
+
+  async function open(id) {
+    let d;
+    try { d = await BL.api('/history/incidents/' + id); } catch (e) { BL.toast(e.message); return; }
+    const a = BL.parseT(d.started_at);
+    const m = d.active_seconds != null ? Math.round(d.active_seconds / 60) : Math.max(0, Math.round((BL.parseT(d.ended_at) - a) / 60000));
+    const kinds = [['', 'All'], ['check_in', 'Check-ins'], ['check_out', 'Check-outs'], ['relief', 'Relief & medicine']];
+    const md = BL.modal(
+      '<div class="dialog-head"><div><h2>' + BL.esc(d.barangay || '-') + ' &middot; ' + BL.esc(d.disaster_type || '-') + '</h2><div style="font-size:14px;color:var(--muted)">' +
+      a.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + ', ' + tm(d.started_at) + ' &ndash; ' + tm(d.ended_at) + ' (' + dur(m) + ') &middot; ' + BL.esc(d.center || 'All centers') + '</div></div>' +
+      '<button type="button" class="x-btn" data-close aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5368" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button></div>' +
+      '<div class="dialog-body"><div class="mini4"><div><b>' + d.evacuees + '</b><span>Evacuees checked in</span></div><div><b>' + d.checkins + '</b><span>Check-ins</span></div><div><b>' + d.checkouts + '</b><span>Check-outs</span></div><div><b>' + d.relief + '</b><span>Relief records</span></div></div>' +
+      '<div class="fbtns" id="kf">' + kinds.map((k, n) => '<button type="button" data-k="' + k[0] + '" aria-pressed="' + (n === 0) + '">' + k[1] + '</button>').join('') + '</div>' +
+      '<ul class="tl" id="tl" style="max-height:52vh;overflow-y:auto"></ul></div>' +
+      '<div class="dialog-foot"><span style="font-size:13px;color:var(--muted)">' + d.activities.length + ' activities recorded</span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" id="pr">Print</button><button type="button" class="btn btn-ghost" data-close>Close</button></div></div>', 820);
+    const draw = (k) => {
+      const list = d.activities.filter((x) => !k || x.kind === k || x.kind === 'start' || x.kind === 'end');
+      md.el.querySelector('#tl').innerHTML = list.map((x) => '<li class="' + x.kind + '"><strong>' + BL.esc(x.text) + '</strong>' + (x.by ? ' <span class="subx">by ' + BL.esc(x.by) + '</span>' : '') + '<div class="t">' + BL.parseT(x.time).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + '</div></li>').join('')
+        || '<li class="subx" style="padding-left:0">No activity of this kind.</li>';
+    };
+    draw('');
+    md.el.querySelector('#kf').addEventListener('click', (e) => { const b = e.target.closest('button[data-k]'); if (!b) return; md.el.querySelectorAll('#kf button').forEach((x) => x.setAttribute('aria-pressed', x === b)); draw(b.dataset.k); });
+    md.el.querySelector('#pr').addEventListener('click', () => { const w = window.open('', '_blank'); w.document.write('<title>Evacuation record</title><body style="font-family:sans-serif">' + md.el.querySelector('.dialog-head').innerHTML + md.el.querySelector('.dialog-body').innerHTML + '</body>'); w.document.close(); w.print(); });
+  }
+
+  $('rows').addEventListener('click', (e) => {
+    const o = e.target.closest('[data-open]'); if (o) { open(Number(o.dataset.open)); return; }
+    const d = e.target.closest('[data-del]'); if (!d) return;
+    const i = all.find((x) => x.id === Number(d.dataset.del)); if (!i) return;
+    BL.confirmBox({ title: 'Are you sure you want to delete this evacuation record?',
+      text: (i.barangay || '') + ', ' + (i.disaster_type || '') + ' on ' + i._a.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) + '. It will be removed from the history. Residents\' check-in records are kept.',
+      ok: 'Yes, Delete', danger: true, action: () => BL.api('/history/incidents/' + i.id, { method: 'DELETE' }) })
+      .then((ok) => { if (ok) { BL.toast('Evacuation record deleted.'); load(); } });
+  });
+
+  await load();
+  BL.connectLive(() => load(), null);
+})();
+</script>
+</body>
+</html>

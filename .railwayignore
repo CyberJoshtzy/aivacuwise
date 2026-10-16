@@ -1,0 +1,9 @@
+.env
+venv/
+backups/
+__pycache__/
+*.sql
+*.sql.gz
+logs/
+backup-*/
+*.bak
