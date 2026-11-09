@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Evacuation · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="app.css?v=50">
 <style>
 .banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-radius: 14px; color: #FFFFFF; background: #4A5368; flex-wrap: wrap; }
 .banner.on { background: var(--red); }
@@ -20,7 +20,7 @@
 .layout { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .latest { padding: 16px; border-radius: 14px; background: #1B2233; color: #FFFFFF; display: flex; flex-direction: column; gap: 10px; min-height: 150px; justify-content: center; }
 .latest .who { font-size: 22px; font-weight: 800; }
-.latest .meta { font-size: 13px; color: #C3CCE4; }
+.latest .meta { font-size: 14px; color: #C3CCE4; }
 .latest.flash { animation: arrive 1.6s ease-out; }
 @keyframes arrive { 0% { background: #15803D; } 100% { background: #1B2233; } }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -30,7 +30,7 @@
 .res li { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line-soft); }
 .res li.new { animation: newrow 2.4s ease-out; }
 .res .name { font-size: 15px; font-weight: 700; color: var(--navy); }
-.res .meta { font-size: 13px; color: var(--muted); }
+.res .meta { font-size: 14px; color: var(--muted); }
 .res .right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .okdot { width: 32px; height: 32px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; }
 .types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -44,7 +44,7 @@ body.tv .res { max-height: none; }
 .smsgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .smsgrid div { padding: 10px 14px; border-radius: 12px; background: var(--bg); }
 .smsgrid b { display: block; font-size: 24px; font-weight: 800; color: var(--navy); }
-.smsgrid span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.smsgrid span { font-size: 14px; font-weight: 700; color: var(--muted); }
 .radio { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; }
 .radio:has(input:checked) { border-color: var(--navy); background: var(--tint); }
 .radio input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--navy); }
@@ -78,7 +78,7 @@ body.tv .res { max-height: none; }
           <div id="bTimes" hidden style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px"></div></div>
       </div>
       <div style="display:flex;align-items:center;gap:16px">
-        <div id="timerBox" hidden><div style="font-size:12px;font-weight:700;color:#FDE8E8;text-align:right">Active time</div><div class="timer" id="timer">00:00:00</div></div>
+        <div id="timerBox" hidden><div style="font-size:14px;font-weight:700;color:#FDE8E8;text-align:right">Active time</div><div class="timer" id="timer">00:00:00</div></div>
         <button type="button" class="btn btn-white" id="resumeBtn" hidden>Resume Evacuation</button>
         <button type="button" class="btn btn-primary" id="startBtn">Start Evacuation</button>
         <button type="button" class="btn btn-white" id="endBtn" hidden>End Evacuation</button>
@@ -99,25 +99,26 @@ body.tv .res { max-height: none; }
         <div><b id="smsFail" class="tone-red">0</b><span>Failed</span></div>
         <div><b id="smsNum">0</b><span>Mobile numbers registered</span></div>
       </div>
-      <p class="sub" id="smsNote" style="font-size:13px;color:var(--muted);margin:0">When you press Start Evacuation, every registered mobile number in your barangay automatically receives an evacuation alert.</p>
+      <p class="sub" id="smsNote" style="font-size:14px;color:var(--muted);margin:0">When you press Start Evacuation, every registered mobile number in your barangay automatically receives an evacuation alert.</p>
     </section>
 
     <div class="stats">
       <div class="kpi"><div class="label">Evacuated</div><div class="value tone-green" id="kIn">0</div><div class="bar" style="margin-top:8px"><span id="kBar" style="width:0"></span></div></div>
       <div class="kpi"><div class="label">Not yet accounted for</div><div class="value" id="kOut">0</div></div>
       <div class="kpi"><div class="label">Priority not yet here</div><div class="value tone-amber" id="kPrio">0</div><div class="sub">Seniors, children under 5, PWD, pregnant, medical</div></div>
-      <div class="kpi"><div class="label">Arrivals this session</div><div class="value" id="kNew">0</div><div class="sub">Since this page was opened</div></div>
+      <div class="kpi"><div class="label">Spaces left</div><div class="value" id="kNew">-</div><div class="sub" id="kNewSub">At the evacuation center</div></div>
     </div>
 
     <div class="layout">
       <div style="display:flex;flex-direction:column;gap:16px">
         <section class="panel">
           <div class="panel-head"><h2>Entrance camera</h2></div>
+          <div class="cam-status unknown" id="camStatus" role="status"><span class="cdot"></span><span>Checking the camera...<small>&nbsp;</small></span></div>
           <div class="latest" id="latest">
             <div class="meta">Waiting for the next evacuee</div>
             <div style="font-size:15px;color:#D6DDF0">Each person the camera identifies appears here within a second, and gets a green check in the list.</div>
           </div>
-          <div class="field-group">
+          <div class="field-group" hidden>
             <label for="manualCenter">Evacuation Center</label>
             <select id="manualCenter" class="input" style="height:46px;font-size:15px"></select>
           </div>
@@ -147,7 +148,7 @@ body.tv .res { max-height: none; }
     </div>
   </main>
 </div>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=50"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -159,6 +160,7 @@ body.tv .res { max-height: none; }
   let brgys = [], brgyId = me.barangay_id, incident = null, lastEnded = null, residents = [], where = {}, centers = [];
   let allInc = [];
   let prevWhere = null, fresh = new Set(), arrivals = 0, tab = 'not', feed = [], timerId = null;
+  let camCenter = null, camRows = null; // entrance camera status (see loadCam)
 
   try { brgys = await BL.api('/barangays') || []; } catch (e) { brgys = []; }
   const brgyName = (id) => (brgys.find((b) => b.id === id) || {}).name || 'Barangay #' + id;
@@ -261,7 +263,7 @@ body.tv .res { max-height: none; }
       : (lastEnded ? (lastEnded.finished ? 'The last evacuation was finished and the evacuee list was reset. Start a new one when a disaster happens.' : 'The evacuation was paused. Press Resume Evacuation to continue it, or start a new one.') : 'Start it when a disaster happens so arrivals are tracked against everyone registered.');
     const fmtDate = (d) => BL.parseT(d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const dur = (inc) => { const m = Math.round((inc.active_seconds != null ? inc.active_seconds : Math.max(0, (BL.parseT(inc.ended_at) - BL.parseT(inc.started_at)) / 1000)) / 60); return (m >= 60 ? Math.floor(m / 60) + ' hr ' : '') + (m % 60) + ' min'; };
-    const cell = (k, v) => '<div><div style="font-size:12px;font-weight:700;color:#FDE8E8;text-transform:uppercase;letter-spacing:.04em">' + k + '</div><div style="font-size:16px;font-weight:800">' + BL.esc(v) + '</div></div>';
+    const cell = (k, v) => '<div><div style="font-size:14px;font-weight:700;color:#FDE8E8;text-transform:uppercase;letter-spacing:.04em">' + k + '</div><div style="font-size:16px;font-weight:800">' + BL.esc(v) + '</div></div>';
     if (on) {
       $('bTimes').innerHTML = cell('Date', fmtDate(incident.started_at)) + cell('Time started', BL.time(incident.started_at)) + cell('Time ended', 'Ongoing');
       $('bTimes').hidden = false; $('bTimes').style.display = 'flex';
@@ -294,7 +296,10 @@ body.tv .res { max-height: none; }
     $('kBar').style.width = (residents.length ? Math.round(inN / residents.length * 100) : 0) + '%';
     $('kOut').textContent = residents.length - inN;
     $('kPrio').textContent = residents.filter((r) => !where[r.id] && isPrio(r)).length;
-    $('kNew').textContent = arrivals;
+    const ctr = centers.find((c) => String(c.id) === String(sel.value));
+    $('kNew').textContent = ctr ? Math.max(0, ctr.capacity - ctr.occupancy) : '-';
+    $('kNewSub').textContent = ctr ? 'At ' + ctr.name + ' (' + ctr.occupancy + ' of ' + ctr.capacity + ' used)' : 'No evacuation center yet';
+    camCenter = sel.value ? Number(sel.value) : null; showCam();
 
     // Tabs
     const awayN = residents.filter((r) => where[r.id] && where[r.id].away).length;
@@ -310,9 +315,9 @@ body.tv .res { max-height: none; }
       const c = where[r.id];
       const tag = prioTags(r).map((x) => '<span class="chip">' + BL.esc(x) + '</span>').join(' ');
       const right = c && c.away
-        ? '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#B45309">Evacuated in another barangay</div><div class="meta">' + BL.esc(c.name) + (c.brgy ? ' &#183; ' + BL.esc(c.brgy) : '') + '</div></div><span class="okdot" aria-hidden="true" style="background:#B45309"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>'
+        ? '<div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#B45309">Evacuated in another barangay</div><div class="meta">' + BL.esc(c.name) + (c.brgy ? ' &#183; ' + BL.esc(c.brgy) : '') + '</div></div><span class="okdot" aria-hidden="true" style="background:#B45309"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>'
         : c
-        ? '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--green)">Evacuated</div><div class="meta">' + BL.esc(c.name) + '</div></div><span class="okdot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>'
+        ? '<div style="text-align:right"><div style="font-size:14px;font-weight:800;color:var(--green)">Evacuated</div><div class="meta">' + BL.esc(c.name) + '</div></div><span class="okdot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>'
         : '<span class="meta" style="font-weight:700">Not yet</span>';
       return '<li class="' + (fresh.has(r.id) ? 'new' : '') + '"><div><div class="name">' + BL.esc(r.full_name) + ' ' + tag + '</div><div class="meta">' + BL.esc(r.sex || '-') + ', ' + (a === null ? 'age unknown' : a + ' yrs') + (r.identification_method === 'facial_recognition' ? ' &#183; Face ID' : ' &#183; Manual') + '</div></div><div class="right">' + right + '</div></li>';
     }).join('');
@@ -332,7 +337,7 @@ body.tv .res { max-height: none; }
     $('guests').innerHTML = g.map((x) => {
       const tag = (x.priority || []).map((t) => '<span class="chip">' + BL.esc(t) + '</span>').join(' ');
       return '<li><div><div class="name">' + BL.esc(x.full_name) + ' ' + tag + '</div><div class="meta">' + BL.esc(x.sex || '-') + ', ' + (x.age === null ? 'age unknown' : x.age + ' yrs') + ' &#183; From <strong>' + BL.esc(x.home_barangay || 'another barangay') + '</strong></div></div>' +
-        '<div class="right"><div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#B45309">From another barangay</div><div class="meta">' + BL.esc(x.center_name) + ' &#183; ' + BL.time(x.checked_in_at) + '</div></div></div></li>';
+        '<div class="right"><div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#B45309">From another barangay</div><div class="meta">' + BL.esc(x.center_name) + ' &#183; ' + BL.time(x.checked_in_at) + '</div></div></div></li>';
     }).join('');
     $('guestEmpty').hidden = g.length > 0;
   }
@@ -430,11 +435,11 @@ body.tv .res { max-height: none; }
     const m = BL.modal('<form id="sf" novalidate style="display:contents"><div class="dialog-head"><h2>Send the evacuation alert again</h2>' +
       '<button type="button" class="x-btn" data-close aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5368" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button></div>' +
       '<div class="dialog-body" style="display:flex;flex-direction:column;gap:12px"><div class="form-error" id="sErr" hidden></div>' +
-      '<label class="radio"><input type="radio" name="tg" value="not_evacuated" checked><span><strong>Only residents not yet evacuated</strong><br><span style="font-size:13px;color:var(--muted)">Skips families whose members are all inside a center.</span></span></label>' +
-      '<label class="radio"><input type="radio" name="tg" value="all"><span><strong>Everyone in the barangay</strong><br><span style="font-size:13px;color:var(--muted)">All registered mobile numbers, including those already evacuated.</span></span></label>' +
+      '<label class="radio"><input type="radio" name="tg" value="not_evacuated" checked><span><strong>Only residents not yet evacuated</strong><br><span style="font-size:14px;color:var(--muted)">Skips families whose members are all inside a center.</span></span></label>' +
+      '<label class="radio"><input type="radio" name="tg" value="all"><span><strong>Everyone in the barangay</strong><br><span style="font-size:14px;color:var(--muted)">All registered mobile numbers, including those already evacuated.</span></span></label>' +
       '<div class="field-group"><label for="sMsg">Message <span style="font-weight:500;color:var(--muted)">(leave blank to use the standard reminder)</span></label>' +
       '<textarea id="sMsg" class="input" rows="3" maxlength="300" style="height:auto;padding:10px 12px" placeholder="PAALALA: Patuloy po ang evacuation. Kung hindi pa kayo nakalilikas, pumunta na po sa evacuation center."></textarea>' +
-      '<div style="font-size:12px;color:var(--muted);margin-top:4px"><span id="sLen">0</span> / 300 characters. Long messages are sent as more than one text.</div></div></div>' +
+      '<div style="font-size:14px;color:var(--muted);margin-top:4px"><span id="sLen">0</span> / 300 characters. Long messages are sent as more than one text.</div></div></div>' +
       '<div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="sGo">Send Alert</button></div></div></form>', 620);
     const g = (id) => m.el.querySelector('#' + id);
     g('sMsg').addEventListener('input', () => { g('sLen').textContent = g('sMsg').value.length; });
@@ -449,6 +454,23 @@ body.tv .res { max-height: none; }
   });
   loadSms();
   setInterval(loadSms, 5000);
+
+  // Entrance camera on/off, from the heartbeat the Raspberry Pi sends every 15 seconds
+  function showCam() {
+    const box = $('camStatus'); if (!box || camRows === null) return;
+    const row = camRows.find((r) => r.kind === 'entrance' && r.center_id === camCenter);
+    const on = !!(row && row.online);
+    box.className = 'cam-status ' + (on ? 'on' : 'off');
+    box.querySelector('span:last-child').innerHTML = on
+      ? 'Camera on<small>Evacuees are checked in as they walk in.</small>'
+      : 'Camera off<small>' + (row ? 'Last seen ' + BL.ago(row.last_seen) + '. ' : '') + 'Turn on the Raspberry Pi at the entrance. The camera starts by itself in about 1 minute.</small>';
+  }
+  async function loadCam() {
+    try { camRows = await BL.api('/camera/status') || []; } catch (e) { camRows = []; }
+    showCam();
+  }
+  loadCam();
+  setInterval(loadCam, 10000);
 
   BL.connectLive(() => { load(); loadSms(); }, $('live'));
 })();

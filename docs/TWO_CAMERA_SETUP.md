@@ -76,15 +76,19 @@ Check: `curl -s http://127.0.0.1:8080/health` on the Pi should show `"ok": true`
 The address is remembered by that browser. "This computer's webcam" is still available as a backup.
 Because the camera is on the Pi, pre-registration no longer has to be done on the laptop itself.
 
-## Step 6: Start the entrance camera (on the Pi, with a monitor connected)
+## Step 6: Entrance camera (starts by itself)
 
-```
-cd ~/ai-vacuwise-pi/entrance_client && python3 recognize.py
-```
+The setup installs `ai-vacuwise-entrance-camera`, a background service that starts the USB
+webcam recognizer whenever the Pi turns on. It reports to the laptop every 15 seconds, so the
+Live Evacuation page and the Entrance Display show **Camera on** or **Camera off**.
 
-It prints `Entrance camera: /dev/videoN` and shows the camera window. Press `q` to stop.
-Set `EVACUATION_CENTER_ID` in `entrance_client/config.py` on the Pi to the center this
-entrance belongs to. Without a monitor, set `SHOW_PREVIEW = False`.
+- Watch it: `sudo journalctl -u ai-vacuwise-entrance-camera -f`
+- Set the center it guards: `EVACUATION_CENTER_ID` in `entrance_client/config.py` on the Pi,
+  then `sudo systemctl restart ai-vacuwise-entrance-camera`.
+- To see the camera window for testing: `sudo systemctl stop ai-vacuwise-entrance-camera`,
+  then `cd ~/ai-vacuwise-pi/entrance_client && python3 recognize.py` (press `q` to stop),
+  then `sudo systemctl start ai-vacuwise-entrance-camera`.
+- Only re-install the services (no package downloads): `bash pi_camera/install_services.sh`
 
 ## Troubleshooting
 

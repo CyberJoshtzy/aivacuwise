@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Entrance Display · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="app.css?v=50">
 <style>
 .preview { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #0E1F4F; border: 1px solid var(--line); }
 .preview iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -13,7 +13,7 @@
 .stats .kpi .value { font-size: 28px; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
 .link-box { display: flex; gap: 8px; }
-.link-box input { flex-grow: 1; min-width: 0; height: 44px; font-size: 13px; background: var(--bg); }
+.link-box input { flex-grow: 1; min-width: 0; height: 44px; font-size: 14px; background: var(--bg); }
 .steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.55; }
 @media (max-width: 1200px) { .layout { grid-template-columns: minmax(0, 1fr); } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
@@ -29,12 +29,13 @@
         <p>What evacuees see on the monitor at the evacuation center entrance. Faces move from "Unaccounted" to "Accounted" as the camera identifies them.</p>
       </div>
       <div class="toolbar">
-        <label for="centerSel" class="sr-only">Evacuation center</label>
-        <select id="centerSel" class="input" style="width:260px;height:46px"></select>
+        <label for="centerSel" style="font-weight:700">Show center</label>
+        <select id="centerSel" class="input" style="width:280px;height:50px"></select>
         <button type="button" class="btn btn-primary" id="openFull">Open Full Screen</button>
       </div>
     </div>
     <div id="loadError" class="form-error" role="alert" hidden></div>
+    <div class="cam-status unknown" id="camStatus" role="status"><span class="cdot"></span><span>Checking the entrance camera...<small>&nbsp;</small></span></div>
 
     <div class="stats">
       <div class="kpi"><div class="label">Unaccounted</div><div class="value" id="sWait">0</div><div class="sub">Shown under "Unaccounted"</div></div>
@@ -63,7 +64,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=50"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -79,7 +80,12 @@
     $('loadError').hidden = false;
     return;
   }
-  const saved = Number(localStorage.getItem('bl_display_center'));
+  // Open on the center of the evacuation that is running; otherwise the last one chosen here.
+  let saved = Number(localStorage.getItem('bl_display_center'));
+  try {
+    const act = (await BL.api('/incidents?active=true') || []).find((i) => i.active && i.evacuation_center_id);
+    if (act && centers.some((c) => c.id === act.evacuation_center_id)) saved = act.evacuation_center_id;
+  } catch (e) {}
   $('centerSel').innerHTML = centers.map((c) => '<option value="' + c.id + '"' + (c.id === saved ? ' selected' : '') + '>' + BL.esc(c.name) + '</option>').join('');
 
   // The mini PC reaches the server by its network address, not 127.0.0.1.
@@ -113,7 +119,22 @@
     } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
   }
 
+  // Entrance camera on/off (heartbeat from the Raspberry Pi every 15 seconds)
+  async function loadCam() {
+    let rows = [];
+    try { rows = await BL.api('/camera/status') || []; } catch (e) {}
+    const row = rows.find((r) => r.kind === 'entrance' && String(r.center_id) === $('centerSel').value);
+    const on = !!(row && row.online);
+    $('camStatus').className = 'cam-status ' + (on ? 'on' : 'off');
+    $('camStatus').querySelector('span:last-child').innerHTML = on
+      ? 'Entrance camera on<small>Faces move to "Accounted" as the camera identifies them.</small>'
+      : 'Entrance camera off<small>' + (row ? 'Last seen ' + BL.ago(row.last_seen) + '. ' : '') + 'Turn on the Raspberry Pi at this entrance. The camera starts by itself in about 1 minute.</small>';
+  }
+  $('centerSel').addEventListener('change', loadCam);
+  setInterval(loadCam, 10000);
+
   applyCenter();
+  loadCam();
   BL.connectLive(() => load(), null);
 })();
 </script>

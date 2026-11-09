@@ -1935,3 +1935,8 @@ iso_quality.install(app)
 import cross_barangay
 
 app.include_router(cross_barangay.router)
+
+# ---- Ai-Vacuwise: entrance camera status (heartbeat from the Raspberry Pi) ----
+import camera_status
+
+app.include_router(camera_status.router)
