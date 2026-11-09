@@ -231,7 +231,7 @@ const BL = (() => {
       ? '<div class="role-badge"><div class="kind">Super user</div><div class="who">City Admin</div><div class="sub">' + esc(me.email || me.username) + '</div></div>'
       : '<div class="role-badge"><div class="kind">Signed in</div><div class="who">' + esc(barangayName || 'Barangay') + '</div><div class="sub">' + esc(me.email || me.username) + '</div></div>';
     el.innerHTML =
-      '<div class="logo-tile"><img src="/static/logo.png" alt="Ai-Vacuwise"></div>' + badge + sizer +
+      '<div class="logo-tile"><img src="/static/logo.png?v=2" alt="Ai-Vacuwise"></div>' + badge + sizer +
       '<nav class="nav" aria-label="Main">' + items + '</nav>' +
       '<div class="sync-badge" id="syncBadge" role="status" hidden><span class="sdot"></span><span><strong id="syncTitle"></strong><span id="syncSub"></span></span></div>' +
       '<nav class="nav signout" aria-label="Account"><a href="#" id="signout">' + svg('out') + 'Sign Out</a></nav>';
