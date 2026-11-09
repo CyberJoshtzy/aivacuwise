@@ -1,4 +1,4 @@
-# Code Governance Setup for BilisLikas 2.0
+# Code Governance Setup for Ai-Vacuwise
 
 These tools run on the laptop server (`~/bilislikas2.0`) and on GitHub. None of them run while the system is serving evacuees, so they do not affect the prototype's performance.
 

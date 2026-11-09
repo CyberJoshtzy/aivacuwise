@@ -12,8 +12,8 @@ import shutil
 import subprocess
 import sys
 
-P3 = '# ---- BilisLikas 2.0: cloud sync phase 3 (push, pull, notify) ----'
-MARK = '# ---- BilisLikas 2.0: cloud sync phase 4 (status and districts) ----'
+P3 = '# ---- Ai-Vacuwise: cloud sync phase 3 (push, pull, notify) ----'
+MARK = '# ---- Ai-Vacuwise: cloud sync phase 4 (status and districts) ----'
 
 main_src, schemas_src = open('main.py').read(), open('schemas.py').read()
 new_main, new_schemas = main_src, schemas_src

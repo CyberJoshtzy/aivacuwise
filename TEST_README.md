@@ -1,4 +1,4 @@
-# BilisLikas 2.0 backend test suite
+# Ai-Vacuwise backend test suite
 
 Covers check-in, walk-in registration, transfers (including the occupancy
 accuracy fix), authentication, and the two facial recognition endpoints the

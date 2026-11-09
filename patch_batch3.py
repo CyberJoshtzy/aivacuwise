@@ -10,8 +10,8 @@ import subprocess
 import sys
 
 D = '_' * 2
-MARK = '# ---- BilisLikas 2.0: incidents and barangay edit/delete (batch 3) ----'
-BATCH2 = '# ---- BilisLikas 2.0: edit and delete endpoints (batch 2) ----'
+MARK = '# ---- Ai-Vacuwise: incidents and barangay edit/delete (batch 3) ----'
+BATCH2 = '# ---- Ai-Vacuwise: edit and delete endpoints (batch 2) ----'
 
 models_src = open('models.py').read()
 main_src = open('main.py').read()

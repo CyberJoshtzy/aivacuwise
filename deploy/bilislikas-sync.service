@@ -1,5 +1,5 @@
 [Unit]
-Description=BilisLikas 2.0 cloud sync agent
+Description=Ai-Vacuwise cloud sync agent
 After=network-online.target bilislikas.service
 Wants=network-online.target
 

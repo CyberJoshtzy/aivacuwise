@@ -1,4 +1,4 @@
-# BilisLikas 2.0 cloud hub (Railway). Lightweight: no face recognition libraries are needed on the hub.
+# Ai-Vacuwise cloud hub (Railway). Lightweight: no face recognition libraries are needed on the hub.
 FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1

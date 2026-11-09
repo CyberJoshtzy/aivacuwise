@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- BilisLikas 2.0: cloud sync phase 1 (sync-ready records) ----'
+MARK = '# ---- Ai-Vacuwise: cloud sync phase 1 (sync-ready records) ----'
 D = '_' * 2  # double underscore, written this way so pasting never corrupts it
 
 files = {f: open(f).read() for f in ['models.py', 'database.py', 'schemas.py', 'main.py']}

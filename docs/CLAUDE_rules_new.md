@@ -1,10 +1,10 @@
-# BilisLikas 2.0: Rules for Claude
+# Ai-Vacuwise: Rules for Claude
 
 Read this file before making any change in this repository.
 
 ## What this project is
 
-BilisLikas 2.0 is an undergraduate Computer Engineering thesis prototype: a quick, smart evacuation tracking and management system for multi-barangay disaster response.
+Ai-Vacuwise is an undergraduate Computer Engineering thesis prototype: a quick, smart evacuation tracking and management system for multi-barangay disaster response.
 
 - **Laptop server** (Ubuntu 24.04 LTS, i5-7200U, 8 GB RAM): runs PostgreSQL 16 and Redis 7 in Docker, and this FastAPI backend as a systemd service (`bilislikas.service`, port 8000).
 - **Raspberry Pi edge device** (`pi_client/`, separate from this repo's backend): does facial recognition with `face_recognition` (dlib) and calls this API (`GET /evacuees/enrolled_faces`, `POST /checkin`). BLE tracker scanning will also run there.

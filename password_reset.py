@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: forgot password with a 6-digit code sent by email.
+"""Ai-Vacuwise: forgot password with a 6-digit code sent by email.
 
 Flow:
   1. POST /password/forgot  {email}                       -> where the code can be sent (masked)
@@ -109,7 +109,7 @@ def _options(user):
 
 def _message(code):
     return (
-        "Your BilisLikas 2.0 password reset code is %s. It expires in %d minutes. "
+        "Your Ai-Vacuwise password reset code is %s. It expires in %d minutes. "
         "If you did not ask for this, ignore this message." % (code, CODE_MINUTES)
     )
 
@@ -123,8 +123,8 @@ def send_email(to_address, code):
             detail="Email sending is not set up on this server yet. Contact your City Admin.",
         )
     msg = EmailMessage()
-    msg["Subject"] = "BilisLikas 2.0 password reset code"
-    msg["From"] = "BilisLikas 2.0 <%s>" % user
+    msg["Subject"] = "Ai-Vacuwise password reset code"
+    msg["From"] = "Ai-Vacuwise <%s>" % user
     msg["To"] = to_address
     msg.set_content(_message(code))
     host = os.getenv("SMTP_HOST") or "smtp.gmail.com"

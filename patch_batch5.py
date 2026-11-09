@@ -17,8 +17,8 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- BilisLikas 2.0: evacuee photos and entrance display (batch 5) ----'
-BATCH4 = '# ---- BilisLikas 2.0: pre-registration with webcam photos (batch 4) ----'
+MARK = '# ---- Ai-Vacuwise: evacuee photos and entrance display (batch 5) ----'
+BATCH4 = '# ---- Ai-Vacuwise: pre-registration with webcam photos (batch 4) ----'
 
 src = open('main.py').read()
 

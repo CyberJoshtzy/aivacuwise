@@ -19,8 +19,8 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- BilisLikas 2.0: barangay self-registration (batch 6) ----'
-BATCH5 = '# ---- BilisLikas 2.0: evacuee photos and entrance display (batch 5) ----'
+MARK = '# ---- Ai-Vacuwise: barangay self-registration (batch 6) ----'
+BATCH5 = '# ---- Ai-Vacuwise: evacuee photos and entrance display (batch 5) ----'
 
 models_src = open('models.py').read()
 main_src = open('main.py').read()

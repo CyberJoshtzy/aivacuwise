@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: cross-barangay evacuee tracking.
+"""Ai-Vacuwise: cross-barangay evacuee tracking.
 
 A resident is registered under a home barangay but may evacuate to a center of another barangay
 (for example, a Barangay 200 resident who goes to Barrio Obrero Elementary School).

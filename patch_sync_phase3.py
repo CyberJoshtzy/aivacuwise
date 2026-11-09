@@ -11,8 +11,8 @@ import shutil
 import subprocess
 import sys
 
-P1 = '# ---- BilisLikas 2.0: cloud sync phase 1 (sync-ready records) ----'
-MARK = '# ---- BilisLikas 2.0: cloud sync phase 3 (push, pull, notify) ----'
+P1 = '# ---- Ai-Vacuwise: cloud sync phase 1 (sync-ready records) ----'
+MARK = '# ---- Ai-Vacuwise: cloud sync phase 3 (push, pull, notify) ----'
 D = '_' * 2
 
 models_src, main_src = open('models.py').read(), open('main.py').read()

@@ -1,4 +1,4 @@
-"""Creates all BilisLikas tables in the database chosen by POSTGRES_PORT (used for Server B and the hub)."""
+"""Creates all Ai-Vacuwise tables in the database chosen by POSTGRES_PORT (used for Server B and the hub)."""
 
 import os
 import sys

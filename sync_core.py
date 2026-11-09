@@ -1,4 +1,4 @@
-"""BilisLikas 2.0 cloud sync: the shared rules used by the cloud hub and by each server's sync agent.
+"""Ai-Vacuwise cloud sync: the shared rules used by the cloud hub and by each server's sync agent.
 
 Records travel between servers by their uuid, never by their local id, because local ids
 (1, 2, 3...) are different on every server. Foreign keys are sent as the parent's uuid and

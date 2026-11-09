@@ -1,4 +1,4 @@
-"""BilisLikas 2.0 entrance camera: recognizes registered evacuees walking past and checks them in.
+"""Ai-Vacuwise entrance camera: recognizes registered evacuees walking past and checks them in.
 
 Same approach as the Raspberry Pi's recognize.py: face_recognition (dlib), 0.6 tolerance,
 cooldown per person, enrolled faces reloaded every minute. If a recognized person is already
@@ -183,7 +183,7 @@ def main():
                     )
 
             if config.SHOW_PREVIEW:
-                cv2.imshow("BilisLikas 2.0 entrance camera (press q to stop)", frame)
+                cv2.imshow("Ai-Vacuwise entrance camera (press q to stop)", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
     except KeyboardInterrupt:
