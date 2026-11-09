@@ -5,29 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>City Hall Access Request · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 body { background: #F4F6FA; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; display: flex; flex-direction: column; gap: 18px; }
-.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; font-size: 15px; font-weight: 600; text-decoration: none; }
 .head h1 { font-size: 30px; font-weight: 800; margin: 0; }
 .head p { color: var(--muted); margin: 6px 0 0; }
 .card { background: #FFFFFF; border: 1px solid #E3E8F2; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 2px 10px rgba(11,31,77,.04); }
 .card-h { display: flex; gap: 14px; align-items: flex-start; }
 .card-h .n { width: 34px; height: 34px; border-radius: 10px; background: var(--navy); color: #FFFFFF; display: grid; place-items: center; font-weight: 800; flex-shrink: 0; }
 .card-h h2 { font-size: 18px; margin: 0; color: var(--navy); }
-.card-h p { font-size: 14px; color: var(--muted); margin: 2px 0 0; }
+.card-h p { font-size: 15px; color: var(--muted); margin: 2px 0 0; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .field-group { margin: 0; }
 select.input { width: 100%; max-width: 100%; text-overflow: ellipsis; }
 .meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
 .meter i { height: 6px; border-radius: 3px; background: #DCE1EA; transition: background .2s; }
-.hint { font-size: 14px; font-weight: 600; margin-top: 4px; }
-.confirm { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.5; color: #3D4659; cursor: pointer; }
+.hint { font-size: 15px; font-weight: 600; margin-top: 4px; }
+.confirm { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.5; color: #3D4659; cursor: pointer; }
 .confirm input { width: 20px; height: 20px; margin-top: 1px; flex-shrink: 0; accent-color: var(--navy); }
 .foot { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-.note { padding: 12px 14px; border-radius: 12px; background: #EEF2FF; color: var(--navy); font-size: 14px; line-height: 1.5; }
+.note { padding: 12px 14px; border-radius: 12px; background: #EEF2FF; color: var(--navy); font-size: 15px; line-height: 1.5; }
 @media (max-width: 640px) { .row, .row3 { grid-template-columns: 1fr; } }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
@@ -79,12 +79,12 @@ select.input { width: 100%; max-width: 100%; text-overflow: ellipsis; }
       <label class="confirm"><input type="checkbox" id="agree">I agree to handle evacuee data according to the Data Privacy Act of 2012 (RA 10173).</label>
       <div class="foot">
         <button class="btn btn-primary btn-lg" type="submit" id="submit">Submit Request</button>
-        <span style="font-size:14px;color:var(--muted)">Already have an account? <a href="admin-signin.html" style="font-weight:700">Sign in</a></span>
+        <span style="font-size:15px;color:var(--muted)">Already have an account? <a href="admin-signin.html" style="font-weight:700">Sign in</a></span>
       </div>
     </div>
   </form>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);

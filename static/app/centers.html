@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Evacuation Centers · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 .ccard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .ccard h2 { font-size: 17px; font-weight: 800; }
-.ccard .addr { font-size: 14px; color: var(--muted); margin-top: 3px; }
+.ccard .addr { font-size: 15px; color: var(--muted); margin-top: 3px; }
 .ccard .occ { display: flex; justify-content: space-between; align-items: baseline; }
 .ccard .occ .n { font-size: 26px; font-weight: 800; }
 .ccard .occ .n small { font-size: 15px; font-weight: 600; color: var(--muted); }
@@ -56,7 +56,7 @@
     <div id="empty" class="empty" hidden>No evacuation centers yet. New centers are added by the City Hall IT Administrator.</div>
   </main>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -73,7 +73,7 @@
   function describe(r) {
     if (r.action === 'delete') return '<strong style="color:#B91C1C">Delete center</strong>';
     const lab = { name: 'Name', address: 'Address', capacity: 'Capacity' };
-    return '<strong>Edit</strong><div style="font-size:14px;color:var(--muted)">' + Object.keys(r.changes || {}).map((k) =>
+    return '<strong>Edit</strong><div style="font-size:15px;color:var(--muted)">' + Object.keys(r.changes || {}).map((k) =>
       lab[k] + ': ' + BL.esc(String(r.current ? r.current[k] : '-')) + ' &rarr; <strong style="color:var(--navy)">' + BL.esc(String(r.changes[k])) + '</strong>').join('<br>') + '</div>';
   }
   async function loadReqs() {
@@ -84,10 +84,10 @@
     $('reqTitle').textContent = itAdmin ? 'Center changes waiting for your approval' : 'Your change requests';
     $('reqNote').textContent = itAdmin ? list.length + ' pending' : 'Reviewed by the City Hall IT Administrator';
     $('reqRows').innerHTML = list.map((r) => { const st = ST[r.status] || ST.pending;
-      return '<tr><td><strong style="color:var(--navy)">' + BL.esc(r.center) + '</strong><div style="font-size:14px;color:var(--muted)">' + BL.esc(r.barangay || '') + '</div></td>' +
-        '<td>' + describe(r) + (r.reason ? '<div style="font-size:14px;margin-top:4px">Reason: ' + BL.esc(r.reason) + '</div>' : '') + '</td>' +
-        '<td style="font-size:14px">' + BL.esc(r.requested_by || '-') + '<div style="font-size:14px;color:var(--muted)">' + BL.dateTime(r.created_at) + '</div></td>' +
-        '<td><span class="chip" style="background:' + st[1] + ';color:' + st[2] + '">' + st[0] + '</span>' + (r.review_note ? '<div style="font-size:14px;color:var(--muted)">' + BL.esc(r.review_note) + '</div>' : '') + '</td>' +
+      return '<tr><td><strong style="color:var(--navy)">' + BL.esc(r.center) + '</strong><div style="font-size:15px;color:var(--muted)">' + BL.esc(r.barangay || '') + '</div></td>' +
+        '<td>' + describe(r) + (r.reason ? '<div style="font-size:15px;margin-top:4px">Reason: ' + BL.esc(r.reason) + '</div>' : '') + '</td>' +
+        '<td style="font-size:15px">' + BL.esc(r.requested_by || '-') + '<div style="font-size:15px;color:var(--muted)">' + BL.dateTime(r.created_at) + '</div></td>' +
+        '<td><span class="chip" style="background:' + st[1] + ';color:' + st[2] + '">' + st[0] + '</span>' + (r.review_note ? '<div style="font-size:15px;color:var(--muted)">' + BL.esc(r.review_note) + '</div>' : '') + '</td>' +
         '<td style="text-align:right;white-space:nowrap">' + (itAdmin && r.status === 'pending'
           ? '<button type="button" class="btn btn-primary btn-sm" data-rq="approve" data-rid="' + r.id + '">Approve</button> <button type="button" class="btn btn-ghost btn-sm" data-rq="reject" data-rid="' + r.id + '">Reject</button>' : '') + '</td></tr>'; }).join('');
   }
@@ -152,7 +152,7 @@
         '<div><h2>' + BL.esc(c.name) + '</h2><div class="addr">' + BL.esc(c.address || 'No address') + (city ? ' &#183; ' + BL.esc(brgyNames[c.barangay_id] || 'Barangay #' + c.barangay_id) : '') + '</div></div>' +
         '<div><div class="occ"><span class="n">' + occ + '<small> / ' + c.capacity + '</small></span><strong class="tone-' + t + '">' + Math.round(p * 100) + '%</strong></div>' +
         '<div class="bar" style="margin-top:6px"><span style="width:' + Math.min(100, Math.round(p * 100)) + '%;background:' + BL.TONE_HEX[t] + '"></span></div>' +
-        '<div style="font-size:14px;font-weight:600;margin-top:6px;color:' + (p >= 0.8 ? 'var(--orange-text)' : 'var(--muted)') + '">' + note + '</div></div>' +
+        '<div style="font-size:15px;font-weight:600;margin-top:6px;color:' + (p >= 0.8 ? 'var(--orange-text)' : 'var(--muted)') + '">' + note + '</div></div>' +
         '<div class="actions">' +
         '<button type="button" class="btn btn-primary btn-sm" data-act="view" data-id="' + c.id + '">View Details</button>' +
         (city && !itAdmin ? '' : pendingFor(c.id) ? '<span class="chip" style="background:#FFF7ED;color:#B45309;align-self:center">Change waiting for approval</span>' :
@@ -178,7 +178,7 @@
     const people = live[c.id] ? (live[c.id].evacuees || []) : [];
     const occ = occOf(c);
     BL.modal(
-      '<div class="dialog-head"><div><h2>' + BL.esc(c.name) + '</h2><div style="font-size:14px;color:var(--muted)">' + BL.esc(c.address || '') + ' &#183; ' + occ + ' of ' + c.capacity + ' evacuees</div></div>' + xBtn + '</div>' +
+      '<div class="dialog-head"><div><h2>' + BL.esc(c.name) + '</h2><div style="font-size:15px;color:var(--muted)">' + BL.esc(c.address || '') + ' &#183; ' + occ + ' of ' + c.capacity + ' evacuees</div></div>' + xBtn + '</div>' +
       '<div class="dialog-body"><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Evacuees inside now</h3>' +
       (people.length ? '<div class="table-wrap"><table class="data"><thead><tr><th scope="col">Name</th><th scope="col">Identified by</th></tr></thead><tbody>' +
         people.map((p) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(p.full_name) + '</strong></td><td>' + (p.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>') + '</td></tr>').join('') +
@@ -200,9 +200,9 @@
       '<div class="field-group"><label for="cCap">Capacity *</label><input id="cCap" type="number" min="1" class="input" value="' + (editing ? c.capacity : '') + '"></div>' +
       brgySelect +
       (itAdmin ? '' : '<div class="field-group span4"><label for="cWhy">Reason for the change *</label><input id="cWhy" class="input" placeholder="e.g., The covered court was expanded"></div>' +
-        '<div class="span4" style="font-size:14px;color:var(--navy);background:#EEF2FF;border-radius:10px;padding:10px 12px">Your change will be sent to the City Hall IT Administrator. It takes effect only after it is approved.</div>') +
+        '<div class="span4" style="font-size:15px;color:var(--navy);background:#EEF2FF;border-radius:10px;padding:10px 12px">Your change will be sent to the City Hall IT Administrator. It takes effect only after it is approved.</div>') +
       '</div></div>' +
-      '<div class="dialog-foot"><span style="font-size:14px;color:var(--muted)" id="cHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="cSave">' + (!itAdmin ? 'Send for Approval' : editing ? 'Save Changes' : 'Add Center') + '</button></div></div>' +
+      '<div class="dialog-foot"><span style="font-size:15px;color:var(--muted)" id="cHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="cSave">' + (!itAdmin ? 'Send for Approval' : editing ? 'Save Changes' : 'Add Center') + '</button></div></div>' +
       '</form>', 640);
     const f = (id) => m.el.querySelector('#' + id);
     const sync = () => {

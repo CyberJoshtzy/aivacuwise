@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>City Hall Sign In · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 .signin { min-height: 100vh; display: flex; }
 .signin aside { width: 560px; flex-shrink: 0; background: linear-gradient(160deg, #0B1F4D, #13306E); color: #FFFFFF; padding: 56px 64px; display: flex; flex-direction: column; justify-content: center; gap: 36px; position: relative; }
@@ -18,12 +18,12 @@
 .signin main { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
 .signin form { width: min(440px, 100%); display: flex; flex-direction: column; gap: 20px; animation: pop .35s ease-out; }
 .signin h1 { font-size: 32px; font-weight: 800; }
-.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 15px; font-weight: 600; text-decoration: none; }
 .code-input { letter-spacing: .5em; font-size: 22px; font-weight: 700; text-align: center; }
-.linkbtn { background: none; border: none; padding: 0; color: var(--navy); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.linkbtn { background: none; border: none; padding: 0; color: var(--navy); font: inherit; font-size: 15px; font-weight: 700; text-decoration: underline; cursor: pointer; }
 .linkbtn:disabled { color: var(--muted); text-decoration: none; cursor: default; }
 .signin form[hidden] { display: none; }
-.help { padding: 14px 16px; background: var(--tint); border-radius: 10px; font-size: 14px; line-height: 1.5; }
+.help { padding: 14px 16px; background: var(--tint); border-radius: 10px; font-size: 15px; line-height: 1.5; }
 @media (max-width: 900px) {
   .signin { flex-direction: column; }
   .signin aside { width: 100%; padding: 28px 24px; }
@@ -41,7 +41,7 @@
 .signin aside .points { margin-top: 18px !important; gap: 10px !important; width: 100%; }
 .signin aside .points div { align-items: center !important; text-align: left; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.10); color: #E3E9F7; font-size: 15px; }
 .signin aside .points svg { width: 34px !important; height: 34px !important; padding: 7px; border-radius: 10px; background: rgba(245,158,11,.16); }
-.signin aside .foot { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 14px !important; }
+.signin aside .foot { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 15px !important; }
 @media (max-width: 900px) { .signin aside { padding: 28px 24px !important; } .signin aside .tile img { width: 180px !important; } }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
@@ -51,7 +51,7 @@
   <aside>
     <div class="tile"><img src="/static/logo.png?v=2" alt="Ai-Vacuwise"></div>
     <div>
-      <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:var(--orange);color:#FFFFFF;font-size:14px;font-weight:800;letter-spacing:.08em;margin-bottom:14px">CITY ADMINISTRATOR PORTAL</div>
+      <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:var(--orange);color:#FFFFFF;font-size:15px;font-weight:800;letter-spacing:.08em;margin-bottom:14px">CITY ADMINISTRATOR PORTAL</div>
       <h2>City Hall access</h2>
       <div class="points">
         <div><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>City-wide view of every barangay and evacuation center</span></div>
@@ -59,7 +59,7 @@
         <div><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/></svg><span>Approve and manage official accounts</span></div>
       </div>
     </div>
-    <div class="foot" style="font-size:14px;color:#AEB9D6">Protected under the Data Privacy Act of 2012 (RA 10173)</div>
+    <div class="foot" style="font-size:15px;color:#AEB9D6">Protected under the Data Privacy Act of 2012 (RA 10173)</div>
   </aside>
   <main>
     <form id="form" novalidate>
@@ -76,7 +76,7 @@
       <div class="field-group">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <label for="pw">Password</label>
-          <a href="#" id="forgotLink" style="font-size:14px;font-weight:600">Forgot password?</a>
+          <a href="#" id="forgotLink" style="font-size:15px;font-weight:600">Forgot password?</a>
         </div>
         <div class="input-wrap">
           <input id="pw" class="input" type="password" autocomplete="current-password" placeholder="Enter your password" required>
@@ -85,7 +85,7 @@
       </div>
       <label class="check"><input type="checkbox" id="remember">Keep me signed in on this device</label>
       <button class="btn btn-primary btn-lg" type="submit" id="submit">Sign In</button>
-      <p style="font-size:14px;color:var(--muted);margin:0">No account yet? <a href="admin-register.html" style="font-weight:700">Request City Hall access</a></p>
+      <p style="font-size:15px;color:var(--muted);margin:0">No account yet? <a href="admin-register.html" style="font-weight:700">Request City Hall access</a></p>
     </form>
 
     <form id="fp" novalidate hidden>
@@ -110,14 +110,14 @@
           <input id="fpCode" class="input code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="------">
         </div>
         <button class="btn btn-primary btn-lg" type="button" id="fpVerify">Verify Code</button>
-        <div style="font-size:14px;color:var(--muted)">Did not get it? <button type="button" class="linkbtn" id="fpResend">Send again</button></div>
+        <div style="font-size:15px;color:var(--muted)">Did not get it? <button type="button" class="linkbtn" id="fpResend">Send again</button></div>
       </div>
 
       <div id="step4" hidden style="display:none;flex-direction:column;gap:20px">
         <div class="field-group">
           <label for="fpPw">New password</label>
           <div class="input-wrap"><input id="fpPw" class="input" type="password" autocomplete="new-password" placeholder="At least 8 characters"><button type="button" class="eye" id="fpEye1"></button></div>
-          <div class="hint" style="font-size:14px;font-weight:600;color:var(--muted)">Use 8+ characters with letters and a number.</div>
+          <div class="hint" style="font-size:15px;font-weight:600;color:var(--muted)">Use 8+ characters with letters and a number.</div>
         </div>
         <div class="field-group">
           <label for="fpPw2">Confirm new password</label>
@@ -130,7 +130,7 @@
     </form>
   </main>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
   const form = document.getElementById('form');
   const email = document.getElementById('email');

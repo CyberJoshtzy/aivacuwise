@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Barangays · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 .head-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .head-tools .search { width: 300px; }
@@ -13,10 +13,10 @@ tr.clickable { cursor: pointer; }
 tr.clickable:hover td { background: #F6F8FD; }
 .cnames { display: flex; flex-wrap: wrap; gap: 6px; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 22px; }
-.facts .k { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.facts .k { font-size: 15px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .facts .v { font-size: 15px; font-weight: 600; color: #1F2937; margin-top: 2px; }
 .facts .full { grid-column: 1 / -1; }
-.off { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); margin-bottom: 6px; font-size: 14px; }
+.off { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); margin-bottom: 6px; font-size: 15px; }
 @media (max-width: 700px) { .facts { grid-template-columns: 1fr; } .head-tools .search { width: 100%; } }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
@@ -50,7 +50,7 @@ tr.clickable:hover td { background: #F6F8FD; }
     </section>
   </main>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -80,7 +80,7 @@ tr.clickable:hover td { background: #F6F8FD; }
     $('count').textContent = list.length + (list.length === 1 ? ' barangay' : ' barangays') + ' registered in Ai-Vacuwise, with ' + total + ' residents in total.';
     $('rows').innerHTML = shown.map((b) =>
       '<tr class="clickable" data-id="' + b.id + '" tabindex="0">' +
-      '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(b.name) + '</strong>' + (b.address ? '<div style="font-size:14px;color:var(--muted)">' + BL.esc(b.address) + '</div>' : '') + '</td>' +
+      '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(b.name) + '</strong>' + (b.address ? '<div style="font-size:15px;color:var(--muted)">' + BL.esc(b.address) + '</div>' : '') + '</td>' +
       '<td>' + (b.district ? BL.esc(b.district) : '<span style="color:var(--muted)">Not set</span>') + '</td>' +
       '<td>' + (b.zone ? BL.esc(b.zone) : '<span style="color:var(--muted)">Not set</span>') + '</td>' +
       '<td><strong>' + b.residents + '</strong></td>' +
@@ -109,7 +109,7 @@ tr.clickable:hover td { background: #F6F8FD; }
   function view(b) {
     const ch = b.chairman;
     const m = BL.modal(
-      '<div class="dialog-head"><div><h2>' + BL.esc(b.name) + '</h2><div style="font-size:14px;color:var(--muted)">' + (b.zone ? BL.esc(b.zone) + ', ' : '') + (b.district ? 'District of ' + BL.esc(b.district) : 'District not set') + '</div></div>' + xBtn + '</div>' +
+      '<div class="dialog-head"><div><h2>' + BL.esc(b.name) + '</h2><div style="font-size:15px;color:var(--muted)">' + (b.zone ? BL.esc(b.zone) + ', ' : '') + (b.district ? 'District of ' + BL.esc(b.district) : 'District not set') + '</div></div>' + xBtn + '</div>' +
       '<div class="dialog-body" style="display:flex;flex-direction:column;gap:18px">' +
       '<div class="facts">' +
       '<div class="full"><div class="k">Barangay address</div><div class="v">' + BL.esc(b.address || 'Not set yet') + '</div></div>' +

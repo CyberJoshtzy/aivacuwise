@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 /* status strip */
 .status { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
 .status .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; background: var(--tint); }
 .status h2 { font-size: 17px; font-weight: 800; color: var(--navy); margin: 0; }
-.status p { font-size: 14px; color: var(--muted); margin: 2px 0 0; }
+.status p { font-size: 15px; color: var(--muted); margin: 2px 0 0; }
 .status .go { margin-left: auto; flex-shrink: 0; }
 .status.active { background: var(--red); border-color: var(--red); }
 .status.active h2, .status.active p { color: #FFFFFF; }
@@ -20,22 +20,22 @@
 
 /* choice cards */
 .ask { font-size: 20px; font-weight: 800; color: var(--navy); margin: 6px 0 0; }
-.ask-sub { font-size: 14px; color: var(--muted); margin: 2px 0 0; }
+.ask-sub { font-size: 15px; color: var(--muted); margin: 2px 0 0; }
 .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .choice { display: flex; gap: 16px; align-items: flex-start; text-align: left; padding: 22px; border-radius: 18px; background: var(--surface); border: 1.5px solid var(--line);
   font: inherit; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
 .choice:hover, .choice:focus-visible { border-color: var(--navy); box-shadow: 0 6px 18px rgba(11,31,77,.08); transform: translateY(-1px); outline: none; }
 .choice .ci { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; }
 .choice h3 { font-size: 18px; font-weight: 800; color: var(--navy); margin: 0 0 4px; }
-.choice p { font-size: 14px; color: var(--muted); margin: 0; line-height: 1.5; }
-.choice .meta { margin-top: 10px; display: inline-block; font-size: 14px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--bg); color: var(--navy); }
+.choice p { font-size: 15px; color: var(--muted); margin: 0; line-height: 1.5; }
+.choice .meta { margin-top: 10px; display: inline-block; font-size: 15px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--bg); color: var(--navy); }
 .choice .arrow { margin-left: auto; align-self: center; color: var(--muted); font-size: 22px; }
 
 .sumgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .sum { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
 .sum .si { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
 .sum b { display: block; font-size: 28px; font-weight: 800; color: var(--navy); line-height: 1.1; }
-.sum span { font-size: 14px; font-weight: 700; color: var(--muted); }
+.sum span { font-size: 15px; font-weight: 700; color: var(--muted); }
 .tabbar { display: flex; gap: 4px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
 .tab { border: none; background: none; font: inherit; font-size: 15px; font-weight: 700; color: var(--muted); padding: 12px 16px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
 .tab:hover { color: var(--navy); }
@@ -43,33 +43,33 @@
 @media (max-width: 1000px) { .sumgrid { grid-template-columns: 1fr 1fr; } }
 /* view */
 .viewhead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.back { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; font-size: 14px; font-weight: 700; color: var(--navy); cursor: pointer; }
+.back { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; font-size: 15px; font-weight: 700; color: var(--navy); cursor: pointer; }
 .back:hover { border-color: var(--navy); }
 .viewhead h2 { font-size: 22px; font-weight: 800; color: var(--navy); margin: 0; }
-.viewhead .hint { font-size: 14px; color: var(--muted); width: 100%; margin: 0; }
+.viewhead .hint { font-size: 15px; color: var(--muted); width: 100%; margin: 0; }
 .groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .group { padding: 14px; border-radius: 12px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
 .group .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.group .name { font-size: 14px; font-weight: 700; }
+.group .name { font-size: 15px; font-weight: 700; }
 .group .num { font-size: 26px; font-weight: 800; color: var(--navy); }
-.group .num small { font-size: 14px; font-weight: 600; color: var(--muted); }
+.group .num small { font-size: 15px; font-weight: 600; color: var(--muted); }
 .group .bar > span { background: var(--navy); }
 .center-row { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
-.center-row .top { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.center-row .top { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
 .pick { display: flex; flex-direction: column; gap: 10px; }
 .pick button { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; cursor: pointer; }
 .pick button:hover, .pick button[aria-pressed="true"] { border-color: var(--navy); background: #F6F8FD; }
 .pick .t { font-weight: 800; color: var(--navy); }
-.pick .s { font-size: 14px; color: var(--muted); }
-.pick .r { margin-left: auto; text-align: right; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.pick .s { font-size: 15px; color: var(--muted); }
+.pick .r { margin-left: auto; text-align: right; font-size: 15px; color: var(--muted); white-space: nowrap; }
 .tl { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; }
-.tl li { position: relative; padding: 0 0 14px 26px; font-size: 14px; }
+.tl li { position: relative; padding: 0 0 14px 26px; font-size: 15px; }
 .tl li::before { content: ''; position: absolute; left: 5px; top: 5px; width: 11px; height: 11px; border-radius: 50%; background: #9AA3B2; }
 .tl li::after { content: ''; position: absolute; left: 10px; top: 19px; bottom: 0; width: 2px; background: #E3E8F2; }
 .tl li:last-child::after { display: none; }
 .tl li.check_in::before { background: #15803D; } .tl li.check_out::before { background: #1D4ED8; }
 .tl li.relief::before { background: #F59E0B; } .tl li.start::before, .tl li.end::before { background: #142C6E; }
-.tl .tt { font-size: 14px; color: var(--muted); }
+.tl .tt { font-size: 15px; color: var(--muted); }
 @media (max-width: 1000px) { .choices, .grid-4 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 700px) { .choices, .grid-4, .grid-2, .groups { grid-template-columns: 1fr; } }
 </style>
@@ -121,7 +121,7 @@
     </section>
   </main>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'barangay_official' });
@@ -264,7 +264,7 @@
     return G.map(([label, test]) => {
       const reg = res.filter(test), ok = present ? reg.filter((ev) => present.has(ev.id)).length : reg.length;
       const p = reg.length ? Math.round(ok / reg.length * 100) : 0;
-      return '<div class="group"><div class="top"><span class="name">' + label + '</span>' + (present ? '<span class="' + (reg.length - ok ? 'tone-red' : 'tone-green') + '" style="font-size:14px;font-weight:700">' + (reg.length - ok) + ' not yet</span>' : '') + '</div>' +
+      return '<div class="group"><div class="top"><span class="name">' + label + '</span>' + (present ? '<span class="' + (reg.length - ok ? 'tone-red' : 'tone-green') + '" style="font-size:15px;font-weight:700">' + (reg.length - ok) + ' not yet</span>' : '') + '</div>' +
         '<div class="num">' + (present ? ok + ' <small>of ' + reg.length + '</small>' : reg.length + ' <small>registered</small>') + '</div>' + (present ? '<div class="bar"><span style="width:' + p + '%"></span></div>' : '') + '</div>';
     }).join('');
   }
