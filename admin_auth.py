@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: City Hall administrator accounts.
+"""Ai-Vacuwise: City Hall administrator accounts.
 
 - Adds position, office, employee_id, account_status and is_superuser to users (startup ALTER).
 - Existing city_admin accounts made before this change become System Administrators (superusers).

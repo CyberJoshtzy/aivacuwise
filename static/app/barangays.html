@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Barangays · BilisLikas 2.0</title>
+<title>Barangays · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=11">
 <style>
@@ -76,7 +76,7 @@ tr.clickable:hover td { background: #F6F8FD; }
     const shown = list.filter((b) => !q || b.name.toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     const total = list.reduce((s, b) => s + b.residents, 0);
-    $('count').textContent = list.length + (list.length === 1 ? ' barangay' : ' barangays') + ' registered in BilisLikas 2.0, with ' + total + ' residents in total.';
+    $('count').textContent = list.length + (list.length === 1 ? ' barangay' : ' barangays') + ' registered in Ai-Vacuwise, with ' + total + ' residents in total.';
     $('rows').innerHTML = shown.map((b) =>
       '<tr class="clickable" data-id="' + b.id + '" tabindex="0">' +
       '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(b.name) + '</strong>' + (b.address ? '<div style="font-size:13px;color:var(--muted)">' + BL.esc(b.address) + '</div>' : '') + '</td>' +

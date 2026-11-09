@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: barangay profile (address, chairman, centers, residents).
+"""Ai-Vacuwise: barangay profile (address, chairman, centers, residents).
 
 - Adds barangays.address and barangays.zone (startup ALTER).
 - GET /barangay_info               City Admin: every barangay. Official: own barangay only.

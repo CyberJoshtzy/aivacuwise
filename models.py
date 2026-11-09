@@ -134,7 +134,7 @@ class Incident(Base):
     ended_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
 
-# ---- BilisLikas 2.0: cloud sync phase 1 (sync-ready records) ----
+# ---- Ai-Vacuwise: cloud sync phase 1 (sync-ready records) ----
 import os as _sync_os
 import uuid as _sync_uuid
 
@@ -264,7 +264,7 @@ def _sync_record_deletions(session, flush_context, instances):
             )
 
 
-# ---- BilisLikas 2.0: cloud sync phase 3 (push, pull, notify) ----
+# ---- Ai-Vacuwise: cloud sync phase 3 (push, pull, notify) ----
 class SyncLog(Base):
     """On the cloud hub: every change received, in order, so each server can pull what it has not seen."""
 

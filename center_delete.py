@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: delete an evacuation center together with its past records (after confirmation).
+"""Ai-Vacuwise: delete an evacuation center together with its past records (after confirmation).
 
 - GET    /evacuation_centers/{id}/usage   evacuees inside now and number of check-in records
 - DELETE /evacuation_centers/{id}/force   removes the center and its check-in history

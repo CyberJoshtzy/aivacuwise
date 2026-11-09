@@ -1,4 +1,4 @@
-/* BilisLikas 2.0 shared frontend logic.
+/* Ai-Vacuwise shared frontend logic.
    Talks to the FastAPI backend on the same host (served from /static/app/). */
 const BL = (() => {
   const TOKEN = 'bl_token';
@@ -27,7 +27,7 @@ const BL = (() => {
     try {
       res = await fetch(path, { method: opts.method || 'GET', headers, body: opts.body });
     } catch (e) {
-      throw new Error('Cannot reach the BilisLikas server. Check that the laptop server is running.');
+      throw new Error('Cannot reach the Ai-Vacuwise server. Check that the laptop server is running.');
     }
     if (res.status === 401 && !opts.allow401) {
       logout();
@@ -157,7 +157,7 @@ const BL = (() => {
       ? '<div class="role-badge"><div class="kind">Super user</div><div class="who">City Admin</div><div class="sub">' + esc(me.email || me.username) + '</div></div>'
       : '<div class="role-badge"><div class="kind">Signed in</div><div class="who">' + esc(barangayName || 'Barangay') + '</div><div class="sub">' + esc(me.email || me.username) + '</div></div>';
     el.innerHTML =
-      '<div class="logo-tile"><img src="/static/logo.png" alt="BilisLikas 2.0"></div>' + badge +
+      '<div class="logo-tile"><img src="/static/logo.png" alt="Ai-Vacuwise"></div>' + badge +
       '<nav class="nav" aria-label="Main">' + items + '</nav>' +
       '<div class="sync-badge" id="syncBadge" role="status" hidden><span class="sdot"></span><span><strong id="syncTitle"></strong><span id="syncSub"></span></span></div>' +
       '<nav class="nav signout" aria-label="Account"><a href="#" id="signout">' + svg('out') + 'Sign Out</a></nav>';

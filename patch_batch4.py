@@ -16,8 +16,8 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- BilisLikas 2.0: pre-registration with webcam photos (batch 4) ----'
-BATCH2 = '# ---- BilisLikas 2.0: edit and delete endpoints (batch 2) ----'
+MARK = '# ---- Ai-Vacuwise: pre-registration with webcam photos (batch 4) ----'
+BATCH2 = '# ---- Ai-Vacuwise: edit and delete endpoints (batch 2) ----'
 
 models_src = open('models.py').read()
 main_src = open('main.py').read()

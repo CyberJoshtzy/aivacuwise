@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- BilisLikas 2.0: edit and delete endpoints (batch 2) ----'
+MARK = '# ---- Ai-Vacuwise: edit and delete endpoints (batch 2) ----'
 
 src = open('main.py').read()
 if MARK in src:

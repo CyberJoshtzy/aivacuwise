@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: delete a barangay together with everything registered under it (after confirmation).
+"""Ai-Vacuwise: delete a barangay together with everything registered under it (after confirmation).
 
 - GET    /barangays/{id}/usage   counts of centers, residents, accounts, households, evacuation records
 - DELETE /barangays/{id}/force   City Admin only; refused while an evacuation is running there

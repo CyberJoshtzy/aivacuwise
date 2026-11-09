@@ -1,4 +1,4 @@
-# Ruff settings for BilisLikas 2.0 (linting, security checks, formatting)
+# Ruff settings for Ai-Vacuwise (linting, security checks, formatting)
 target-version = "py313"
 line-length = 100
 

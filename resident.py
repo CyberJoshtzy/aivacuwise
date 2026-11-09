@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: resident / evacuee portal (read-only, own family only).
+"""Ai-Vacuwise: resident / evacuee portal (read-only, own family only).
 
 Residents do not sign up. They were pre-registered by their barangay, so they sign in with
   last name + birthday + mobile number given at pre-registration

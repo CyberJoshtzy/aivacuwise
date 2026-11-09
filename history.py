@@ -1,4 +1,4 @@
-"""BilisLikas 2.0: evacuation history (City Admin).
+"""Ai-Vacuwise: evacuation history (City Admin).
 
 - GET    /history/incidents            every past evacuation (paused or finished), newest first
 - GET    /history/incidents/{id}       one evacuation with every activity during it

@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for the BilisLikas 2.0 backend test suite.
+"""Shared pytest fixtures for the Ai-Vacuwise backend test suite.
 
 Design decisions:
 

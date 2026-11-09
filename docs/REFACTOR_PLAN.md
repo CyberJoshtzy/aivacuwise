@@ -120,7 +120,7 @@ from routers import (
     users,
 )
 
-app = FastAPI(title="BilisLikas 2.0 API")
+app = FastAPI(title="Ai-Vacuwise API")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 for module in (

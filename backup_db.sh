@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# BilisLikas 2.0: daily database backup (ISO/IEC 25010 Reliability - Recoverability)
+# Ai-Vacuwise: daily database backup (ISO/IEC 25010 Reliability - Recoverability)
 set -euo pipefail
 cd "$(dirname "$0")"
 getv() { grep -E "^$1=" .env | head -1 | cut -d= -f2- | sed -e 's/^["'"'"']//' -e 's/["'"'"']$//' || true; }

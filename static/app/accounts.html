@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>User Accounts · BilisLikas 2.0</title>
+<title>User Accounts · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=11">
 <style>
@@ -196,7 +196,7 @@ table.data td { vertical-align: middle; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const u = all.find((x) => String(x.id) === b.dataset.id) || {};
     const ok = await BL.confirmBox(b.dataset.act === 'approve'
-      ? { title: 'Approve ' + (u.full_name || 'this account') + '?', text: 'They will be able to sign in to BilisLikas 2.0 right away. Make sure the employee ID matches the official list.', ok: 'Approve' }
+      ? { title: 'Approve ' + (u.full_name || 'this account') + '?', text: 'They will be able to sign in to Ai-Vacuwise right away. Make sure the employee ID matches the official list.', ok: 'Approve' }
       : { title: 'Reject ' + (u.full_name || 'this account') + '?', text: 'They will not be able to sign in.' + (u.role === 'barangay_official' ? ' Any barangay or evacuation center added only by this request will also be removed.' : ''), ok: 'Reject', danger: true });
     if (!ok) return;
     try { await BL.api('/admin/users/' + b.dataset.id + '/' + b.dataset.act, { method: 'POST' }); BL.toast(b.dataset.act === 'approve' ? 'Account approved.' : 'Request rejected.'); }
