@@ -18,8 +18,7 @@
 .stage { position: relative; aspect-ratio: 4 / 3; border-radius: 14px; background: #1B2233; overflow: hidden; }
 .stage video, .stage img.live { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
 .camsrc { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; font-size: 14px; color: #C3CCE4; }
-.camsrc select, .camsrc input { min-height: 44px; border-radius: 10px; border: 1px solid #3A4766; background: #0E1F4F; color: #FFFFFF; padding: 0 10px; font: inherit; }
-.camsrc input { width: 260px; }
+.camsrc select { min-height: 44px; border-radius: 10px; border: 1px solid #3A4766; background: #0E1F4F; color: #FFFFFF; padding: 0 10px; font: inherit; }
 .stage .oval { position: absolute; left: 50%; top: 46%; width: 42%; height: 70%; transform: translate(-50%, -50%); border: 4px dashed var(--orange); border-radius: 50%; pointer-events: none; transition: border-color .2s, box-shadow .2s; }
 .stage .oval.bad { border: 5px solid #EF4444; box-shadow: 0 0 0 4px rgba(239,68,68,.25), inset 0 0 30px rgba(239,68,68,.25); }
 .stage .oval.good { border: 5px solid #22C55E; box-shadow: 0 0 0 4px rgba(34,197,94,.3), inset 0 0 30px rgba(34,197,94,.25); }
@@ -100,7 +99,6 @@
             <div class="camsrc">
               <label for="camSrc">Camera</label>
               <select id="camSrc"><option value="pi">Raspberry Pi camera (Camera Module 3)</option><option value="webcam">This computer's webcam</option></select>
-              <input id="piUrl" type="text" spellcheck="false" aria-label="Raspberry Pi camera address" placeholder="http://192.168.100.50:8080">
             </div>
             <button type="button" class="btn btn-primary btn-lg" id="camOn">Turn On Camera</button>
           </div>
@@ -228,12 +226,13 @@
 
   // ---------- camera source: Raspberry Pi Camera Module 3 (default) or this computer's webcam ----------
   const webcamAllowed = !!(window.isSecureContext && navigator.mediaDevices);
-  let camSrc = 'pi', piUrl = '';
-  try { camSrc = localStorage.getItem('bl_cam_src') || 'pi'; piUrl = localStorage.getItem('bl_picam_url') || ''; } catch (e) {}
-  $('camSrc').value = camSrc; $('piUrl').value = piUrl;
+  // The page finds the Raspberry Pi camera by itself: by name first, then by its last known address.
+  const PI_CAMERA_ADDRESSES = ['http://ai-vacuwise-pi.local:8080', 'http://192.168.100.41:8080'];
+  let camSrc = 'pi', piFound = '';
+  try { camSrc = localStorage.getItem('bl_cam_src') || 'pi'; } catch (e) {}
+  $('camSrc').value = camSrc;
   function showCamSrc() {
     camSrc = $('camSrc').value;
-    $('piUrl').hidden = camSrc !== 'pi';
     const blockWebcam = camSrc === 'webcam' && !webcamAllowed;
     if (blockWebcam) {
       const url = 'http://127.0.0.1:' + (location.port || '8000') + '/static/app/preregister.html';
@@ -244,14 +243,22 @@
     try { localStorage.setItem('bl_cam_src', camSrc); } catch (e) {}
   }
   $('camSrc').addEventListener('change', showCamSrc);
-  $('piUrl').addEventListener('change', () => { try { localStorage.setItem('bl_picam_url', $('piUrl').value.trim()); } catch (e) {} });
   showCamSrc();
-  const piBase = () => {
-    let u = $('piUrl').value.trim().replace(/\/+$/, '');
-    if (u && !/^https?:\/\//.test(u)) u = 'http://' + u;
-    if (u && !/:\d+$/.test(u)) u += ':8080';
-    return u;
-  };
+  const piBase = () => piFound;
+  async function findPiCamera() {
+    let saved = '';
+    try { saved = localStorage.getItem('bl_picam_url') || ''; } catch (e) {}
+    const list = [saved].concat(PI_CAMERA_ADDRESSES).filter((u, i, a) => u && a.indexOf(u) === i);
+    for (const base of list) {
+      try {
+        const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 2500);
+        const h = await (await fetch(base + '/health', { cache: 'no-store', signal: ctl.signal })).json();
+        clearTimeout(tm);
+        if (h.ok) { try { localStorage.setItem('bl_picam_url', base); } catch (e) {} return base; }
+      } catch (e) { /* try the next address */ }
+    }
+    return '';
+  }
   // Draws the newest camera frame on a canvas. width 0 = full size.
   async function grab(width, full) {
     let src, w, h;
@@ -366,18 +373,14 @@
 
   $('camOn').addEventListener('click', async () => {
     if (camSrc === 'pi') {
-      const base = piBase();
-      if (!base) { BL.toast('Type the Raspberry Pi camera address first, for example http://192.168.100.50:8080'); $('piUrl').focus(); return; }
-      try { localStorage.setItem('bl_picam_url', $('piUrl').value.trim()); } catch (e) {}
-      try {
-        const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 4000);
-        const h = await (await fetch(base + '/health', { cache: 'no-store', signal: ctl.signal })).json();
-        clearTimeout(tm);
-        if (!h.ok) throw new Error('not ready');
-      } catch (e) {
-        BL.toast('Cannot reach the Raspberry Pi camera at ' + base + '. Check that the Pi is on and prereg_camera.py is running.');
+      $('camOn').disabled = true; $('camOn').textContent = 'Finding the Raspberry Pi camera...';
+      const base = await findPiCamera();
+      $('camOn').disabled = false; $('camOn').textContent = 'Turn On Camera';
+      if (!base) {
+        BL.toast('Raspberry Pi camera not found. Check that the Pi is on and connected to the same network, then try again.');
         return;
       }
+      piFound = base;
       stream = { getTracks: () => [] };
       const im = $('piview'); im.src = base + '/stream.mjpg?t=' + Date.now(); im.hidden = false;
       $('off').hidden = true; $('oval').hidden = false; $('say').hidden = false; $('faceState').hidden = false;
