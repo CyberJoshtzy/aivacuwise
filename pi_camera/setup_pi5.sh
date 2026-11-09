@@ -17,18 +17,28 @@ read -r -p "Pi password for sudo (it will show on screen): " PW
 echo "$PW" | sudo -S -v 2>/dev/null || { echo "Stopped: wrong password."; exit 1; }
 unset PW
 
-# 1. System packages: picamera2 for the Camera Module 3, v4l-utils to list cameras
+# 1. System packages. numpy, OpenCV, requests and Pillow come from apt so they match the
+#    system picamera2 (a newer pip numpy can break the Camera Module 3 library).
 sudo apt-get update -y
-sudo apt-get install -y python3-picamera2 v4l-utils
-echo "OK  picamera2 and v4l-utils installed"
+sudo apt-get install -y python3-picamera2 python3-opencv python3-numpy python3-requests \
+    python3-pil python3-click python3-setuptools v4l-utils
+echo "OK  system packages installed (picamera2, OpenCV, numpy, requests)"
 
-# 2. Python packages for face recognition (prebuilt wheels; no slow source builds on the Pi)
-PIP="python3 -m pip install --break-system-packages"
+# Remove copies that an earlier run put in ~/.local (they would hide the system versions)
+for p in numpy opencv-python requests; do
+  python3 -m pip uninstall -y --break-system-packages "$p" >/dev/null 2>&1 || true
+done
+
+# 2. Face recognition (prebuilt wheels; no slow source builds on the Pi)
+PIP="python3 -m pip install --break-system-packages --no-warn-script-location"
 python3 -c "import dlib" 2>/dev/null || $PIP dlib-bin
 python3 -c "import face_recognition" 2>/dev/null || $PIP --no-deps face_recognition==1.3.0
-$PIP Click Pillow numpy opencv-python "requests==2.31.0"
-python3 -c "import face_recognition_models" 2>/dev/null || $PIP --resume-retries 5 face_recognition_models
-python3 -c "import face_recognition, cv2, picamera2, requests; print('OK  Python packages ready')"
+# about 100 MB; retry if the connection drops
+for i in 1 2 3; do
+  python3 -c "import face_recognition_models" 2>/dev/null && break
+  $PIP --no-deps face_recognition_models || sleep 5
+done
+python3 -c "import face_recognition, cv2, numpy, picamera2, requests; print('OK  Python packages ready (numpy %s, OpenCV %s)' % (numpy.__version__, cv2.__version__))"
 
 # 3. Entrance settings for the Pi 5 (laptop address, USB webcam)
 cp "$DIR/entrance_client/config_pi5.py" "$DIR/entrance_client/config.py"
