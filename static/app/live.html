@@ -112,8 +112,8 @@ body.tv .res { max-height: none; }
     <div class="layout">
       <div style="display:flex;flex-direction:column;gap:16px">
         <section class="panel">
-          <div class="panel-head"><h2>Entrance camera</h2></div>
-          <div class="cam-status unknown" id="camStatus" role="status"><span class="cdot"></span><span>Checking the camera...<small>&nbsp;</small></span></div>
+          <div class="panel-head"><h2>Entrance webcam</h2></div>
+          <div class="cam-status unknown" id="camStatus" role="status"><span class="cdot"></span><span>Checking the entrance webcam...<small>&nbsp;</small></span></div>
           <div class="latest" id="latest">
             <div class="meta">Waiting for the next evacuee</div>
             <div style="font-size:15px;color:#D6DDF0">Each person the camera identifies appears here within a second, and gets a green check in the list.</div>
@@ -148,7 +148,7 @@ body.tv .res { max-height: none; }
     </div>
   </main>
 </div>
-<script src="app.js?v=50"></script>
+<script src="app.js?v=51"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -458,12 +458,22 @@ body.tv .res { max-height: none; }
   // Entrance camera on/off, from the heartbeat the Raspberry Pi sends every 15 seconds
   function showCam() {
     const box = $('camStatus'); if (!box || camRows === null) return;
-    const row = camRows.find((r) => r.kind === 'entrance' && r.center_id === camCenter);
-    const on = !!(row && row.online);
-    box.className = 'cam-status ' + (on ? 'on' : 'off');
-    box.querySelector('span:last-child').innerHTML = on
-      ? 'Camera on<small>Evacuees are checked in as they walk in.</small>'
-      : 'Camera off<small>' + (row ? 'Last seen ' + BL.ago(row.last_seen) + '. ' : '') + 'Turn on the Raspberry Pi at the entrance. The camera starts by itself in about 1 minute.</small>';
+    const mine = camRows.filter((r) => r.kind === 'entrance' && centers.some((c) => c.id === r.center_id));
+    const here = mine.find((r) => r.center_id === camCenter);
+    const elsewhere = mine.find((r) => r.online && r.center_id !== camCenter);
+    const cname = (id) => (centers.find((c) => c.id === id) || {}).name || 'another center';
+    let cls = 'off', html;
+    if (here && here.online) {
+      cls = 'on'; html = 'Entrance webcam on<small>Evacuees at ' + BL.esc(cname(here.center_id)) + ' are checked in as they walk in.</small>';
+    } else if (elsewhere && !(incident && incident.active)) {
+      cls = 'on'; html = 'Entrance webcam on<small>It is watching the entrance of ' + BL.esc(cname(elsewhere.center_id)) + '.</small>';
+    } else if (elsewhere) {
+      html = 'Entrance webcam is at a different center<small>It is watching ' + BL.esc(cname(elsewhere.center_id)) + ', but this evacuation uses ' + BL.esc(cname(camCenter)) + '. Ask your technical staff to change the webcam\'s center.</small>';
+    } else {
+      html = 'Entrance webcam off<small>' + (here ? 'Last seen ' + BL.ago(here.last_seen) + '. ' : '') + 'Check that the webcam at the entrance is plugged in and its small computer (Raspberry Pi) is turned on. It starts by itself in about 1 minute.</small>';
+    }
+    box.className = 'cam-status ' + cls;
+    box.querySelector('span:last-child').innerHTML = html;
   }
   async function loadCam() {
     try { camRows = await BL.api('/camera/status') || []; } catch (e) { camRows = []; }
