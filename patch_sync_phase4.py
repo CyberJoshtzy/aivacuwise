@@ -4,7 +4,7 @@
 - GET /districts and PUT /barangays/{id}/district (City Admin only)
 - Barangays now report their district; registration can include it.
 
-Run from ~/bilislikas2.0 with the venv active:  python3 patch_sync_phase4.py   (no migration needed)
+Run from ~/ai-vacuwise with the venv active:  python3 patch_sync_phase4.py   (no migration needed)
 Safe to run twice.
 """
 import re

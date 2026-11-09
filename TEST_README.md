@@ -14,11 +14,11 @@ gets its own empty database that is created and thrown away automatically.
 ## Setup (run once)
 
 1. Copy `conftest.py`, `pytest.ini`, `requirements-test.txt`, and the
-   `tests/` folder into `~/bilislikas2.0`, alongside `main.py`.
+   `tests/` folder into `~/ai-vacuwise`, alongside `main.py`.
 2. In a terminal:
 
 ```
-cd ~/bilislikas2.0
+cd ~/ai-vacuwise
 source venv/bin/activate
 pip install -r requirements-test.txt
 ```
@@ -26,7 +26,7 @@ pip install -r requirements-test.txt
 ## Running the tests
 
 ```
-cd ~/bilislikas2.0
+cd ~/ai-vacuwise
 source venv/bin/activate
 pytest -v
 ```

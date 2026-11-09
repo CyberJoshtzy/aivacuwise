@@ -1,6 +1,6 @@
 """Cloud sync, Phase 1: make the database sync-ready (no sync happens yet).
 
-Run from ~/bilislikas2.0 with the venv active:  python3 patch_sync_phase1.py
+Run from ~/ai-vacuwise with the venv active:  python3 patch_sync_phase1.py
 Then (with the service STOPPED):              python3 migrate_sync_phase1.py
 Safe to run twice.
 """

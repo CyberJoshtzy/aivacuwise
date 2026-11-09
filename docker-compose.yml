@@ -1,3 +1,7 @@
+# Fixed project name so the database volumes (bilislikas20_postgres_data,
+# bilislikas20_redis_data) are kept even though the folder is now ~/ai-vacuwise.
+name: bilislikas20
+
 services:
   postgres:
     image: postgres:16

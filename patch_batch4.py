@@ -6,7 +6,7 @@ Adds:
   GET  /evacuee_details          civil status, special needs, emergency contact for each evacuee
   and lets PUT /evacuees/{id} also update civil_status, special_needs, emergency_contact.
 
-Run from ~/bilislikas2.0 with the venv active:
+Run from ~/ai-vacuwise with the venv active:
   python3 patch_batch4.py
   python3 migrate_batch4.py
 Safe to run twice.
