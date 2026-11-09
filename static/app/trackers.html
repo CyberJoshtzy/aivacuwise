@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trackers · Ai-Vacuwise</title>
+<title>GPS Trackers · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=13">
+<link rel="stylesheet" href="app.css?v=50">
 <style>
 .tlayout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 16px; align-items: start; }
 .people { list-style: none; margin: 0; padding: 0; max-height: 620px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .people button { width: 100%; text-align: left; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #FFFFFF; font: inherit; cursor: pointer; }
 .people button:hover, .people button[aria-pressed="true"] { border-color: var(--navy); background: var(--tint); }
 .people .nm { font-size: 15px; font-weight: 800; color: var(--navy); }
-.people .meta { font-size: 13px; color: var(--muted); }
+.people .meta { font-size: 14px; color: var(--muted); }
 .sig { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .map { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: 14px; background: #F4F6FA; border: 1px solid var(--line); overflow: hidden; }
 .map svg { width: 100%; height: 100%; display: block; }
 .info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
-.info .k { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.info .k { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .info .v { font-size: 15px; font-weight: 700; color: #1B2233; }
 @media (max-width: 1100px) { .tlayout { grid-template-columns: minmax(0, 1fr); } .info { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
@@ -29,7 +29,7 @@
   <main class="main">
     <div class="page-head">
       <div>
-        <h1>Trackers</h1>
+        <h1>GPS Trackers</h1>
         <p>Find the last known location of evacuees with a tracker who are not yet at an evacuation center, such as missing seniors and PWD.</p>
       </div>
       <span class="live-badge" id="live"><span class="dot"></span><span class="txt">Connecting</span></span>
@@ -39,7 +39,7 @@
     <div class="tlayout">
       <section class="panel">
         <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><label for="q" class="sr-only">Search evacuees with a tracker</label><input id="q" class="input" type="search" placeholder="Search evacuee name or tracker ID" autocomplete="off"></div>
-        <div style="font-size:13px;color:var(--muted)" id="countNote"></div>
+        <div style="font-size:14px;color:var(--muted)" id="countNote"></div>
         <ul class="people" id="people"></ul>
       </section>
 
@@ -57,7 +57,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=50"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -103,7 +103,7 @@
     $('people').innerHTML = shown.length ? shown.map((t) =>
       '<li><button type="button" data-ev="' + t.evacuee_id + '" aria-pressed="' + (selected === t.evacuee_id) + '"><span class="sig" style="background:' + (t.center ? '#15803D' : '#B91C1C') + '"></span>' +
       '<span style="min-width:0"><span class="nm">' + BL.esc(t.full_name) + '</span> ' + (t.center ? '<span class="chip green">Accounted</span>' : '<span class="chip" style="background:#FDECEC;color:#B91C1C">Unaccounted</span>') + prioChips(t.evacuee_id) + '<br><span class="meta">Tracker ' + BL.esc(t.device_id) + ' &#183; ' + (t.timestamp ? 'last seen ' + BL.ago(t.timestamp) : 'no signal yet') + '</span></span></button></li>').join('')
-      : '<li class="empty" style="display:block">' + (list.length ? 'No evacuee matches your search.' : 'No trackers are given to residents yet. Enter a tracker ID during Pre-Registration.') + '</li>';
+      : '<li class="empty" style="display:block">' + (list.length ? 'No evacuee matches your search.' : 'No trackers are given to residents yet. Enter a tracker ID when you register a resident.') + '</li>';
   }
 
   // ---------- plain offline map: grid in meters, auto-scaled around the points ----------

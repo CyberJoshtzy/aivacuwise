@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Register Barangay Account · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="app.css?v=50">
 <style>
 body { background: #F4F6FA; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; display: flex; flex-direction: column; gap: 18px; }
@@ -13,12 +13,12 @@ body { background: #F4F6FA; }
 .head h1 { font-size: 30px; font-weight: 800; margin: 0; }
 .head p { color: var(--muted); margin: 6px 0 0; }
 .steps { display: flex; gap: 8px; flex-wrap: wrap; }
-.steps span { font-size: 12px; font-weight: 700; color: var(--muted); padding: 6px 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E3E8F2; }
+.steps span { font-size: 14px; font-weight: 700; color: var(--muted); padding: 6px 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E3E8F2; }
 .card { background: #FFFFFF; border: 1px solid #E3E8F2; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 2px 10px rgba(11,31,77,.04); }
 .card-h { display: flex; gap: 14px; align-items: flex-start; }
 .card-h .n { width: 34px; height: 34px; border-radius: 10px; background: var(--navy); color: #FFFFFF; display: grid; place-items: center; font-weight: 800; flex-shrink: 0; }
 .card-h h2 { font-size: 18px; margin: 0; color: var(--navy); }
-.card-h p { font-size: 13px; color: var(--muted); margin: 2px 0 0; }
+.card-h p { font-size: 14px; color: var(--muted); margin: 2px 0 0; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .field-group { margin: 0; }
@@ -27,12 +27,12 @@ body { background: #F4F6FA; }
 .phone .input { border-radius: 0 10px 10px 0; }
 .meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
 .meter i { height: 6px; border-radius: 3px; background: #DCE1EA; transition: background .2s; }
-.hint { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.hint { font-size: 14px; font-weight: 600; margin-top: 4px; }
 #crows { display: flex; flex-direction: column; gap: 12px; }
 .crow { border: 1px solid #E3E8F2; border-radius: 14px; padding: 14px 16px 16px; background: #F8FAFD; display: grid; grid-template-columns: 1fr 1fr 120px; gap: 12px; }
 .crow .top { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
-.crow .top strong { font-size: 13px; color: var(--navy); letter-spacing: .03em; }
-.crow .x { background: none; border: none; color: #B91C1C; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.crow .top strong { font-size: 14px; color: var(--navy); letter-spacing: .03em; }
+.crow .x { background: none; border: none; color: #B91C1C; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .addc { width: 100%; padding: 12px; border: 2px dashed #C2CAD8; border-radius: 12px; background: #FFFFFF; color: var(--navy); font: inherit; font-weight: 700; cursor: pointer; }
 .addc:hover { border-color: var(--orange); }
 .confirm { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.5; color: #3D4659; cursor: pointer; }
@@ -86,7 +86,7 @@ body { background: #F4F6FA; }
           <div class="field-group"><label for="phone">Mobile number</label><div class="phone"><span>+63</span><input id="phone" type="tel" class="input" placeholder="9XX XXX XXXX" autocomplete="tel-national"></div></div>
         </div>
         <div class="field-group"><label for="empid">Barangay employee ID number</label><input id="empid" class="input" placeholder="As printed on your barangay ID" autocomplete="off">
-          <div style="font-size:13px;color:var(--muted);margin-top:4px">Used to confirm that you are a legitimate barangay official.</div></div>
+          <div style="font-size:14px;color:var(--muted);margin-top:4px">Used to confirm that you are a legitimate barangay official.</div></div>
       </div>
 
       <div class="card">
@@ -122,7 +122,7 @@ body { background: #F4F6FA; }
     <a class="btn btn-primary btn-lg" id="toSignin" href="signin.html">Back to Sign In</a>
   </section>
 </div>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=50"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);

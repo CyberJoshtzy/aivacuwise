@@ -44,26 +44,8 @@ python3 -c "import face_recognition, cv2, numpy, picamera2, requests; print('OK 
 cp "$DIR/entrance_client/config_pi5.py" "$DIR/entrance_client/config.py"
 echo "OK  entrance_client/config.py set for the Pi 5 (backend http://192.168.100.200:8000, USB webcam)"
 
-# 4. Pre-registration camera service, starts at boot
-sudo tee /etc/systemd/system/ai-vacuwise-prereg-camera.service >/dev/null <<UNIT
-[Unit]
-Description=Ai-Vacuwise pre-registration camera (Camera Module 3)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=$ME
-WorkingDirectory=$DIR/pi_camera
-ExecStart=/usr/bin/python3 $DIR/pi_camera/prereg_camera.py
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-sudo systemctl daemon-reload
-sudo systemctl enable --now ai-vacuwise-prereg-camera
-echo "OK  pre-registration camera service started"
+# 4. Camera services (pre-registration + entrance), start at boot
+bash "$DIR/pi_camera/install_services.sh"
 
 # 5. Checks
 echo
@@ -76,4 +58,4 @@ IP="$(hostname -I | awk '{print $1}')"
 echo
 echo "Done. This Pi's address: $IP"
 echo "  Pre-Registration page -> Camera: Raspberry Pi camera, address: http://$IP:8080"
-echo "  Entrance camera       -> cd $DIR/entrance_client && python3 recognize.py"
+echo "  Entrance camera       -> runs by itself (service ai-vacuwise-entrance-camera)"

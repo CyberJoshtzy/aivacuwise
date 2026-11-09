@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Resident Sign In · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="app.css?v=50">
 <style>
 .signin { min-height: 100vh; display: flex; }
 .signin aside { width: 520px; flex-shrink: 0; background: linear-gradient(160deg, #0F5132, #198754); color: #FFFFFF; padding: 56px 64px; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; }
@@ -20,7 +20,7 @@
 .signin h1 { font-size: 30px; font-weight: 800; }
 .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; text-decoration: none; }
 .bday { display: grid; grid-template-columns: 1.4fr 1fr 1.1fr; gap: 10px; }
-.help { padding: 14px 16px; background: var(--tint); border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.help { padding: 14px 16px; background: var(--tint); border-radius: 10px; font-size: 14px; line-height: 1.5; }
 .btn-res { background: #198754; color: #FFFFFF; border-color: #198754; }
 @media (max-width: 900px) { .signin { flex-direction: column; } .signin aside { width: 100%; padding: 28px 24px; } .signin aside .points, .signin aside .foot { display: none; } }
 </style>
@@ -34,7 +34,7 @@
 .points { margin-top: 18px !important; gap: 10px !important; width: 100%; }
 .points div { align-items: center !important; text-align: left; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
 .points b { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: rgba(255,209,102,.18); flex-shrink: 0; }
-.signin aside .foot { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 12px !important; }
+.signin aside .foot { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 14px !important; }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=1">
 </head>
@@ -43,7 +43,7 @@
   <aside>
     <div class="tile"><img src="/static/logo.png" alt="Ai-Vacuwise, Kasama mo sa Paglikas"></div>
     <div>
-      <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:var(--orange);color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:.08em;margin-bottom:8px">RESIDENT PORTAL</span>
+      <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:var(--orange);color:#FFFFFF;font-size:14px;font-weight:800;letter-spacing:.08em;margin-bottom:8px">RESIDENT PORTAL</span>
       <h2>Para sa mga residente</h2>
       <div class="points">
         <div><b>1</b><span>Check if you and your family are safe in an evacuation center</span></div>
@@ -51,7 +51,7 @@
         <div><b>3</b><span>View your pre-registration information</span></div>
       </div>
     </div>
-    <div class="foot" style="font-size:13px;color:#BFE5CF">Protected under the Data Privacy Act of 2012 (RA 10173)</div>
+    <div class="foot" style="font-size:14px;color:#BFE5CF">Protected under the Data Privacy Act of 2012 (RA 10173)</div>
   </aside>
   <main>
     <form id="form" novalidate>
@@ -74,13 +74,13 @@
         </div>
       </div>
       <div class="field-group"><label for="mobile">Mobile number</label><input id="mobile" class="input" inputmode="tel" placeholder="0917 123 4567">
-        <div style="font-size:13px;color:var(--muted)">Children without a phone can use the head of family's number.</div></div>
+        <div style="font-size:14px;color:var(--muted)">Children without a phone can use the head of family's number.</div></div>
       <button class="btn btn-res btn-lg" type="submit" id="submit">Sign In</button>
       <p class="help">No account to create. Your barangay already registered you. If you cannot sign in, visit your barangay office to check your details.</p>
     </form>
   </main>
 </div>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=50"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };

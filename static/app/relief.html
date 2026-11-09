@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Relief &amp; Medicine · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="app.css?v=50">
 <style>
 .grid2 { display: grid; grid-template-columns: 400px 1fr; gap: 18px; align-items: start; }
 .form { display: flex; flex-direction: column; gap: 14px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cats { display: flex; flex-wrap: wrap; gap: 6px; }
-.cat { border: 2px solid #E3E8F2; background: #FFFFFF; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 700; color: var(--navy); cursor: pointer; }
+.cat { border: 2px solid #E3E8F2; background: #FFFFFF; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; font-weight: 700; color: var(--navy); cursor: pointer; }
 .cat[aria-pressed="true"] { background: var(--navy); color: #FFFFFF; border-color: var(--navy); }
 .sugg { display: flex; flex-wrap: wrap; gap: 6px; }
-.sugg button { border: 1px dashed #C2CAD8; background: #F6F8FD; border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; color: #1F2937; }
+.sugg button { border: 1px dashed #C2CAD8; background: #F6F8FD; border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 14px; cursor: pointer; color: #1F2937; }
 .sugg button:hover { border-color: var(--orange); }
-.tag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.tag { font-size: 13px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
 .t-Food { background: #FFF4E5; color: #B45309; } .t-Water { background: #E0F2FE; color: #0369A1; }
 .t-Medicine { background: #FDECEC; color: #B91C1C; } .t-Hygiene { background: #E8F7EE; color: #15803D; } .t-Other { background: #EEF2FF; color: var(--navy); }
 .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -70,7 +70,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=50"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -147,11 +147,11 @@
     const fb = Number($('xBrgy').value) || null, fc = $('xCat').value;
     const shown = rows.filter((r) => (!fb || r.barangay_id === fb) && (!fc || r.category === fc));
     $('rows').innerHTML = shown.map((r) => '<tr><td style="white-space:nowrap">' + BL.dateTime(r.given_at) + '</td>' +
-      '<td><span class="tag t-' + BL.esc(r.category) + '">' + BL.esc(r.category) + '</span><div style="font-weight:700;color:var(--navy);margin-top:4px">' + BL.esc(r.item) + '</div>' + (r.notes ? '<div style="font-size:12px;color:var(--muted)">' + BL.esc(r.notes) + '</div>' : '') + '</td>' +
+      '<td><span class="tag t-' + BL.esc(r.category) + '">' + BL.esc(r.category) + '</span><div style="font-weight:700;color:var(--navy);margin-top:4px">' + BL.esc(r.item) + '</div>' + (r.notes ? '<div style="font-size:14px;color:var(--muted)">' + BL.esc(r.notes) + '</div>' : '') + '</td>' +
       '<td style="white-space:nowrap"><strong>' + Number(r.quantity).toLocaleString() + '</strong> ' + BL.esc(r.unit) + '</td>' +
-      '<td>' + (city ? '<strong>' + BL.esc(r.barangay || '-') + '</strong><br>' : '') + '<span style="font-size:13px;color:var(--muted)">' + BL.esc(r.center || 'Not at a center') + '</span></td>' +
+      '<td>' + (city ? '<strong>' + BL.esc(r.barangay || '-') + '</strong><br>' : '') + '<span style="font-size:14px;color:var(--muted)">' + BL.esc(r.center || 'Not at a center') + '</span></td>' +
       '<td>' + (r.recipients || '-') + '</td>' +
-      '<td style="text-align:right">' + (city ? '<span style="font-size:12px;color:var(--muted)">' + BL.esc(r.recorded_by || '') + '</span>' : '<button type="button" class="btn btn-del btn-sm" data-del="' + r.id + '">Remove</button>') + '</td></tr>').join('');
+      '<td style="text-align:right">' + (city ? '<span style="font-size:14px;color:var(--muted)">' + BL.esc(r.recorded_by || '') + '</span>' : '<button type="button" class="btn btn-del btn-sm" data-del="' + r.id + '">Remove</button>') + '</td></tr>').join('');
     $('empty').hidden = shown.length > 0;
   }
   $('xBrgy').addEventListener('change', render);

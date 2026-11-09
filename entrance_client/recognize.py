@@ -8,6 +8,7 @@ Run:  ~/ai-vacuwise/venv/bin/python recognize.py      Stop: press q in the windo
 """
 
 import json
+import os
 import sys
 import time
 
@@ -16,6 +17,10 @@ import cv2
 import face_recognition
 import numpy as np
 import requests
+
+# The background service (ai-vacuwise-entrance-camera) has no screen, so it runs without the preview window.
+if os.environ.get("AIVACUWISE_HEADLESS") == "1":
+    config.SHOW_PREVIEW = False
 
 
 class Backend:
@@ -114,6 +119,7 @@ def main():
     last_load = 0.0
     last_action = {}  # evacuee id -> time of last check-in/transfer
     scale = config.FRAME_SCALE
+    last_beat = 0.0  # last "camera is running" report to the server
 
     try:
         while True:
@@ -131,6 +137,17 @@ def main():
                                 where[p["id"]] = c["id"]
                 print("Loaded %d enrolled face(s)." % len(ids))
                 last_load = now
+
+            if now - last_beat > 15:  # lets the website show "Camera on"
+                try:
+                    api.call(
+                        "POST",
+                        "/camera/heartbeat",
+                        json={"center_id": config.EVACUATION_CENTER_ID, "kind": "entrance"},
+                    )
+                except requests.RequestException:
+                    pass  # server briefly unreachable; recognition keeps running
+                last_beat = now
 
             ok, frame = cam.read()
             if not ok:
