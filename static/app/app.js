@@ -11,6 +11,57 @@ const BL = (() => {
   function token() {
     return localStorage.getItem(TOKEN) || sessionStorage.getItem(TOKEN);
   }
+
+  // Sign-in hand-over for pages opened in a new tab (Entrance Display, TV Mode, reports).
+  // Without "Keep me signed in", the sign-in lives only in the first tab, so a new tab would ask
+  // to sign in again. openApp() leaves it in localStorage for a few seconds; the new tab takes it
+  // into its own tab storage and deletes it right away.
+  const HANDOFF = 'bl_handoff';
+  (function takeHandoff() {
+    try {
+      const h = JSON.parse(localStorage.getItem(HANDOFF) || 'null');
+      if (!h) return;
+      localStorage.removeItem(HANDOFF);
+      if (Date.now() - h.at < 15000 && !token() && h.token) {
+        sessionStorage.setItem(TOKEN, h.token);
+        if (h.me) sessionStorage.setItem(ME, h.me);
+        if (h.privacy) sessionStorage.setItem(PRIVACY, '1');
+      }
+    } catch (e) { /* storage blocked: the new tab simply asks to sign in */ }
+  })();
+  function leaveHandoff() {
+    try {
+      if (!localStorage.getItem(TOKEN) && sessionStorage.getItem(TOKEN)) {
+        localStorage.setItem(HANDOFF, JSON.stringify({
+          token: sessionStorage.getItem(TOKEN), me: sessionStorage.getItem(ME),
+          privacy: sessionStorage.getItem(PRIVACY), at: Date.now()
+        }));
+      }
+    } catch (e) {}
+  }
+  function openApp(url) {
+    leaveHandoff();
+    return window.open(url, '_blank');
+  }
+  const appLink = (target) => {
+    const a = target && target.closest && target.closest('a[href]');
+    if (!a) return null;
+    let u;
+    try { u = new URL(a.getAttribute('href'), location.href); } catch (err) { return null; }
+    return u.origin === location.origin && /\/static\/app\//.test(u.pathname) ? { a, u } : null;
+  };
+  // Links to other Ai-Vacuwise pages that open in a new tab use the hand-over, so the new tab opens
+  // signed in. This also covers Ctrl+click, middle-click and right-click "Open in new tab".
+  document.addEventListener('click', (e) => {
+    const l = appLink(e.target);
+    if (!l) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) { leaveHandoff(); return; }
+    if (l.a.getAttribute('target') !== '_blank') return;
+    e.preventDefault();
+    openApp(l.u.href);
+  });
+  document.addEventListener('auxclick', (e) => { if (e.button === 1 && appLink(e.target)) leaveHandoff(); });
+  document.addEventListener('contextmenu', (e) => { if (appLink(e.target)) leaveHandoff(); });
   function cachedMe() {
     try { return JSON.parse(store().getItem(ME) || 'null'); } catch (e) { return null; }
   }
@@ -405,7 +456,7 @@ const BL = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addHotlineButton); else addHotlineButton();
 
-  return { showHotlines, nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
+  return { openApp, showHotlines, nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
 })();
 
 /* live-badge-hidden: the green Live badges are hidden on every page */

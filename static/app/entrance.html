@@ -64,7 +64,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=51"></script>
+<script src="app.js?v=52"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -101,7 +101,7 @@
     load();
   }
   $('centerSel').addEventListener('change', applyCenter);
-  $('openFull').addEventListener('click', () => window.open('display.html?center=' + $('centerSel').value, '_blank'));
+  $('openFull').addEventListener('click', () => BL.openApp('display.html?center=' + $('centerSel').value));
   $('copy').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText($('link').value); BL.toast('Monitor link copied.'); }
     catch (e) { $('link').select(); BL.toast('Press Ctrl+C to copy the selected link.'); }

@@ -160,7 +160,7 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
     </div>
   </main>
 </div>
-<script src="app.js?v=50"></script>
+<script src="app.js?v=52"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'city_admin' });
@@ -177,7 +177,7 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
     $('distSel').innerHTML += (dl || []).map((d) => '<option>' + BL.esc(d) + '</option>').join('');
   } catch (e) {}
   $('distSel').addEventListener('change', (e) => { distFilter = e.target.value; render(); });
-  $('print').addEventListener('click', () => { window.open('report.html', '_blank'); });
+  $('print').addEventListener('click', () => { BL.openApp('report.html'); });
   const pad = (n) => String(n).padStart(2, '0');
 
   async function load() {
