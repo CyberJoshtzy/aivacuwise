@@ -4,7 +4,7 @@ Same approach as the Raspberry Pi's recognize.py: face_recognition (dlib), 0.6 t
 cooldown per person, enrolled faces reloaded every minute. If a recognized person is already
 checked in at a different center, a transfer is recorded instead of a plain check-in.
 
-Run:  ~/bilislikas2.0/venv/bin/python recognize.py      Stop: press q in the window, or Ctrl+C.
+Run:  ~/ai-vacuwise/venv/bin/python recognize.py      Stop: press q in the window, or Ctrl+C.
 """
 
 import json

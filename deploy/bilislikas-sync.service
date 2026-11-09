@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 User=ian
-WorkingDirectory=/home/ian/bilislikas2.0
-ExecStart=/home/ian/bilislikas2.0/venv/bin/python sync_agent.py server-a
+WorkingDirectory=/home/ian/ai-vacuwise
+ExecStart=/home/ian/ai-vacuwise/venv/bin/python sync_agent.py server-a
 Restart=always
 RestartSec=10
 

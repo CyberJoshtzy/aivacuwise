@@ -1,6 +1,6 @@
 """Adds Edit and Delete endpoints for evacuees and evacuation centers to main.py.
 
-Run from ~/bilislikas2.0 with the venv active:  python3 patch_edit_delete.py
+Run from ~/ai-vacuwise with the venv active:  python3 patch_edit_delete.py
 Safe to run twice: it skips itself if the endpoints are already there.
 """
 import re

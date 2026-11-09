@@ -6,10 +6,10 @@ Adds:
   GET  /display/{center_id}     everything the Entrance Display needs in one call
 Deleting an evacuee also deletes their photo.
 
-Photos are stored in ~/bilislikas2.0/data/photos/ (override with the BL_PHOTO_DIR environment
+Photos are stored in ~/ai-vacuwise/data/photos/ (override with the BL_PHOTO_DIR environment
 variable). That folder holds personal data: it must stay out of Git (see .gitignore step).
 
-Run from ~/bilislikas2.0 with the venv active:  python3 patch_batch5.py
+Run from ~/ai-vacuwise with the venv active:  python3 patch_batch5.py
 Safe to run twice.
 """
 import re

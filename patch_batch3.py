@@ -1,6 +1,6 @@
 """Batch 3 backend: evacuation incidents (start/end with a disaster type) and barangay edit/delete.
 
-Run from ~/bilislikas2.0 with the venv active:  python3 patch_batch3.py
+Run from ~/ai-vacuwise with the venv active:  python3 patch_batch3.py
 Then create the new table in PostgreSQL:        python3 create_new_tables.py
 Safe to run twice.
 """

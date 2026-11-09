@@ -1,6 +1,6 @@
 # Code Governance Setup for Ai-Vacuwise
 
-These tools run on the laptop server (`~/bilislikas2.0`) and on GitHub. None of them run while the system is serving evacuees, so they do not affect the prototype's performance.
+These tools run on the laptop server (`~/ai-vacuwise`) and on GitHub. None of them run while the system is serving evacuees, so they do not affect the prototype's performance.
 
 ## What each file does
 
@@ -29,8 +29,8 @@ All are free and open source and suitable for an 8 GB RAM laptop.
 
 1. Copy the files into the repo. From the folder where you extracted the zip:
    ```bash
-   cp -r bilislikas2.0/. ~/bilislikas2.0/
-   cd ~/bilislikas2.0
+   cp -r bilislikas2.0/. ~/ai-vacuwise/
+   cd ~/ai-vacuwise
    ```
 2. Activate the virtual environment (the prompt must show `(venv)`):
    ```bash
@@ -84,7 +84,7 @@ All are free and open source and suitable for an 8 GB RAM laptop.
 | Problem | Cause | Fix |
 | --- | --- | --- |
 | `externally-managed-environment` | venv not active | `source venv/bin/activate` |
-| pytest hook fails with "venv/bin/pytest not found" | Committing from another folder or venv missing | Commit from `~/bilislikas2.0` |
+| pytest hook fails with "venv/bin/pytest not found" | Committing from another folder or venv missing | Commit from `~/ai-vacuwise` |
 | Commit is very slow the first time | pre-commit is downloading hooks | Normal, only happens once |
 | CI fails at import with a missing setting | Dummy variable names in `ci.yml` differ from your `.env` names | Edit the `env:` block in `ci.yml` to use your real variable names (dummy values only) |
 | CI fails with `ModuleNotFoundError` | Package missing from `requirements.txt` | Add it, commit, push |

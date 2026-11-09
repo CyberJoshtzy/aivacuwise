@@ -4,7 +4,7 @@
   records this server still has to send, and the hub keeps a sync_log of every change it received.
 - main.py: POST /sync/push, GET /sync/pull (used on the hub), POST /sync/notify (refreshes open pages).
 
-Run from ~/bilislikas2.0 with the venv active:  python3 patch_sync_phase3.py
+Run from ~/ai-vacuwise with the venv active:  python3 patch_sync_phase3.py
 Safe to run twice.
 """
 import shutil

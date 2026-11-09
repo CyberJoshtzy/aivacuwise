@@ -9,7 +9,7 @@ Optional safeguard: put REGISTRATION_CODE=something in .env and restart the serv
 people given that code by the City DRRMO can register. Without it, registration is open to anyone
 on the local network.
 
-Run from ~/bilislikas2.0 with the venv active:
+Run from ~/ai-vacuwise with the venv active:
   python3 patch_batch6.py
   python3 migrate_batch6.py
 Safe to run twice.
