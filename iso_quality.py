@@ -91,6 +91,8 @@ activity = Table(
 try:
     _meta.create_all(engine)
     with engine.begin() as _c:
+        if _c.dialect.name == "postgresql":  # do not wait forever on a locked table
+            _c.execute(text("SET LOCAL lock_timeout = '5s'"))
         _c.execute(text("ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS details TEXT"))
 except Exception as exc:
     print("iso_quality: could not create activity_logs table:", exc)

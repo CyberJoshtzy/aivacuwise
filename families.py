@@ -25,6 +25,8 @@ try:  # add the new columns if this database was created before them
 
     if _engine.dialect.name == "postgresql":
         with _engine.begin() as conn:
+            if conn.dialect.name == "postgresql":  # do not wait forever on a locked table
+                conn.execute(text("SET LOCAL lock_timeout = '5s'"))
             conn.execute(
                 text(
                     "ALTER TABLE evacuees ADD COLUMN IF NOT EXISTS guardian_evacuee_id INTEGER REFERENCES evacuees(id)"

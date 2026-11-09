@@ -20,6 +20,8 @@ router = APIRouter()
 
 try:
     with engine.begin() as conn:
+        if conn.dialect.name == "postgresql":  # do not wait forever on a locked table
+            conn.execute(text("SET LOCAL lock_timeout = '5s'"))
         conn.execute(text("ALTER TABLE barangays ADD COLUMN IF NOT EXISTS address VARCHAR"))
         conn.execute(text("ALTER TABLE barangays ADD COLUMN IF NOT EXISTS zone VARCHAR"))
 except Exception as exc:
