@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Mode · Ai-Vacuwise</title>
+<link rel="icon" type="image/png" href="/static/favicon.png?v=1">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="app.css?v=50">
+<style>
+html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; display: flex; flex-direction: column; font-family: var(--font); color: #FFFFFF; }
+.hd { height: 120px; flex-shrink: 0; padding: 0 40px; display: flex; align-items: center; gap: 28px; background: #142C6E; }
+.hd .logo { height: 84px; padding: 6px; background: #FFFFFF; border-radius: 14px; }
+.hd .logo img { height: 72px; display: block; }
+.hd h1 { color: #FFFFFF; font-size: 46px; font-weight: 800; }
+.hd .state { display: inline-flex; align-items: center; gap: 10px; margin-top: 6px; padding: 5px 16px; border-radius: 999px; font-size: 22px; font-weight: 800; background: #B91C1C; }
+.hd .state.off { background: #3A4A7A; }
+.hd .state i { width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; animation: pulse 1.4s ease-in-out infinite; }
+.hd .big { margin-left: auto; text-align: right; }
+.hd .big .k { font-size: 20px; font-weight: 700; color: #C3CCE4; }
+.hd .big .v { font-size: 58px; font-weight: 800; line-height: 1; }
+.hd .big .v small { font-size: 30px; color: #C3CCE4; }
+.hd .clock { padding-left: 28px; border-left: 2px solid rgba(255,255,255,.2); text-align: right; }
+.hd .clock .v { color: #F7941D; }
+.body { flex: 1; display: flex; gap: 24px; padding: 24px 40px 20px; min-height: 0; }
+.cam { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.cam .cambar { display: flex; align-items: center; gap: 14px; font-size: 24px; font-weight: 800; }
+.cam .cambar .dot { width: 16px; height: 16px; border-radius: 50%; background: #9AA5BE; }
+.cam .cambar.on .dot { background: #22C55E; animation: pulse 1.4s ease-in-out infinite; }
+.cam .cambar .hint { margin-left: auto; font-size: 20px; font-weight: 600; color: #C3CCE4; }
+.cam .view { flex: 1; min-height: 0; border-radius: 20px; background: #050D26; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 3px solid #1D3C8F; }
+.cam .view img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cam .msg { max-width: 760px; text-align: center; font-size: 30px; font-weight: 700; color: #D6DDF0; line-height: 1.4; padding: 40px; }
+.cam .msg small { display: block; margin-top: 12px; font-size: 22px; font-weight: 600; color: #9FB0DA; }
+.side { width: 520px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; min-height: 0; }
+.card { background: #FFFFFF; color: var(--text); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
+.card .ch { padding: 16px 22px; font-size: 26px; font-weight: 800; color: #FFFFFF; display: flex; justify-content: space-between; align-items: center; }
+.card .ch.green { background: #15803D; } .card .ch.orange { background: #F7941D; color: #142C6E; }
+.arr { flex: 1; min-height: 0; }
+.arr ul { list-style: none; margin: 0; padding: 8px 14px; overflow: hidden; }
+.arr li { display: flex; align-items: center; gap: 14px; padding: 12px 8px; border-bottom: 1px solid #EEF1F6; font-size: 26px; font-weight: 800; color: #142C6E; }
+.arr li .av { width: 52px; height: 52px; border-radius: 50%; background: #E6EBF7; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #142C6E; flex-shrink: 0; }
+.arr li .t { margin-left: auto; font-size: 20px; font-weight: 700; color: #3F4859; }
+.arr li.new { animation: newrow 3s ease-out; }
+.arr .none { padding: 28px; text-align: center; font-size: 22px; color: #3F4859; }
+.nums { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.nums div { padding: 16px 22px; }
+.nums .k { font-size: 20px; font-weight: 700; color: #3F4859; }
+.nums .v { font-size: 50px; font-weight: 800; color: #142C6E; line-height: 1.1; }
+.nums .v.amber { color: #B45309; }
+.foot { height: 40px; flex-shrink: 0; text-align: center; font-size: 18px; color: #9FB0DA; }
+#gate { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font); color: #FFFFFF; font-size: 26px; }
+</style>
+</head>
+<body>
+<div id="gate">Loading TV Mode...</div>
+<div id="stage" hidden>
+  <div class="hd">
+    <div class="logo"><img src="/static/logo.png" alt="Ai-Vacuwise"></div>
+    <div>
+      <h1 id="cName">Evacuation center</h1>
+      <span class="state off" id="state"><i></i><span id="stateTxt">No evacuation running</span></span>
+    </div>
+    <div class="big"><div class="k">Accounted</div><div class="v" id="acc">0 <small>/ 0</small></div></div>
+    <div class="big clock"><div class="k" id="date"></div><div class="v" id="clock"></div></div>
+  </div>
+  <div class="body">
+    <section class="cam">
+      <div class="cambar" id="camBar"><span class="dot"></span><span id="camTxt">Entrance webcam</span><span class="hint">Green box = recognized and checked in · Red box = not registered</span></div>
+      <div class="view" id="view"><div class="msg">Looking for the entrance webcam...</div></div>
+    </section>
+    <aside class="side">
+      <div class="card arr">
+        <div class="ch green"><span>Just arrived</span><span id="arrN">0</span></div>
+        <ul id="arrList"></ul>
+      </div>
+      <div class="card">
+        <div class="ch orange"><span>Still not here</span><span id="waitN">0</span></div>
+        <div class="nums">
+          <div><div class="k">Priority not here</div><div class="v amber" id="prio">0</div></div>
+          <div><div class="k">Spaces left</div><div class="v" id="spaces">0</div></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="foot">Photos and names shown with consent under the Data Privacy Act of 2012 (RA 10173).</div>
+</div>
+<script src="app.js?v=53"></script>
+<script>
+(async () => {
+  const me = await BL.requireAuth();
+  const $ = (id) => document.getElementById(id);
+  $('gate').hidden = true; $('stage').hidden = false;
+
+  // Fit the 1920x1080 stage to any screen.
+  const fit = () => { const k = Math.min(innerWidth / 1920, innerHeight / 1080); $('stage').style.transform = 'scale(' + k + ')'; $('stage').style.left = ((innerWidth - 1920 * k) / 2) + 'px'; $('stage').style.top = ((innerHeight - 1080 * k) / 2) + 'px'; };
+  addEventListener('resize', fit); fit();
+
+  // Which center: ?center=, else the running evacuation's center, else the first center.
+  let centers = [];
+  try { centers = (await BL.api('/evacuation_centers') || []).filter((c) => me.role === 'city_admin' || c.barangay_id === me.barangay_id); } catch (e) {}
+  let centerId = Number(new URLSearchParams(location.search).get('center')) || null;
+  if (!centerId) {
+    try { const act = (await BL.api('/incidents?active=true') || []).find((i) => i.active && i.evacuation_center_id); if (act) centerId = act.evacuation_center_id; } catch (e) {}
+  }
+  if (!centerId) {  // no evacuation running: show the center the entrance webcam is watching
+    try { const cam = (await BL.api('/camera/status') || []).find((r) => r.kind === 'entrance' && r.online && centers.some((c) => c.id === r.center_id)); if (cam) centerId = cam.center_id; } catch (e) {}
+  }
+  if (!centerId && centers.length) centerId = centers[0].id;
+  if (!centerId) { $('view').innerHTML = '<div class="msg">No evacuation center yet.<small>Add one on the Evacuation Centers page.</small></div>'; return; }
+
+  const tick = () => {
+    const d = new Date();
+    $('clock').textContent = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    $('date').textContent = d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  tick(); setInterval(tick, 10000);
+
+  const initials = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  let seen = null;
+  async function loadData() {
+    try {
+      const d = await BL.api('/display/' + centerId);
+      $('cName').textContent = d.center.name;
+      document.title = 'TV Mode · ' + d.center.name;
+      const on = d.incident && d.incident.active;
+      $('state').className = 'state' + (on ? '' : ' off');
+      $('stateTxt').textContent = on ? 'EVACUATION ACTIVE · ' + String(d.incident.disaster_type || '').toUpperCase() : 'No evacuation running';
+      $('acc').innerHTML = d.safe_total + ' <small>/ ' + d.expected_total + '</small>';
+      $('waitN').textContent = d.waiting.length;
+      $('prio').textContent = d.waiting.filter((w) => w.tags.length).length;
+      const c = centers.find((x) => x.id === centerId);
+      $('spaces').textContent = c ? Math.max(0, c.capacity - (c.occupancy != null ? c.occupancy : d.arrived.length)) : '-';
+      $('arrN').textContent = d.arrived.length;
+      const ids = d.arrived.map((a) => a.id);
+      $('arrList').innerHTML = d.arrived.slice(0, 8).map((a) =>
+        '<li class="' + (seen && !seen.has(a.id) ? 'new' : '') + '"><span class="av">' + BL.esc(initials(a.name)) + '</span>' + BL.esc(a.name) +
+        '<span class="t">' + BL.esc(BL.time(a.time)) + '</span></li>').join('') || '<li class="none">Arrivals appear here as the webcam recognizes them.</li>';
+      seen = new Set(ids);
+    } catch (e) { /* keep showing the last data; the next refresh tries again */ }
+  }
+
+  let streamUrl = null;
+  async function loadCam() {
+    let rows = [];
+    try { rows = await BL.api('/camera/status') || []; } catch (e) {}
+    const row = rows.find((r) => r.kind === 'entrance' && r.center_id === centerId);
+    const on = !!(row && row.online);
+    $('camBar').className = 'cambar' + (on ? ' on' : '');
+    $('camTxt').textContent = on ? 'Entrance webcam: live' : 'Entrance webcam: off';
+    const url = on && row.stream_url ? row.stream_url : null;
+    if (url === streamUrl) return;
+    streamUrl = url;
+    if (url) {
+      $('view').innerHTML = '<img alt="Live picture from the entrance webcam" src="' + BL.esc(url) + '?t=' + Date.now() + '">';
+      $('view').querySelector('img').addEventListener('error', () => { streamUrl = null; });
+    } else if (on) {
+      $('view').innerHTML = '<div class="msg">The entrance webcam is running, but its picture is not shared.<small>Update the webcam program on the Raspberry Pi to show the live picture here.</small></div>';
+    } else {
+      $('view').innerHTML = '<div class="msg">The entrance webcam is off.<small>Check that the webcam at the entrance is plugged in and its small computer (Raspberry Pi) is turned on. It starts by itself in about 1 minute.</small></div>';
+    }
+  }
+
+  loadData(); loadCam();
+  setInterval(loadData, 5000);
+  setInterval(loadCam, 10000);
+  BL.connectLive(() => loadData(), null);
+})();
+</script>
+</body>
+</html>

@@ -441,7 +441,7 @@ const BL = (() => {
     }));
   }
   function addHotlineButton() {
-    if (document.getElementById('hotlineBtn') || /display\.html$/.test(location.pathname)) return;
+    if (document.getElementById('hotlineBtn') || /(display|tv)\.html$/.test(location.pathname)) return;
     const b = document.createElement('button');
     b.type = 'button'; b.id = 'hotlineBtn'; b.className = 'no-print';
     b.setAttribute('aria-label', 'Emergency hotlines (press H)');

@@ -34,3 +34,7 @@ FRAME_SCALE = 0.25
 
 # True shows a window with boxes and names (needs a screen). False prints to the terminal only.
 SHOW_PREVIEW = True
+
+# Port where the live picture (with face boxes and names) is shared for the TV Mode page.
+# 0 turns it off.
+STREAM_PORT = 8081

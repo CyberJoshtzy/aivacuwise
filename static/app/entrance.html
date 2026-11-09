@@ -57,14 +57,14 @@
             <li>Connect the mini PC to the same network as the server laptop.</li>
             <li>Sign in with "Keep me signed in on this device" ticked, so the display stays signed in after restarts.</li>
             <li>Monitor 1 (facing evacuees): open the link above, then press F11.</li>
-            <li>Monitor 2 (facing officials): open Live Evacuation in TV mode: <a id="tvLink" href="live.html?tv=1" target="_blank" rel="noopener">live.html?tv=1</a></li>
+            <li>Monitor 2 (facing officials): open <a id="tvLink" href="tv.html" target="_blank" rel="noopener">TV Mode</a>, which shows the live entrance webcam with the names of recognized evacuees</li>
           </ol>
         </section>
       </div>
     </div>
   </main>
 </div>
-<script src="app.js?v=52"></script>
+<script src="app.js?v=53"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -97,7 +97,7 @@
     localStorage.setItem('bl_display_center', id);
     $('frame').src = 'display.html?center=' + id;
     $('link').value = base + 'display.html?center=' + id;
-    $('tvLink').href = 'live.html?tv=1';
+    $('tvLink').href = 'tv.html?center=' + id;
     load();
   }
   $('centerSel').addEventListener('change', applyCenter);

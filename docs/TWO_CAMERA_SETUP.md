@@ -89,6 +89,10 @@ Live Evacuation page and the Entrance Display show **Camera on** or **Camera off
   then `cd ~/ai-vacuwise-pi/entrance_client && python3 recognize.py` (press `q` to stop),
   then `sudo systemctl start ai-vacuwise-entrance-camera`.
 - Only re-install the services (no package downloads): `bash pi_camera/install_services.sh`
+- TV Mode (`tv.html`, the "Open TV Mode" button on Live Evacuation) shows the live webcam picture
+  with green boxes and names for recognized evacuees. The Pi shares it on port 8081
+  (`STREAM_PORT` in `entrance_client/config.py`, 0 turns it off); the page finds the address
+  from the heartbeat, so nothing has to be typed.
 
 ## Troubleshooting
 

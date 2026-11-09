@@ -77,6 +77,81 @@ def parse_faces(rows):
     return ids, names, vecs
 
 
+class Stream:
+    """Shares the newest camera picture (with face boxes and names) for the TV Mode page.
+
+    GET http://<pi>:STREAM_PORT/stream.mjpg   live picture (MJPEG)
+    GET http://<pi>:STREAM_PORT/health        {"ok": true}
+    """
+
+    def __init__(self, port):
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        self.port = port
+        self.jpeg = None
+        self.count = 0
+        self.cond = threading.Condition()
+        outer = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                path = self.path.split("?")[0]
+                if path == "/health":
+                    body = b'{"ok": true}'
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
+                if path != "/stream.mjpg":
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                seen = 0
+                try:
+                    while True:
+                        with outer.cond:
+                            outer.cond.wait_for(lambda: outer.count > seen, timeout=5)
+                            seen, data = outer.count, outer.jpeg
+                        if data:
+                            self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\n")
+                            self.wfile.write(b"Content-Length: %d\r\n\r\n" % len(data))
+                            self.wfile.write(data + b"\r\n")
+                except (BrokenPipeError, ConnectionResetError):
+                    pass  # the TV page was closed
+
+            def log_message(self, *args):
+                pass
+
+        server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+        server.daemon_threads = True
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.last = 0.0
+
+    def push(self, frame):
+        now = time.time()
+        if now - self.last < 0.1:  # about 10 pictures per second is enough for the TV
+            return
+        self.last = now
+        h, w = frame.shape[:2]
+        if w > 960:
+            frame = cv2.resize(frame, (960, int(h * 960 / w)))
+        ok, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        if ok:
+            with self.cond:
+                self.jpeg = buf.tobytes()
+                self.count += 1
+                self.cond.notify_all()
+
+
 def find_camera(setting):
     """Returns what to open with OpenCV.
 
@@ -114,6 +189,14 @@ def main():
             "using it (for example a browser tab)." % device
         )
     print("Entrance camera: %s" % device)
+    stream = None
+    port = getattr(config, "STREAM_PORT", 8081)
+    if port:
+        try:
+            stream = Stream(port)
+            print("Live picture for TV Mode: http://<this Pi's address>:%d/stream.mjpg" % port)
+        except OSError as exc:
+            print("Live picture not shared (port %s busy: %s)" % (port, exc))
 
     ids, names, vecs, where = [], [], [], {}
     last_load = 0.0
@@ -143,7 +226,11 @@ def main():
                     api.call(
                         "POST",
                         "/camera/heartbeat",
-                        json={"center_id": config.EVACUATION_CENTER_ID, "kind": "entrance"},
+                        json={
+                            "center_id": config.EVACUATION_CENTER_ID,
+                            "kind": "entrance",
+                            "stream_port": stream.port if stream else None,
+                        },
                     )
                 except requests.RequestException:
                     pass  # server briefly unreachable; recognition keeps running
@@ -160,12 +247,14 @@ def main():
 
             for (top, right, bottom, left), enc in zip(locs, encs):  # noqa: B905
                 label, color = "Not registered", (0, 0, 220)
+                shown = label
                 if vecs:
                     dist = face_recognition.face_distance(vecs, enc)
                     i = int(np.argmin(dist))
                     if dist[i] <= config.MATCH_TOLERANCE:
                         eid, name = ids[i], names[i]
                         label, color = "%s (%.2f)" % (name, dist[i]), (0, 170, 0)
+                        shown = name
                         if now - last_action.get(eid, 0) > config.CHECKIN_COOLDOWN_SECONDS:
                             last_action[eid] = now
                             here = where.get(eid)
@@ -207,19 +296,24 @@ def main():
                                     where[eid] = config.EVACUATION_CENTER_ID
                                 else:
                                     print("Check-in failed for %s: %s" % (name, r.text[:120]))
-                if config.SHOW_PREVIEW:
+                if config.SHOW_PREVIEW or stream:
                     t, r_, b, l = [int(v / scale) for v in (top, right, bottom, left)]  # noqa: E741
-                    cv2.rectangle(frame, (l, t), (r_, b), color, 2)
-                    cv2.rectangle(frame, (l, b), (r_, b + 28), color, cv2.FILLED)
+                    text = label if config.SHOW_PREVIEW else shown  # TV shows the name only
+                    tw = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)[0][0]
+                    cv2.rectangle(frame, (l, t), (r_, b), color, 3)
+                    cv2.rectangle(frame, (l, b), (max(r_, l + tw + 14), b + 34), color, cv2.FILLED)
                     cv2.putText(
                         frame,
-                        label,
-                        (l + 6, b + 20),
+                        text,
+                        (l + 7, b + 25),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.6,
+                        0.8,
                         (255, 255, 255),
                         2,
                     )
+
+            if stream:
+                stream.push(frame)
 
             if config.SHOW_PREVIEW:
                 cv2.imshow("Ai-Vacuwise entrance camera (press q to stop)", frame)
