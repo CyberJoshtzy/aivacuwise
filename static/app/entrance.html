@@ -35,7 +35,7 @@
       </div>
     </div>
     <div id="loadError" class="form-error" role="alert" hidden></div>
-    <div class="cam-status unknown" id="camStatus" role="status"><span class="cdot"></span><span>Checking the entrance camera...<small>&nbsp;</small></span></div>
+    <div class="cam-status unknown" id="camStatus" role="status"><span class="cdot"></span><span>Checking the entrance webcam...<small>&nbsp;</small></span></div>
 
     <div class="stats">
       <div class="kpi"><div class="label">Unaccounted</div><div class="value" id="sWait">0</div><div class="sub">Shown under "Unaccounted"</div></div>
@@ -64,7 +64,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=50"></script>
+<script src="app.js?v=51"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -123,12 +123,17 @@
   async function loadCam() {
     let rows = [];
     try { rows = await BL.api('/camera/status') || []; } catch (e) {}
-    const row = rows.find((r) => r.kind === 'entrance' && String(r.center_id) === $('centerSel').value);
+    const sel = $('centerSel').value;
+    const row = rows.find((r) => r.kind === 'entrance' && String(r.center_id) === sel);
+    const other = rows.find((r) => r.kind === 'entrance' && r.online && String(r.center_id) !== sel && centers.some((c) => c.id === r.center_id));
     const on = !!(row && row.online);
+    const cname = (id) => (centers.find((c) => c.id === id) || {}).name || 'another center';
     $('camStatus').className = 'cam-status ' + (on ? 'on' : 'off');
     $('camStatus').querySelector('span:last-child').innerHTML = on
-      ? 'Entrance camera on<small>Faces move to "Accounted" as the camera identifies them.</small>'
-      : 'Entrance camera off<small>' + (row ? 'Last seen ' + BL.ago(row.last_seen) + '. ' : '') + 'Turn on the Raspberry Pi at this entrance. The camera starts by itself in about 1 minute.</small>';
+      ? 'Entrance webcam on<small>Faces move to "Accounted" as the webcam identifies them.</small>'
+      : other
+        ? 'No webcam at this center<small>The entrance webcam is watching ' + BL.esc(cname(other.center_id)) + '. Choose that center above to see its display.</small>'
+        : 'Entrance webcam off<small>' + (row ? 'Last seen ' + BL.ago(row.last_seen) + '. ' : '') + 'Check that the webcam at this entrance is plugged in and its small computer (Raspberry Pi) is turned on. It starts by itself in about 1 minute.</small>';
   }
   $('centerSel').addEventListener('change', loadCam);
   setInterval(loadCam, 10000);
