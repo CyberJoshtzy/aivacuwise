@@ -72,6 +72,26 @@ def parse_faces(rows):
     return ids, names, vecs
 
 
+def find_camera(setting):
+    """Returns what to open with OpenCV.
+
+    setting = 0, 1, ...   a camera number (laptop webcam, or a Pi 4 with one USB webcam)
+    setting = "usb"       the first USB webcam (needed on a Raspberry Pi 5, where the
+                          Camera Module 3 and the Pi's video hardware also appear as cameras)
+    setting = "/dev/..."  an exact device path
+    """
+    if setting != "usb":
+        return setting
+    import glob
+    import os
+
+    for pattern in ("/dev/v4l/by-id/usb-*-video-index0", "/dev/v4l/by-path/*usb*-video-index0"):
+        found = sorted(glob.glob(pattern))
+        if found:
+            return os.path.realpath(found[0])
+    sys.exit("No USB webcam found. Plug the webcam into a USB port of the Pi, then run again.")
+
+
 def main():
     api = Backend()
     api.login()
@@ -80,13 +100,15 @@ def main():
         % (api.base, config.USERNAME, config.EVACUATION_CENTER_ID)
     )
 
-    cam = cv2.VideoCapture(config.CAMERA_INDEX, cv2.CAP_V4L2)
+    device = find_camera(config.CAMERA_INDEX)
+    cam = cv2.VideoCapture(device, cv2.CAP_V4L2)
     cam.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # always use the newest frame (avoids the multi-second lag)
     if not cam.isOpened():
         sys.exit(
-            "Cannot open camera %s. Close any browser tab using the webcam and try again."
-            % config.CAMERA_INDEX
+            "Cannot open camera %s. Check the USB webcam cable, and close any other program "
+            "using it (for example a browser tab)." % device
         )
+    print("Entrance camera: %s" % device)
 
     ids, names, vecs, where = [], [], [], {}
     last_load = 0.0
