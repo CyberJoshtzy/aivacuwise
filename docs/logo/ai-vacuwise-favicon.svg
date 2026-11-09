@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="295 30 510 510">
+  <defs>
+    <linearGradient id="navy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1D3C8F"/>
+      <stop offset="1" stop-color="#142C6E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ===== Emblem (center x = 550) ===== -->
+  <g id="emblem">
+    <!-- face-scan corner brackets (AI facial recognition) -->
+    <g fill="none" stroke="#F7941D" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M330 120 V60 H390"/>
+      <path d="M710 60 H770 V120"/>
+      <path d="M330 450 V510 H390"/>
+      <path d="M710 510 H770 V450"/>
+    </g>
+
+    <!-- shield -->
+    <path d="M550 505 C480 430 350 345 350 240 A200 200 0 1 1 750 240 C750 345 620 430 550 505 Z" fill="url(#navy)"/>
+    <path d="M550 470 C492 408 376 334 376 240 A174 174 0 1 1 724 240 C724 334 608 408 550 470 Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="4"/>
+
+    <g transform="translate(0,-26)">
+    <!-- house roof -->
+    <path d="M440 240 L550 160 L660 240" fill="none" stroke="#FFFFFF" stroke-width="22"
+          stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- three people (family) -->
+    <g fill="#FFFFFF">
+      <circle cx="488" cy="282" r="24"/>
+      <path d="M448 360 C448 330 466 314 488 314 C510 314 528 330 528 360 Z"/>
+      <circle cx="612" cy="282" r="24"/>
+      <path d="M572 360 C572 330 590 314 612 314 C634 314 652 330 652 360 Z"/>
+    </g>
+    <g fill="#F7941D">
+      <circle cx="550" cy="270" r="30"/>
+      <path d="M500 372 C500 334 522 312 550 312 C578 312 600 334 600 372 Z"/>
+    </g>
+
+    <!-- location/tracker dot with signal arcs -->
+    <circle cx="550" cy="420" r="12" fill="#F7941D"/>
+    <g fill="none" stroke="#F7941D" stroke-width="12" stroke-linecap="round">
+      <path d="M516 400 A40 40 0 0 0 516 440"/>
+      <path d="M584 400 A40 40 0 0 1 584 440"/>
+    </g>
+
+    </g>
+    
+  </g>
+
+  </svg>
