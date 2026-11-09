@@ -11,7 +11,10 @@ PASSWORD = "TestPass123!"  # noqa: S105
 # The evacuation center this camera guards. 1 = Test Elementary School.
 EVACUATION_CENTER_ID = 2
 
-# 0 = the first webcam (the laptop's built-in camera, or the Pi's USB webcam).
+# Which camera watches the entrance:
+#   0      = the first webcam (laptop built-in camera, or a Pi 4 with one USB webcam)
+#   "usb"  = the first USB webcam. Use this on the Raspberry Pi 5, because the Camera
+#            Module 3 (used for pre-registration) also shows up as a camera there.
 CAMERA_INDEX = 0
 
 # Face match strictness. 0.6 is the face_recognition default; lower is stricter.
