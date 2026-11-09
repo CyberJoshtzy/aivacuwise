@@ -202,16 +202,6 @@ const BL = (() => {
     ]
   };
 
-  // Text size (Normal / Large / Larger), remembered on this computer.
-  const TEXT_SIZES = ['normal', 'large', 'larger'];
-  function textSize() { try { return localStorage.getItem('bl_textsize') || 'normal'; } catch (e) { return 'normal'; } }
-  function applyTextSize(v) {
-    const h = document.documentElement;
-    h.classList.remove('ts-large', 'ts-larger');
-    if (v !== 'normal') h.classList.add('ts-' + v);
-  }
-  applyTextSize(textSize());
-
   function renderSidebar(me, active, barangayName) {
     const el = document.getElementById('sidebar');
     if (!el) return;
@@ -223,25 +213,12 @@ const BL = (() => {
       const cur = href === active ? ' aria-current="page"' : '';
       return '<a href="' + href + '"' + cur + ' data-href="' + href + '">' + svg(ic) + label + '</a>';
     }).join('');
-    const ts = textSize();
-    const sizer = '<div class="textsize" role="group" aria-label="Text size"><span>Text size</span><div class="opts">' +
-      TEXT_SIZES.map((v, i) => '<button type="button" data-ts="' + v + '" aria-pressed="' + (v === ts) + '" aria-label="' + ['Normal', 'Large', 'Larger'][i] + ' text">A</button>').join('') +
-      '</div></div>';
-    const badge = city
-      ? '<div class="role-badge"><div class="kind">Super user</div><div class="who">City Admin</div><div class="sub">' + esc(me.email || me.username) + '</div></div>'
-      : '<div class="role-badge"><div class="kind">Signed in</div><div class="who">' + esc(barangayName || 'Barangay') + '</div><div class="sub">' + esc(me.email || me.username) + '</div></div>';
     el.innerHTML =
-      '<div class="logo-tile"><img src="/static/logo.png?v=2" alt="Ai-Vacuwise"></div>' + badge + sizer +
+      '<div class="logo-tile"><img src="/static/logo.png?v=2" alt="Ai-Vacuwise"></div>' +
       '<nav class="nav" aria-label="Main">' + items + '</nav>' +
       '<div class="sync-badge" id="syncBadge" role="status" hidden><span class="sdot"></span><span><strong id="syncTitle"></strong><span id="syncSub"></span></span></div>' +
       '<nav class="nav signout" aria-label="Account"><a href="#" id="signout">' + svg('out') + 'Sign Out</a></nav>';
     document.getElementById('signout').addEventListener('click', (e) => { e.preventDefault(); logout(); });
-    el.querySelectorAll('[data-ts]').forEach((b) => b.addEventListener('click', () => {
-      const v = b.dataset.ts;
-      try { localStorage.setItem('bl_textsize', v); } catch (e) {}
-      applyTextSize(v);
-      el.querySelectorAll('[data-ts]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    }));
     // Red "Active" tag on Live Evacuation while an evacuation is running in this barangay.
     if (!city) {
       api('/incidents?active=true').then((list) => {

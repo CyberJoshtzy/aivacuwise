@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Entrance Display · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 .preview { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #0E1F4F; border: 1px solid var(--line); }
 .preview iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -13,8 +13,8 @@
 .stats .kpi .value { font-size: 28px; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
 .link-box { display: flex; gap: 8px; }
-.link-box input { flex-grow: 1; min-width: 0; height: 44px; font-size: 14px; background: var(--bg); }
-.steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.55; }
+.link-box input { flex-grow: 1; min-width: 0; height: 44px; font-size: 15px; background: var(--bg); }
+.steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.55; }
 @media (max-width: 1200px) { .layout { grid-template-columns: minmax(0, 1fr); } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
@@ -51,7 +51,7 @@
       <div style="display:flex;flex-direction:column;gap:16px">
         <section class="panel">
           <h2 style="font-size:17px">Put it on the entrance monitor</h2>
-          <p style="font-size:14px;color:var(--muted)">Open this link on the mini PC connected to the entrance monitor, then press F11 for full screen.</p>
+          <p style="font-size:15px;color:var(--muted)">Open this link on the mini PC connected to the entrance monitor, then press F11 for full screen.</p>
           <div class="link-box"><input id="link" class="input" readonly aria-label="Monitor link"><button type="button" class="btn btn-ghost btn-sm" id="copy">Copy</button></div>
           <ol class="steps-list">
             <li>Connect the mini PC to the same network as the server laptop.</li>
@@ -64,7 +64,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();

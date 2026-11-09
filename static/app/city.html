@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>City Overview · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 :root { --ok: #15803D; --warn: #B45309; --bad: #B91C1C; --line2: #E3E8F2; }
 .main { gap: 18px; }
@@ -13,7 +13,7 @@
 .hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .hero h1 { margin: 0; }
 .hero .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 14px; font-weight: 700; background: #FFFFFF; border: 1px solid var(--line2); color: #3D4659; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 15px; font-weight: 700; background: #FFFFFF; border: 1px solid var(--line2); color: #3D4659; }
 .pill i { width: 8px; height: 8px; border-radius: 50%; background: #C2CAD8; }
 .pill.on { background: #FFF7ED; border-color: #F59E0B; color: var(--warn); } .pill.on i { background: #F59E0B; animation: blink 1.4s infinite; }
 @keyframes blink { 50% { opacity: .3; } }
@@ -21,11 +21,11 @@
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .stat { background: #FFFFFF; border: 1px solid var(--line2); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; transition: box-shadow .15s, transform .15s; }
 a.stat:hover { box-shadow: 0 8px 22px rgba(11,31,77,.10); transform: translateY(-2px); }
-.stat .lb { font-size: 14px; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; }
+.stat .lb { font-size: 15px; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; }
 .stat .lb span { opacity: .5; }
 .stat .big { font-size: 34px; font-weight: 800; line-height: 1.05; color: var(--navy); }
 .stat .big small { font-size: 15px; font-weight: 700; color: var(--muted); }
-.stat .sm { font-size: 14px; color: var(--muted); }
+.stat .sm { font-size: 15px; color: var(--muted); }
 .stat.hero-stat { border-top: 4px solid #15803D; }
 .stat.hero-stat .big { color: #15803D; }
 .meter { height: 6px; border-radius: 999px; background: #EEF1F6; overflow: hidden; }
@@ -36,14 +36,14 @@ a.stat:hover { box-shadow: 0 8px 22px rgba(11,31,77,.10); transform: translateY(
 .mini .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #EEF2FF; color: var(--navy); flex-shrink: 0; }
 .mini .ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .mini strong { font-size: 20px; color: var(--navy); display: block; line-height: 1.1; }
-.mini span { font-size: 14px; color: var(--muted); }
+.mini span { font-size: 15px; color: var(--muted); }
 /* layout */
 .cols { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 .stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .card { background: #FFFFFF; border: 1px solid var(--line2); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .card-h h2 { font-size: 18px; margin: 0; }
-.card-h .note { font-size: 14px; color: var(--muted); }
+.card-h .note { font-size: 15px; color: var(--muted); }
 .h-link { color: var(--navy); text-decoration: none; }
 .h-link span { opacity: .45; transition: opacity .15s, margin .15s; }
 .h-link:hover { text-decoration: underline; } .h-link:hover span { opacity: 1; margin-left: 4px; }
@@ -53,32 +53,32 @@ table.data td { vertical-align: middle; }
 .bar2 { display: flex; align-items: center; gap: 8px; min-width: 150px; }
 .bar2 .t { flex-grow: 1; height: 8px; border-radius: 999px; background: #EEF1F6; overflow: hidden; }
 .bar2 .t b { display: block; height: 100%; border-radius: 999px; }
-.bar2 em { font-style: normal; font-size: 14px; font-weight: 800; min-width: 64px; text-align: right; }
-.stx { display: inline-block; font-size: 13px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: #EEF1F6; color: #6B7280; white-space: nowrap; }
+.bar2 em { font-style: normal; font-size: 15px; font-weight: 800; min-width: 64px; text-align: right; }
+.stx { display: inline-block; font-size: 15px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: #EEF1F6; color: #6B7280; white-space: nowrap; }
 .stx.on { background: #FFF7ED; color: #B45309; }
-.subx { font-size: 14px; color: var(--muted); }
+.subx { font-size: 15px; color: var(--muted); }
 tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
 .num-bad { color: var(--bad); font-weight: 800; } .num-ok { color: var(--ok); font-weight: 800; }
 /* alerts and lists */
 .alist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.alist li { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.45; }
+.alist li { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 15px; line-height: 1.45; }
 .alist li .d { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
 .ev { display: flex; flex-direction: column; gap: 8px; }
-.ev div { padding: 10px 12px; border-radius: 10px; background: #FFF7ED; border-left: 4px solid #F59E0B; font-size: 14px; }
+.ev div { padding: 10px 12px; border-radius: 10px; background: #FFF7ED; border-left: 4px solid #F59E0B; font-size: 15px; }
 .ev strong { color: var(--navy); }
 .plist { display: flex; flex-direction: column; }
-.plist div { display: flex; justify-content: space-between; gap: 8px; padding: 9px 2px; border-bottom: 1px solid #EEF1F6; font-size: 14px; }
+.plist div { display: flex; justify-content: space-between; gap: 8px; padding: 9px 2px; border-bottom: 1px solid #EEF1F6; font-size: 15px; }
 .plist div:last-child { border-bottom: none; }
 .plist b { color: var(--navy); }
-.tg { font-size: 13px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #FFF4E5; color: var(--warn); margin-left: 4px; white-space: nowrap; }
+.tg { font-size: 15px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #FFF4E5; color: var(--warn); margin-left: 4px; white-space: nowrap; }
 .rel { display: flex; flex-direction: column; gap: 10px; }
 .rel .r { padding: 10px 12px; border-radius: 10px; background: #F6F8FD; }
-.rel .r strong { color: var(--navy); font-size: 14px; }
-.rel .r .sm { font-size: 14px; color: var(--muted); }
-.chip2 { display: inline-block; margin: 4px 4px 0 0; font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
-.emptyx { padding: 14px; border-radius: 10px; background: #F6F8FD; color: var(--muted); font-size: 14px; text-align: center; }
+.rel .r strong { color: var(--navy); font-size: 15px; }
+.rel .r .sm { font-size: 15px; color: var(--muted); }
+.chip2 { display: inline-block; margin: 4px 4px 0 0; font-size: 15px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.emptyx { padding: 14px; border-radius: 10px; background: #F6F8FD; color: var(--muted); font-size: 15px; text-align: center; }
 .acc { display: flex; flex-direction: column; gap: 8px; }
-.acc div { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 14px; padding: 8px 10px; border-radius: 10px; background: #F6F8FD; }
+.acc div { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 15px; padding: 8px 10px; border-radius: 10px; background: #F6F8FD; }
 @media (max-width: 1200px) { .stats { grid-template-columns: 1fr 1fr; } .cols { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .stats, .mini { grid-template-columns: 1fr; } }
 @media print { .no-print { display: none !important; } .scroll { max-height: none; overflow: visible; } }
@@ -115,7 +115,7 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
       <div class="stack">
         <section class="card">
           <div class="card-h"><h2><a class="h-link" href="barangays.html">Barangay status <span>&rarr;</span></a></h2>
-            <select id="distSel" class="input no-print" style="width:190px;height:38px;font-size:14px" aria-label="Filter by district"><option value="">All districts</option></select></div>
+            <select id="distSel" class="input no-print" style="width:190px;height:38px;font-size:15px" aria-label="Filter by district"><option value="">All districts</option></select></div>
           <div class="table-wrap scroll"><table class="data"><thead><tr><th>Barangay</th><th>Status</th><th>Accounted</th><th>Unaccounted</th><th>Priority</th><th>Centers</th></tr></thead><tbody id="brgys"></tbody></table></div>
         </section>
         <section class="card">
@@ -129,8 +129,8 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
         <section class="card">
           <div class="card-h"><h2><a class="h-link" href="history.html">Evacuation history <span>&rarr;</span></a></h2>
             <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
-              <select id="hB" class="input" style="width:170px;height:38px;font-size:14px" aria-label="Filter by barangay"><option value="">All barangays</option></select>
-              <select id="hY" class="input" style="width:120px;height:38px;font-size:14px" aria-label="Filter by year"><option value="">All years</option></select>
+              <select id="hB" class="input" style="width:170px;height:38px;font-size:15px" aria-label="Filter by barangay"><option value="">All barangays</option></select>
+              <select id="hY" class="input" style="width:120px;height:38px;font-size:15px" aria-label="Filter by year"><option value="">All years</option></select>
             </div></div>
           <div class="table-wrap scroll"><table class="data"><thead><tr><th>Date</th><th>Barangay</th><th>Disaster</th><th>Evacuation center</th><th>Time</th><th>Duration</th><th>Status</th></tr></thead><tbody id="hist"></tbody></table></div>
         </section>
@@ -160,7 +160,7 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
     </div>
   </main>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth({ role: 'city_admin' });
@@ -257,7 +257,7 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
       .sort((a, b) => (b.on - a.on) || ((b.occupancy / (b.capacity || 1)) - (a.occupancy / (a.capacity || 1)))).map((c) => {
         if (!c.on) return '<tr class="idle"><td><strong>' + BL.esc(c.name) + '</strong></td><td>' + BL.esc(c.brgyName) + '</td><td><span class="stx">Standby</span> <span class="subx">capacity ' + c.capacity + '</span></td></tr>';
         const p = c.capacity ? c.occupancy / c.capacity : 0, t = BL.tone(p);
-        return '<tr><td><strong style="color:var(--navy)">' + BL.esc(c.name) + '</strong> <span class="stx on">Active</span></td><td style="font-size:14px">' + BL.esc(c.brgyName) + '</td>' +
+        return '<tr><td><strong style="color:var(--navy)">' + BL.esc(c.name) + '</strong> <span class="stx on">Active</span></td><td style="font-size:15px">' + BL.esc(c.brgyName) + '</td>' +
           '<td><div class="bar2"><div class="t"><b style="width:' + Math.min(100, Math.round(p * 100)) + '%;background:' + BL.TONE_HEX[t] + '"></b></div><em class="tone-' + t + '">' + c.occupancy + '/' + c.capacity + '</em></div></td></tr>'; }).join('')
       || '<tr><td colspan="3"><div class="emptyx">No evacuation centers yet.</div></td></tr>';
 
@@ -304,7 +304,7 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
       const users = await BL.api('/admin/users');
       const pend = users.filter((u) => u.status === 'pending');
       $('accNote').textContent = users.length + ' accounts';
-      $('acc').innerHTML = pend.length ? pend.map((u) => '<div><span><strong style="color:var(--navy)">' + BL.esc(u.full_name || u.email) + '</strong><br><span style="color:var(--muted);font-size:14px">' + BL.esc(u.position || '-') + '</span></span><a class="btn btn-primary btn-sm" href="accounts.html">Review</a></div>').join('')
+      $('acc').innerHTML = pend.length ? pend.map((u) => '<div><span><strong style="color:var(--navy)">' + BL.esc(u.full_name || u.email) + '</strong><br><span style="color:var(--muted);font-size:15px">' + BL.esc(u.position || '-') + '</span></span><a class="btn btn-primary btn-sm" href="accounts.html">Review</a></div>').join('')
         : '<div class="emptyx" style="display:block">No requests waiting for approval.</div>';
     } catch (e) {}
   }
@@ -329,8 +329,8 @@ tr.idle td { color: #9AA3B2; } tr.idle td strong { color: #6B7280; }
     $('hist').innerHTML = list.map((i) => {
       const a = BL.parseT(i.started_at), b = i.ended_at ? BL.parseT(i.ended_at) : null, m = i.active_seconds != null ? Math.round(i.active_seconds / 60) : b ? Math.max(0, Math.round((b - a) / 60000)) : 0;
       return '<tr><td style="white-space:nowrap"><strong>' + a.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + '</strong><div class="subx">' + a.toLocaleDateString('en-PH', { weekday: 'long' }) + '</div></td>' +
-        '<td><strong style="color:var(--navy)">' + BL.esc(i._b) + '</strong></td><td>' + BL.esc(i.disaster_type || '-') + '</td><td style="font-size:14px">' + BL.esc(i._c) + '</td>' +
-        '<td style="white-space:nowrap;font-size:14px">' + t(i.started_at) + (b ? ' &ndash; ' + t(i.ended_at) : '') + '</td><td style="white-space:nowrap">' + (b ? Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm' : '-') + '</td>' +
+        '<td><strong style="color:var(--navy)">' + BL.esc(i._b) + '</strong></td><td>' + BL.esc(i.disaster_type || '-') + '</td><td style="font-size:15px">' + BL.esc(i._c) + '</td>' +
+        '<td style="white-space:nowrap;font-size:15px">' + t(i.started_at) + (b ? ' &ndash; ' + t(i.ended_at) : '') + '</td><td style="white-space:nowrap">' + (b ? Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm' : '-') + '</td>' +
         '<td>' + '<span class="stx" style="background:#E8F7EE;color:#15803D">Finished</span>' + '</td></tr>';
     }).join('') || '<tr><td colspan="7"><div class="emptyx">No past evacuations recorded yet.</div></td></tr>';
   }

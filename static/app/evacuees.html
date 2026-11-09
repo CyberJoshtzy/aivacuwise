@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Resident List · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=50">
+<link rel="stylesheet" href="app.css?v=54">
 <style>
 .bpick { display: flex; flex-direction: column; gap: 12px; }
 .bpick .bsearch { max-width: 360px; }
 .bopt { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; border: none; border-bottom: 1px solid #EEF1F6; background: #FFFFFF; font: inherit; text-align: left; cursor: pointer; }
 .bopt:hover { background: #EEF2FF; }
 .bopt strong { color: var(--navy); }
-.bopt span { font-size: 14px; color: var(--muted); }
+.bopt span { font-size: 15px; color: var(--muted); }
 .bcard { text-align: left; font: inherit; cursor: pointer; padding: 12px 14px; border-radius: 12px; border: 2px solid #E3E8F2; background: #FFFFFF; display: flex; flex-direction: column; gap: 4px; transition: border-color .15s, box-shadow .15s; }
 .bcard:hover { border-color: var(--orange); box-shadow: 0 6px 16px rgba(11,31,77,.08); }
 .bcard[aria-pressed="true"] { border-color: var(--navy); background: #EEF2FF; }
 .bcard strong { color: var(--navy); font-size: 15px; }
-.bcard span { font-size: 14px; color: var(--muted); }
+.bcard span { font-size: 15px; color: var(--muted); }
 .bcard .bad { color: #B91C1C; font-weight: 700; }
 .filters-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; width: 100%; }
 
@@ -25,14 +25,14 @@
 .bwrap .search { max-width: none; }
 .bgrid { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 50; display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; border: 1px solid #E3E8F2; border-radius: 10px; background: #FFFFFF; box-shadow: 0 10px 24px rgba(11,31,77,.12); }
 .bgrid[hidden] { display: none; }
-.bnote { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.bnote { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--muted); }
 .bnote strong { color: var(--navy); }
 .toolbar { flex-direction: column; align-items: stretch; }
 .fam { display: flex; flex-direction: column; gap: 8px; }
 .fam .m { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); cursor: pointer; border: none; font: inherit; text-align: left; width: 100%; }
 .fam .m:hover { background: #EEF2FF; }
 .fam .m strong { color: var(--navy); }
-.fam .m small { color: var(--muted); font-size: 14px; display: block; }
+.fam .m small { color: var(--muted); font-size: 15px; display: block; }
 /* search boxes side by side */
 .filters-row { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 12px !important; }
 .filters-row > .bwrap { flex: 0 0 300px !important; width: 300px !important; max-width: none !important; margin: 0 !important; }
@@ -42,16 +42,16 @@
 /* evacuee table layout */
 table.data td { vertical-align: middle; padding-top: 12px; padding-bottom: 12px; }
 table.data .nm { font-weight: 800; color: var(--navy); font-size: 15px; line-height: 1.3; }
-table.data .fm { font-weight: 600; color: #1F2937; font-size: 14px; line-height: 1.3; }
-table.data .sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+table.data .fm { font-weight: 600; color: #1F2937; font-size: 15px; line-height: 1.3; }
+table.data .sub { font-size: 15px; color: var(--muted); margin-top: 2px; }
 table.data .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-table.data .tg { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #FFF4E5; color: #B45309; white-space: nowrap; }
-table.data .st { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+table.data .tg { font-size: 15px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #FFF4E5; color: #B45309; white-space: nowrap; }
+table.data .st { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 table.data .st i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 table.data .st.in { color: #15803D; } table.data .st.in i { background: #15803D; }
 table.data .st.out { color: var(--muted); } table.data .st.out i { background: #C2CAD8; }
 table.data .row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
-table.data .row-actions .btn { min-height: 36px; padding: 0 12px; font-size: 14px; }
+table.data .row-actions .btn { min-height: 36px; padding: 0 12px; font-size: 15px; }
 table.data tbody tr:hover td { background: #F6F8FD; }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
@@ -98,7 +98,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
     </section>
   </main>
 </div>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=54"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -236,9 +236,9 @@ table.data tbody tr:hover td { background: #F6F8FD; }
   async function view(ev) {
     const a = BL.age(ev.birthdate);
     const m = BL.modal(
-      '<div class="dialog-head"><div><h2>' + BL.esc(ev.full_name) + '</h2><div style="font-size:14px;color:var(--muted)">' + (where[ev.id] ? 'At ' + BL.esc(where[ev.id]) + ' now' : 'Not at an evacuation center') + '</div></div>' + xBtn + '</div>' +
+      '<div class="dialog-head"><div><h2>' + BL.esc(ev.full_name) + '</h2><div style="font-size:15px;color:var(--muted)">' + (where[ev.id] ? 'At ' + BL.esc(where[ev.id]) + ' now' : 'Not at an evacuation center') + '</div></div>' + xBtn + '</div>' +
       '<div class="dialog-body" style="display:flex;flex-direction:column;gap:18px">' +
-      '<div style="display:flex;gap:16px;align-items:center"><div id="vPhoto" style="width:96px;height:96px;border-radius:50%;background:var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);text-align:center;flex-shrink:0">No photo</div><div style="font-size:14px;color:var(--muted)">Photo shown on the Entrance Display. Registrations made before photos were saved show initials instead.</div></div>' +
+      '<div style="display:flex;gap:16px;align-items:center"><div id="vPhoto" style="width:96px;height:96px;border-radius:50%;background:var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);text-align:center;flex-shrink:0">No photo</div><div style="font-size:15px;color:var(--muted)">Photo shown on the Entrance Display. Registrations made before photos were saved show initials instead.</div></div>' +
       '<div class="facts">' +
       '<div><div class="k">Sex</div><div class="v">' + BL.esc(ev.sex || '-') + '</div></div>' +
       '<div><div class="k">Birthday</div><div class="v">' + BL.esc(niceDate(ev.birthdate)) + '</div></div>' +
@@ -255,7 +255,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
       familyBlock(ev) +
       '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Movement history</h3><ul class="timeline" id="hist"><li style="color:var(--muted)">Loading history.</li></ul></div>' +
       '</div>' +
-      '<div class="dialog-foot"><span style="font-size:14px;color:var(--muted)">Every check-in and check-out, newest first.</span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Close</button><button type="button" class="btn btn-primary" id="toEdit">Edit Information</button></div></div>', 820);
+      '<div class="dialog-foot"><span style="font-size:15px;color:var(--muted)">Every check-in and check-out, newest first.</span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Close</button><button type="button" class="btn btn-primary" id="toEdit">Edit Information</button></div></div>', 820);
     m.el.querySelector('#toEdit').addEventListener('click', () => { m.close(); edit(ev); });
     m.el.querySelectorAll('[data-fam]').forEach((b) => b.addEventListener('click', () => { const o = listAll.find((x) => x.id === Number(b.dataset.fam)); if (o) { m.close(); view(o); } }));
     fetch('/evacuees/' + ev.id + '/photo', { headers: { Authorization: 'Bearer ' + BL.token() } }).then((r) => r.ok ? r.blob() : null).then((b) => { if (b) m.el.querySelector('#vPhoto').innerHTML = '<img alt="Photo of ' + BL.esc(ev.full_name) + '" src="' + URL.createObjectURL(b) + '" style="width:100%;height:100%;object-fit:cover">'; }).catch(() => {});
@@ -284,7 +284,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
     const body = house.map((x) => row(x, 'Same family')).join('') + same.map((x) => row(x, 'Same surname, ' + BL.esc(homeBrgy(x)))).join('');
     return '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Family members (' + (house.length + same.length) + ')</h3><div class="fam">' +
       (body || '<p class="empty" style="margin:0">No other family members or residents with the surname "' + BL.esc(ev.full_name.trim().split(/\s+/).pop()) + '" in this barangay.</p>') +
-      '</div><p style="font-size:14px;color:var(--muted);margin:6px 0 0">Click a name to open that person.</p></div>';
+      '</div><p style="font-size:15px;color:var(--muted);margin:6px 0 0">Click a name to open that person.</p></div>';
   }
 
   function edit(ev) {
@@ -304,9 +304,9 @@ table.data tbody tr:hover td { background: #F6F8FD; }
       '<div class="field-group span2"><label for="fCivil">Civil status</label><select id="fCivil" class="input">' + ['', 'Single', 'Married', 'Widowed', 'Separated'].map((c) => '<option value="' + c + '"' + (c === (ex.civil_status || '') ? ' selected' : '') + '>' + (c || 'Not set') + '</option>').join('') + '</select></div>' +
       '<div class="field-group span4"><label for="fTrk">GPS tracker ID</label><input id="fTrk" class="input" placeholder="Leave empty if no tracker" value="' + BL.esc(trackerOf[ev.id] || '') + '"></div>' +
       '<div class="field-group span4"><label for="fBrgy">Barangay</label><input id="fBrgy" class="input" value="' + BL.esc(homeBrgy(ev) === '-' ? '' : homeBrgy(ev)) + '"></div>' +
-      '<div class="field-group span4"><span style="font-size:14px;font-weight:700">Special needs</span><div style="display:flex;flex-wrap:wrap;gap:8px" id="fNeeds">' + ['Senior citizen', 'Pregnant', 'PWD', 'Medical condition'].map((n) => '<label class="check" style="border:1.5px solid var(--field);border-radius:10px;padding:0 12px"><input type="checkbox" value="' + n + '"' + ((ex.special_needs || []).includes(n) ? ' checked' : '') + '>' + n + '</label>').join('') + '</div></div>' +
+      '<div class="field-group span4"><span style="font-size:15px;font-weight:700">Special needs</span><div style="display:flex;flex-wrap:wrap;gap:8px" id="fNeeds">' + ['Senior citizen', 'Pregnant', 'PWD', 'Medical condition'].map((n) => '<label class="check" style="border:1.5px solid var(--field);border-radius:10px;padding:0 12px"><input type="checkbox" value="' + n + '"' + ((ex.special_needs || []).includes(n) ? ' checked' : '') + '>' + n + '</label>').join('') + '</div></div>' +
       '</div></div>' +
-      '<div class="dialog-foot"><span style="font-size:14px;color:var(--muted)" id="eHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="eSave">Save Changes</button></div></div>' +
+      '<div class="dialog-foot"><span style="font-size:15px;color:var(--muted)" id="eHint"></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="eSave">Save Changes</button></div></div>' +
       '</form>', 720);
     const f = (id) => m.el.querySelector('#' + id);
     const sync = () => {
