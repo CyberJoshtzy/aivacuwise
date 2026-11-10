@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Evacuation Centers · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=56">
+<link rel="stylesheet" href="app.css?v=57">
 <style>
 .ccard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .ccard h2 { font-size: 17px; font-weight: 800; }
@@ -56,7 +56,7 @@
     <div id="empty" class="empty" hidden>No evacuation centers yet. New centers are added by the City Hall IT Administrator.</div>
   </main>
 </div>
-<script src="app.js?v=55"></script>
+<script src="app.js?v=56"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -110,7 +110,7 @@
   try { brgys = await BL.api('/barangays') || []; } catch (e) { brgys = []; }
   brgys.forEach((b) => { brgyNames[b.id] = b.name; });
   BL.renderSidebar(me, 'centers.html', brgyNames[me.barangay_id]);
-  const tbar = BL.timeBar(document.querySelector('.page-head'), { me, note: 'Counts below are live. They show who is inside each center right now, with the time each person arrived.' });
+  const tbar = BL.timeBar(document.querySelector('.page-head'), { me });
   if (city) {
     $('bFilter').hidden = false;
     $('bFilter').innerHTML = '<option value="">All barangays</option>' + brgys.map((b) => '<option value="' + b.id + '">' + BL.esc(b.name) + '</option>').join('');
@@ -158,7 +158,7 @@
       const note = p >= 0.95 ? 'Full or almost full. Direct new arrivals to another center.' : p >= 0.8 ? 'Almost full.' : (c.capacity - occ) + ' spaces left.';
       const la = lastArrival(c);
       const when = '<div style="font-size:15px;margin-top:4px;color:var(--muted)">' + (la ? 'Last arrival: <strong style="color:var(--navy)">' + BL.when(la) + '</strong> (' + BL.ago(la) + ')' : 'No one checked in.') + '</div>' +
-        (occ && !activeB.has(c.barangay_id) ? '<div class="stale-note">No evacuation is running for this barangay, but ' + occ + (occ === 1 ? ' person is' : ' people are') + ' still checked in here.</div>' : '');
+        (occ && !activeB.has(c.barangay_id) ? '<div class="stale-note">' + occ + ' still checked in, but no evacuation is running.</div>' : '');
       return '<article class="ccard">' +
         '<div><h2>' + BL.esc(c.name) + '</h2><div class="addr">' + BL.esc(c.address || 'No address') + (city ? ' &#183; ' + BL.esc(brgyNames[c.barangay_id] || 'Barangay #' + c.barangay_id) : '') + '</div></div>' +
         '<div><div class="occ"><span class="n">' + occ + '<small> / ' + c.capacity + '</small></span><strong class="tone-' + t + '">' + Math.round(p * 100) + '%</strong></div>' +

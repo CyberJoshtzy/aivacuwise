@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GPS Trackers · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=56">
+<link rel="stylesheet" href="app.css?v=57">
 <style>
 .tlayout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 16px; align-items: start; }
 .people { list-style: none; margin: 0; padding: 0; max-height: 620px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
@@ -57,7 +57,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=55"></script>
+<script src="app.js?v=56"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -65,7 +65,7 @@
   let brgyNames = {};
   try { (await BL.api('/barangays') || []).forEach((b) => { brgyNames[b.id] = b.name; }); } catch (e) {}
   BL.renderSidebar(me, 'trackers.html', brgyNames[me.barangay_id]);
-  const tbar = BL.timeBar(document.querySelector('.page-head'), { me, note: 'Each dot is the last place a tracker reported. Check the time next to each name: an old signal may no longer be where the person is.' });
+  const tbar = BL.timeBar(document.querySelector('.page-head'), { me });
 
   let list = [], people = {}, details = {}, selected = null;
   const FRESH_MIN = 15;

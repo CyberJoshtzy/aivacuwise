@@ -450,6 +450,14 @@ const BL = (() => {
     const d = parseT(iso);
     return dayWord(d) + ' at ' + time(d);
   }
+  function shortDay(d) {
+    const w = dayWord(d);
+    return w === 'today' ? 'Today' : w === 'yesterday' ? 'Yesterday' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function span(a, b) {
+    const x = parseT(a), y = parseT(b);
+    return shortDay(x) + ', ' + time(x) + ' to ' + (sameDay(x, y) ? '' : shortDay(y) + ', ') + time(y);
+  }
   function timeBar(anchor, opts = {}) {
     if (!anchor) return { refresh() {} };
     const box = document.createElement('section');
@@ -458,33 +466,25 @@ const BL = (() => {
     anchor.insertAdjacentElement('afterend', box);
     let incidents = [], names = {};
     const city = opts.me && opts.me.role === 'city_admin';
-    const histLink = '<a href="history.html">See past evacuations</a>';
+    const cal = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
     function draw() {
       const now = new Date();
       const active = incidents.filter((i) => i.active);
-      const past = incidents.filter((i) => !i.active && i.ended_at)
-        .sort((a, b) => parseT(b.ended_at) - parseT(a.ended_at));
-      const where = (i) => (city && names[i.barangay_id] ? ' in ' + esc(names[i.barangay_id]) : '');
-      let status;
+      const past = incidents.filter((i) => !i.active && i.ended_at).sort((a, b) => parseT(b.ended_at) - parseT(a.ended_at));
+      const brgy = (i) => (city && names[i.barangay_id] ? ' &middot; ' + esc(names[i.barangay_id]) : '');
+      let status, extra = '';
       if (active.length) {
-        const rows = active.slice(0, 3).map((i) => '<li><strong>' + esc(i.disaster_type) + '</strong>' + where(i) +
-          ', started ' + when(i.started_at) + ' (' + ago(i.started_at) + ')</li>').join('');
-        status = '<div class="tb-state on"><span class="tb-dot"></span>Evacuation in progress</div>' +
-          '<ul class="tb-list">' + rows + (active.length > 3 ? '<li>and ' + (active.length - 3) + ' more</li>' : '') + '</ul>';
-      } else if (past.length) {
-        const l = past[0];
-        status = '<div class="tb-state off">No evacuation is running right now</div>' +
-          '<div class="tb-last">Last evacuation: <strong>' + esc(l.disaster_type) + '</strong>' + where(l) +
-          ', ' + when(l.started_at) + ' to ' + when(l.ended_at) + '. ' + histLink + '</div>';
+        const i = active[0];
+        status = '<span class="tb-pill on"><span class="tb-dot"></span>Evacuation ongoing</span>' +
+          '<span class="tb-what"><strong>' + esc(i.disaster_type) + '</strong>' + brgy(i) + ' &middot; started ' + (sameDay(parseT(i.started_at), now) ? time(i.started_at) : shortDay(parseT(i.started_at)) + ', ' + time(i.started_at)) + ' (' + ago(i.started_at) + ')' +
+          (active.length > 1 ? ' &middot; +' + (active.length - 1) + ' more' : '') + '</span>';
       } else {
-        status = '<div class="tb-state off">No evacuation is running right now</div>' +
-          '<div class="tb-last">No evacuation has been recorded yet.</div>';
+        status = '<span class="tb-pill off">No evacuation right now</span>';
+        if (past.length) extra = '<span class="tb-what">Last: <strong>' + esc(past[0].disaster_type) + '</strong>' + brgy(past[0]) + ' &middot; ' + span(past[0].started_at, past[0].ended_at) + '</span>';
       }
       box.className = 'timebar' + (active.length ? ' is-on' : '');
-      box.innerHTML =
-        '<div class="tb-clock"><span class="tb-label">Showing the situation as of</span>' +
-        '<strong>' + longDate(now) + '</strong><span class="tb-time">' + time(now) + '</span></div>' +
-        '<div class="tb-status">' + status + (opts.note ? '<div class="tb-note">' + opts.note + '</div>' : '') + '</div>';
+      box.innerHTML = '<span class="tb-today">' + cal + '<span>Today, ' + now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' &middot; ' + time(now) + '</span></span>' +
+        status + extra + (incidents.length ? '<a class="tb-link" href="history.html">Past evacuations &rarr;</a>' : '');
     }
     async function refresh() {
       try { incidents = (await api('/incidents')) || []; } catch (e) { incidents = []; }
@@ -496,7 +496,7 @@ const BL = (() => {
     draw(); refresh();
     setInterval(draw, 30000);
     setInterval(refresh, 60000);
-    return { refresh, activeCount: () => incidents.filter((i) => i.active).length };
+    return { refresh };
   }
 
   return { openApp, showHotlines, nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle, timeBar, when, dayWord };

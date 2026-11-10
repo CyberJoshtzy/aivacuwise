@@ -221,21 +221,18 @@ table.data tr.selected td { background: #FFF8EE; }
 .cam-status.off { background: var(--red-bg); color: var(--red); }
 .cam-status.unknown { background: var(--line-soft); color: var(--muted); }
 
-/* Time bar: what day the page is showing and whether an evacuation is running */
-.timebar { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: flex-start; background: #fff; border: 1px solid var(--line, #E3E7EF); border-left: 6px solid #94A3B8; border-radius: 14px; padding: 16px 20px; margin: 0 0 20px; }
-.timebar.is-on { border-left-color: #F7941D; background: #FFF9F1; }
-.tb-clock { display: flex; flex-direction: column; gap: 2px; min-width: 250px; }
-.tb-label { font-size: 14px; font-weight: 600; color: var(--muted, #4A5368); }
-.tb-clock strong { font-size: 19px; color: var(--navy, #142C6E); }
-.tb-time { font-size: 17px; font-weight: 700; color: var(--navy, #142C6E); }
-.tb-status { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 6px; }
-.tb-state { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; }
-.tb-state.on { color: #B45309; }
-.tb-state.off { color: #334155; }
-.tb-dot { width: 12px; height: 12px; border-radius: 50%; background: #F7941D; box-shadow: 0 0 0 4px rgba(247,148,29,.25); }
-.tb-list { margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.5; }
-.tb-last, .tb-note { font-size: 16px; line-height: 1.5; color: #334155; }
-.tb-note { color: var(--muted, #4A5368); }
-.tb-last a, .tb-note a { color: var(--navy, #142C6E); font-weight: 700; text-decoration: underline; }
+/* Time bar: one slim line with today's date and the evacuation status */
+.timebar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; background: #fff; border: 1px solid var(--line, #E3E7EF); border-radius: 12px; padding: 10px 16px; margin: 0 0 20px; font-size: 16px; }
+.timebar.is-on { border-color: #F7C58A; background: #FFF9F1; }
+.tb-today { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--navy, #142C6E); padding-right: 18px; border-right: 1px solid var(--line, #E3E7EF); }
+.tb-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; font-weight: 800; font-size: 15px; }
+.tb-pill.off { background: #EEF1F6; color: #334155; }
+.tb-pill.on { background: #F7941D; color: #142C6E; }
+.tb-dot { width: 10px; height: 10px; border-radius: 50%; background: #142C6E; animation: tbpulse 1.6s ease-in-out infinite; }
+@keyframes tbpulse { 50% { opacity: .3; } }
+.tb-what { color: #334155; }
+.tb-what strong { color: var(--navy, #142C6E); }
+.tb-link { margin-left: auto; color: var(--navy, #142C6E); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.tb-link:hover { text-decoration: underline; }
 .since { display: block; font-size: 14px; color: var(--muted, #4A5368); font-weight: 500; margin-top: 2px; }
 .stale-note { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: #FFF7ED; color: #92400E; font-size: 15px; font-weight: 600; }
