@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Evacuation · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=54">
+<link rel="stylesheet" href="app.css?v=55">
 <style>
 .banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-radius: 14px; color: #FFFFFF; background: #4A5368; flex-wrap: wrap; }
 .banner.on { background: var(--red); }
@@ -133,7 +133,7 @@ body.tv .res { max-height: none; }
       <section class="panel">
         <div class="panel-head" style="flex-wrap:wrap">
           <div class="tabs" role="tablist" aria-label="Filter residents" id="tabs"></div>
-          <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><label for="q" class="sr-only">Search residents</label><input id="q" class="input" type="search" placeholder="Search name" style="width:240px;height:44px"></div>
+          <div class="search" style="width:260px"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><label for="q" class="sr-only">Search residents</label><input id="q" class="input" type="search" placeholder="Search name" style="height:44px"></div>
         </div>
         <ul class="res" id="res"></ul>
         <div id="resEmpty" class="empty" hidden></div>
