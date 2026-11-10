@@ -83,6 +83,20 @@ body { background: linear-gradient(180deg, #EEF2FA 0, #F4F6FA 320px); }
 /* logo-v3 */ .top img { height: 58px !important; } .brand b { font-size: 17px !important; }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
+<style>
+/* Readability update */
+.brand b { font-size: 18px !important; } .brand span { font-size: 16px !important; }
+.top button, .top .btn { min-height: 48px !important; padding: 0 20px !important; font-size: 17px !important; }
+.hero p { font-size: 18px !important; }
+.card h2 { font-size: 20px !important; }
+.kv dt { font-size: 14px !important; } .kv dd { font-size: 17px !important; }
+.member .meta, .member details summary, .famsum span, .note, .empty { font-size: 16px !important; }
+.member strong, .member b { font-size: 18px; }
+.tl li, .tl .t { font-size: 16px !important; }
+.tips li { font-size: 17px !important; line-height: 1.45; }
+.prof strong { font-size: 20px !important; } .prof span { font-size: 16px !important; }
+.chip { font-size: 15px !important; }
+</style>
 </head>
 <body>
 <header class="top"><div class="in">
@@ -99,15 +113,16 @@ body { background: linear-gradient(180deg, #EEF2FA 0, #F4F6FA 320px); }
       <section class="card"><h2><i>&#128339;</i>My evacuation history</h2><ul class="tl" id="hist"></ul></section>
     </div>
     <div style="display:flex;flex-direction:column;gap:18px">
-      <section class="card"><h2><i>&#128100;</i>My information</h2><div class="prof" id="prof"></div><dl class="kv" id="info"></dl>
-        <p class="note" style="margin-top:12px">Wrong details? Visit your barangay office to correct them. Residents cannot edit records online.</p></section>
-      <section class="card" id="trk" hidden><h2><i>&#128225;</i>My GPS tracker</h2><dl class="kv" id="trkInfo"></dl></section>
-      <section class="card"><h2><i>&#9888;</i>When evacuating</h2><ul class="tips" style="margin:0;padding-left:18px">
+      <section class="card"><h2><i>&#9888;</i>What to do when evacuating</h2><ul class="tips" style="margin:0;padding-left:18px">
         <li>Walk slowly past the entrance camera and face it so you are checked in automatically.</li>
         <li>Keep your GPS tracker on and with you at all times.</li>
         <li>Bring IDs, medicine, water, a flashlight and a charged phone.</li>
         <li>Do not leave the evacuation center without telling the barangay staff.</li>
         <li>For emergencies, press the Emergency Hotlines button.</li></ul></section>
+      <section class="card"><h2><i>&#128100;</i>My information</h2><div class="prof" id="prof"></div><dl class="kv" id="info"></dl>
+        <p class="note" style="margin-top:12px">Wrong details? Visit your barangay office to correct them. Residents cannot edit records online.</p></section>
+      <section class="card" id="trk" hidden><h2><i>&#128225;</i>My GPS tracker</h2><dl class="kv" id="trkInfo"></dl></section>
+
     </div>
   </div>
 </div>
@@ -150,7 +165,7 @@ body { background: linear-gradient(180deg, #EEF2FA 0, #F4F6FA 320px); }
           return '<div class="member"><div class="row"><div class="who"><span class="av2">' + esc((m.name || '?').charAt(0)) + '</span><div><span class="nm">' + esc(m.name) + '</span>' + (m.head ? ' <span class="chip">Head of family</span>' : '') +
             '<div class="meta">' + (m.age != null ? m.age + ' yrs' : '') + (m.sex ? ' &middot; ' + esc(m.sex) : '') + (m.accounted ? ' &middot; at ' + esc(m.center) + ' since ' + fmt(m.since) : '') + '</div></div>' +
             '</div><span class="chip ' + (m.accounted ? 'ok">Accounted' : 'no">Unaccounted') + '</span></div>' +
-            '<details><summary>Show logs</summary><ul class="tl" style="margin-top:10px">' + timeline(m.history) + '</ul></details></div>';
+            '<details><summary>Show history</summary><ul class="tl" style="margin-top:10px">' + timeline(m.history) + '</ul></details></div>';
         }).join('') || '<p class="empty">No other family members are registered with you.</p>');
       $('hist').innerHTML = timeline(d.history);
       var bd = p.birthdate ? new Date(p.birthdate + 'T00:00:00').toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '-';
