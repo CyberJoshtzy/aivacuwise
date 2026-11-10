@@ -199,10 +199,17 @@ def main():
             "Cannot open camera %s. Check the USB webcam cable, and close any other program "
             "using it (for example a browser tab)." % device
         )
-    print(
-        "Entrance camera: %s at %dx%d"
-        % (device, int(cam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-    )
+    ok, first = cam.read()  # report the size the webcam really sends, not the size asked for
+    if ok:
+        real_h, real_w = first.shape[:2]
+    else:
+        real_w, real_h = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print("Entrance camera: %s at %dx%d" % (device, real_w, real_h))
+    if cam_w and cam_h and (real_w, real_h) != (cam_w, cam_h):
+        print(
+            "Note: asked for %dx%d but the webcam sends %dx%d. Pick a size it offers: "
+            "v4l2-ctl -d %s --list-formats-ext | grep Size" % (cam_w, cam_h, real_w, real_h, device)
+        )
     stream = None
     port = getattr(config, "STREAM_PORT", 8081)
     if port:

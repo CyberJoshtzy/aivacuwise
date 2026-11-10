@@ -29,7 +29,7 @@ CHECKIN_COOLDOWN_SECONDS = 300
 ENROLLED_FACES_REFRESH_SECONDS = 60
 
 # Detection runs on a smaller copy of each frame for speed. 0.25 = quarter size (Pi).
-# With a 1280x720 picture, 0.25 means faces are searched in a 320x180 copy.
+# With a 1920x1080 picture, 0.25 means faces are searched in a 480x270 copy.
 # Raise to 0.35 or 0.5 to catch faces farther away (slower on the Pi).
 FRAME_SCALE = 0.25
 
@@ -41,11 +41,14 @@ SHOW_PREVIEW = True
 STREAM_PORT = 8081
 
 # ---- Picture quality ----
-# Size of the picture taken from the webcam. The UGREEN 2K webcam supports 1280x720 and
-# 1920x1080. Larger = sharper and recognizes faces from farther away, but uses more CPU.
+# Size of the picture taken from the webcam. Use a size the webcam really offers
+# (check on the Pi with: v4l2-ctl -d /dev/video0 --list-formats-ext | grep Size).
+# The UGREEN 2K webcam offers 640x480, 1600x896, 1920x1080, 2560x1440 and 2592x1520,
+# but NOT 1280x720 (it silently stays at 640x480 if asked for that).
+# Larger = sharper and recognizes faces from farther away, but uses more CPU.
 # Set both to 0 to use the webcam's default (640x480).
-CAMERA_WIDTH = 1280
-CAMERA_HEIGHT = 720
+CAMERA_WIDTH = 1920
+CAMERA_HEIGHT = 1080
 CAMERA_FPS = 30
 
 # Width of the live picture sent to TV Mode, and its JPEG quality (1 to 100).
