@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Resident List · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=56">
+<link rel="stylesheet" href="app.css?v=57">
 <style>
 .bpick { display: flex; flex-direction: column; gap: 12px; }
 .bpick .bsearch { max-width: 360px; }
@@ -98,7 +98,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
     </section>
   </main>
 </div>
-<script src="app.js?v=55"></script>
+<script src="app.js?v=56"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -116,7 +116,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
     (centers || []).forEach((c) => { centerNames[c.id] = c.name; });
   } catch (e) { /* names fall back to ids */ }
   BL.renderSidebar(me, 'evacuees.html', brgyNames[me.barangay_id]);
-  const tbar = BL.timeBar(document.querySelector('.page-head'), { me, note: 'The Status column shows where each resident is right now, and since when.' });
+  const tbar = BL.timeBar(document.querySelector('.page-head'), { me });
   let since = {};
   $('brgyCol').hidden = !city;
 
