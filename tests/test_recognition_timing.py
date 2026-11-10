@@ -62,5 +62,6 @@ def test_bad_action_is_rejected(client, staff_headers, evacuee, center):
 
 
 def test_needs_sign_in(client, center):
+    client.headers.pop("Authorization", None)  # the client fixture signs in by default
     resp = client.get("/recognition/timings.csv")
     assert resp.status_code == 401
