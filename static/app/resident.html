@@ -6,126 +6,151 @@
 <title>My Family · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=57">
+<link rel="icon" type="image/png" href="/static/favicon.png?v=2">
 <style>
-body { background: #F4F6FA; }
-.top { background: #FFFFFF; border-bottom: 1px solid #E3E8F2; }
-.top .in { max-width: 1080px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.top img { height: 40px; }
-.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 60px; display: flex; flex-direction: column; gap: 18px; }
-.hero { border-radius: 18px; padding: 24px; color: #FFFFFF; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
-.hero.safe { background: linear-gradient(135deg, #0F5132, #198754); }
-.hero.out { background: linear-gradient(135deg, #7A2E0E, #C2410C); }
-.hero.idle { background: linear-gradient(135deg, #0B1F4D, #13306E); }
-.hero h1 { color: #FFFFFF; font-size: 26px; font-weight: 800; margin: 0; }
-.hero p { margin: 4px 0 0; color: rgba(255,255,255,.88); }
-.hero .big { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.18); display: grid; place-items: center; font-size: 30px; flex-shrink: 0; }
-.alert { padding: 16px 18px; border-radius: 14px; background: #FFF7ED; border: 2px solid #F59E0B; }
-.alert strong { color: #B45309; }
-.cols { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
-.card { background: #FFFFFF; border: 1px solid #E3E8F2; border-radius: 16px; padding: 20px; }
-.card h2 { font-size: 18px; margin: 0 0 12px; color: var(--navy); }
-.kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; font-size: 15px; }
-.kv dt { color: var(--muted); font-weight: 600; }
-.kv dd { margin: 0; font-weight: 600; color: #1F2937; }
-.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 15px; font-weight: 700; background: #EEF2FF; color: var(--navy); margin: 0 4px 4px 0; }
-.chip.ok { background: #E8F7EE; color: #15803D; } .chip.no { background: #FDECEC; color: #B91C1C; }
-.member { border: 1px solid #E3E8F2; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-.member .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
-.member .nm { font-weight: 800; color: var(--navy); }
-.member .meta { font-size: 15px; color: var(--muted); }
-.member details summary { cursor: pointer; font-size: 15px; font-weight: 700; color: var(--navy); margin-top: 6px; }
+body { background: #F4F6FA; font-size: 17px; }
+.top { position: sticky; top: 0; z-index: 10; background: #FFFFFF; border-bottom: 1px solid #E3E8F2; }
+.top .in { max-width: 1040px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand img { height: 52px; }
+.brand b { display: block; font-size: 18px; color: var(--navy); }
+.brand span { font-size: 15px; color: var(--muted); }
+.me { display: flex; align-items: center; gap: 14px; font-size: 16px; font-weight: 700; color: var(--navy); }
+.me .btn { min-height: 46px; padding: 0 20px; font-size: 16px; }
+
+.wrap { max-width: 1040px; margin: 0 auto; padding: 24px 20px 70px; display: flex; flex-direction: column; gap: 20px; }
+
+/* Status banner */
+.banner { border-radius: 20px; padding: 26px 28px; color: #FFFFFF; display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+.banner.idle { background: #142C6E; }
+.banner.alert { background: #B45309; }
+.banner.safe { background: #15803D; }
+.banner .ico { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.16); display: grid; place-items: center; flex-shrink: 0; }
+.banner .ico svg { width: 32px; height: 32px; }
+.banner .txt { flex: 1; min-width: 260px; }
+.banner h1 { color: #FFFFFF; font-size: 28px; font-weight: 800; margin: 0; line-height: 1.2; }
+.banner p { margin: 6px 0 0; font-size: 18px; color: rgba(255,255,255,.92); line-height: 1.45; }
+.banner .go { margin-top: 12px; display: inline-block; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,.16); font-size: 18px; font-weight: 700; }
+.banner .today { font-size: 15px; font-weight: 700; color: rgba(255,255,255,.8); text-align: right; }
+.banner .today b { display: block; font-size: 22px; color: #FFFFFF; }
+
+.card { background: #FFFFFF; border: 1px solid #E3E8F2; border-radius: 18px; padding: 24px; }
+.card h2 { font-size: 21px; font-weight: 800; color: var(--navy); margin: 0; }
+.card .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.count { font-size: 17px; font-weight: 700; color: #334155; }
+.count b { color: var(--navy); font-size: 20px; }
+.meter { height: 10px; border-radius: 99px; background: #E9EDF5; overflow: hidden; margin: -4px 0 18px; }
+.meter span { display: block; height: 100%; background: #15803D; border-radius: 99px; }
+
+/* Family members */
+.person { border: 1px solid #E3E8F2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+.person:last-child { margin-bottom: 0; }
+.person.self { border-color: #C7D2EE; background: #F7F9FE; }
+.prow { display: flex; align-items: center; gap: 14px; padding: 16px 18px; width: 100%; background: none; border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.prow:hover { background: #F2F5FC; }
+.av { width: 48px; height: 48px; border-radius: 50%; background: #E6EBF7; color: var(--navy); display: grid; place-items: center; font-size: 17px; font-weight: 800; flex-shrink: 0; }
+.self .av { background: var(--navy); color: #FFFFFF; }
+.pinfo { flex: 1; min-width: 0; }
+.pname { font-size: 19px; font-weight: 800; color: var(--navy); }
+.tag { display: inline-block; margin-left: 6px; padding: 2px 10px; border-radius: 99px; font-size: 14px; font-weight: 700; background: #E6EBF7; color: var(--navy); vertical-align: 2px; }
+.tag.you { background: var(--navy); color: #FFFFFF; }
+.pmeta { font-size: 16px; color: var(--muted); margin-top: 2px; }
+.pstat { text-align: right; flex-shrink: 0; max-width: 46%; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 99px; font-size: 16px; font-weight: 800; }
+.pill i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.pill.safe { background: #E8F7EE; color: #15803D; }
+.pill.miss { background: #FDECEC; color: #B91C1C; }
+.pill.home { background: #EEF1F6; color: #475569; }
+.pwhen { font-size: 15px; color: var(--muted); margin-top: 4px; }
+.chev { width: 22px; height: 22px; color: #94A3B8; flex-shrink: 0; transition: transform .15s; }
+.person.open .chev { transform: rotate(90deg); }
+.hist { display: none; padding: 4px 18px 16px 80px; }
+.person.open .hist { display: block; }
+.hist h3 { font-size: 15px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 10px; }
 .tl { list-style: none; margin: 0; padding: 0; }
-.tl li { position: relative; padding: 0 0 14px 22px; font-size: 15px; }
-.tl li::before { content: ''; position: absolute; left: 4px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #198754; }
-.tl li.out::before { background: #C2410C; }
-.tl li::after { content: ''; position: absolute; left: 8px; top: 18px; bottom: 0; width: 2px; background: #E3E8F2; }
+.tl li { position: relative; padding: 0 0 14px 24px; font-size: 16px; }
+.tl li::before { content: ''; position: absolute; left: 3px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: #15803D; }
+.tl li.out::before { background: #B45309; }
+.tl li::after { content: ''; position: absolute; left: 8px; top: 20px; bottom: 0; width: 2px; background: #E3E8F2; }
+.tl li:last-child { padding-bottom: 0; }
 .tl li:last-child::after { display: none; }
 .tl .t { font-size: 15px; color: var(--muted); }
-.empty { color: var(--muted); font-size: 15px; }
-.note { font-size: 15px; color: var(--muted); }
-.tips li { margin-bottom: 6px; font-size: 15px; }
-@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .kv { grid-template-columns: 120px 1fr; } }
-@media print { .top button, #hotlinesHide { display: none; } }
-/* v2 layout */
-body { background: linear-gradient(180deg, #EEF2FA 0, #F4F6FA 320px); }
-.top { position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #E3E8F2; }
-.top img { height: 46px; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand b { font-size: 15px; color: var(--navy); display: block; }
-.brand span { font-size: 15px; color: var(--muted); }
-.wrap { max-width: 1120px; gap: 20px; }
-.hero { padding: 28px 30px; border-radius: 22px; box-shadow: 0 12px 30px rgba(11,31,77,.18); }
-.hero h1 { font-size: 28px; }
-.cols { gap: 20px; }
-.card { border-radius: 18px; padding: 22px 24px; box-shadow: 0 2px 10px rgba(11,31,77,.04); }
-.card h2 { display: flex; align-items: center; gap: 10px; font-size: 17px; margin-bottom: 14px; }
-.card h2 i { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: #EEF2FF; font-style: normal; font-size: 16px; }
-.prof { display: flex; gap: 14px; align-items: center; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #EEF1F6; }
-.prof .av { width: 56px; height: 56px; border-radius: 50%; background: var(--navy); color: #FFFFFF; display: grid; place-items: center; font-size: 20px; font-weight: 800; flex-shrink: 0; }
-.prof strong { font-size: 18px; color: var(--navy); display: block; }
-.prof span { font-size: 15px; color: var(--muted); }
-.kv { grid-template-columns: 1fr 1fr !important; gap: 14px 18px !important; }
-.kv > div { min-width: 0; }
-.kv dt { font-size: 15px !important; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
-.kv dd { font-size: 15px !important; word-break: break-word; }
+.none { font-size: 16px; color: var(--muted); }
+
+.cols { display: grid; grid-template-columns: 1.15fr .85fr; gap: 20px; align-items: start; }
+.side { display: flex; flex-direction: column; gap: 20px; }
+.kv { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; margin: 0; }
 .kv .full { grid-column: 1 / -1; }
-.member { border-radius: 14px !important; padding: 14px 16px !important; background: #FAFBFE; }
-.member .av2 { width: 40px; height: 40px; border-radius: 50%; background: #EEF2FF; color: var(--navy); display: grid; place-items: center; font-weight: 800; flex-shrink: 0; }
-.member .who { display: flex; gap: 12px; align-items: center; }
-.famsum { display: flex; gap: 10px; margin-bottom: 14px; }
-.famsum div { flex: 1; padding: 10px 12px; border-radius: 12px; background: #F6F8FD; text-align: center; }
-.famsum b { display: block; font-size: 22px; color: var(--navy); }
-.famsum span { font-size: 15px; color: var(--muted); }
-.tl li.empty::before, .tl li.empty::after { display: none; }
-.tips { list-style: none; padding: 0 !important; display: flex; flex-direction: column; gap: 8px; }
-.tips li { display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #F6F8FD; margin: 0 !important; font-size: 15px; }
-.tips li::before { content: '\2713'; color: #15803D; font-weight: 800; }
-/* logo-v3 */ .top img { height: 58px !important; } .brand b { font-size: 17px !important; }
-</style>
-  <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
-<style>
-/* Readability update */
-.brand b { font-size: 18px !important; } .brand span { font-size: 16px !important; }
-.top button, .top .btn { min-height: 48px !important; padding: 0 20px !important; font-size: 17px !important; }
-.hero p { font-size: 18px !important; }
-.card h2 { font-size: 20px !important; }
-.kv dt { font-size: 14px !important; } .kv dd { font-size: 17px !important; }
-.member .meta, .member details summary, .famsum span, .note, .empty { font-size: 16px !important; }
-.member strong, .member b { font-size: 18px; }
-.tl li, .tl .t { font-size: 16px !important; }
-.tips li { font-size: 17px !important; line-height: 1.45; }
-.prof strong { font-size: 20px !important; } .prof span { font-size: 16px !important; }
-.chip { font-size: 15px !important; }
+.kv dt { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+.kv dd { margin: 0; font-size: 18px; font-weight: 600; color: #1F2937; word-break: break-word; }
+.chip { display: inline-block; padding: 3px 12px; border-radius: 99px; font-size: 15px; font-weight: 700; background: #E6EBF7; color: var(--navy); margin: 0 4px 4px 0; }
+.chip.ok { background: #E8F7EE; color: #15803D; }
+.chip.no { background: #FDECEC; color: #B91C1C; }
+.fix { margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; background: #F6F8FD; font-size: 15px; color: #475569; }
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; display: flex; flex-direction: column; gap: 12px; }
+.steps li { counter-increment: s; display: flex; gap: 12px; font-size: 17px; line-height: 1.45; color: #1F2937; }
+.steps li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; background: #FFF4E5; color: #B45309; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; font-size: 15px; }
+@media (max-width: 860px) {
+  .cols { grid-template-columns: 1fr; }
+  .prow { flex-wrap: wrap; position: relative; padding-right: 44px; }
+  .chev { position: absolute; right: 14px; top: 28px; }
+  .pstat { max-width: none; text-align: left; width: 100%; padding-left: 62px; }
+  #who { display: none; }
+  .brand img { height: 44px; }
+  .banner { padding: 22px; }
+  .banner h1 { font-size: 24px; }
+  .hist { padding-left: 20px; }
+  .banner .today { text-align: left; }
+}
+@media print { .me .btn, .chev { display: none; } .hist { display: block; } }
 </style>
 </head>
 <body>
 <header class="top"><div class="in">
   <div class="brand"><img src="/static/logo.png?v=2" alt="Ai-Vacuwise"><div><b>Ai-Vacuwise</b><span>Resident portal</span></div></div>
-  <div style="display:flex;gap:10px;align-items:center"><span class="note" id="who"></span><button type="button" class="btn btn-ghost" id="out">Sign Out</button></div>
+  <div class="me"><span id="who"></span><button type="button" class="btn btn-ghost" id="out">Sign Out</button></div>
 </div></header>
-<div class="wrap">
-  <div id="loadError" class="form-error" role="alert" hidden></div>
-  <section class="hero idle" id="hero"><div class="big" id="heroIco">&#8987;</div><div><h1 id="heroTitle">Loading...</h1><p id="heroSub"></p></div></section>
-  <div class="alert" id="evac" hidden></div>
-  <div class="cols">
-    <div style="display:flex;flex-direction:column;gap:18px">
-      <section class="card"><h2><i>&#128106;</i>My family</h2><div id="family"></div></section>
-      <section class="card"><h2><i>&#128339;</i>My evacuation history</h2><ul class="tl" id="hist"></ul></section>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:18px">
-      <section class="card"><h2><i>&#9888;</i>What to do when evacuating</h2><ul class="tips" style="margin:0;padding-left:18px">
-        <li>Walk slowly past the entrance camera and face it so you are checked in automatically.</li>
-        <li>Keep your GPS tracker on and with you at all times.</li>
-        <li>Bring IDs, medicine, water, a flashlight and a charged phone.</li>
-        <li>Do not leave the evacuation center without telling the barangay staff.</li>
-        <li>For emergencies, press the Emergency Hotlines button.</li></ul></section>
-      <section class="card"><h2><i>&#128100;</i>My information</h2><div class="prof" id="prof"></div><dl class="kv" id="info"></dl>
-        <p class="note" style="margin-top:12px">Wrong details? Visit your barangay office to correct them. Residents cannot edit records online.</p></section>
-      <section class="card" id="trk" hidden><h2><i>&#128225;</i>My GPS tracker</h2><dl class="kv" id="trkInfo"></dl></section>
 
+<main class="wrap">
+  <div id="loadError" class="form-error" role="alert" hidden></div>
+
+  <section class="banner idle" id="banner" aria-live="polite">
+    <div class="ico" id="bIco"></div>
+    <div class="txt"><h1 id="bTitle">Loading your records...</h1><p id="bText"></p><div class="go" id="bGo" hidden></div></div>
+    <div class="today" id="today"></div>
+  </section>
+
+  <section class="card">
+    <div class="head"><h2>My family</h2><span class="count" id="count"></span></div>
+    <div class="meter" id="meterWrap" hidden><span id="meter"></span></div>
+    <div id="family"></div>
+  </section>
+
+  <div class="cols">
+    <section class="card">
+      <div class="head"><h2>My information</h2></div>
+      <dl class="kv" id="info"></dl>
+      <p class="fix">Wrong details? Visit your barangay office to correct them. Residents cannot change records online.</p>
+    </section>
+    <div class="side">
+      <section class="card" id="trk" hidden>
+        <div class="head"><h2>My GPS tracker</h2></div>
+        <dl class="kv" id="trkInfo"></dl>
+      </section>
+      <section class="card">
+        <div class="head"><h2>When you evacuate</h2></div>
+        <ol class="steps">
+          <li>Bring IDs, medicine, water, a flashlight and a charged phone.</li>
+          <li>Go to the evacuation center your barangay names.</li>
+          <li>Walk slowly past the entrance camera and face it. You are checked in automatically.</li>
+          <li>Keep your GPS tracker on you, if you have one.</li>
+          <li>Tell the barangay staff before you leave the center.</li>
+        </ol>
+      </section>
     </div>
   </div>
-</div>
+</main>
+
 <script src="app.js?v=56"></script>
 <script>
 (function () {
@@ -137,12 +162,55 @@ body { background: linear-gradient(180deg, #EEF2FA 0, #F4F6FA 320px); }
   if (!tok) { location.href = 'resident-signin.html'; return; }
   function signOut() { try { sessionStorage.removeItem('bl_resident'); } catch (x) {} window.name = ''; location.href = 'index.html'; }
   $('out').addEventListener('click', signOut);
+
+  var ICON = {
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>'
+  };
+  var chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   var parse = function (t) { return t ? new Date(/Z|[+-]\d\d:?\d\d$/.test(t) ? t : t + 'Z') : null; };
-  var fmt = function (t) { var d = parse(t); return d ? d.toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '-'; };
-  function timeline(list) {
-    return list.length ? list.map(function (h) { return '<li class="' + (h.event === 'Checked out' ? 'out' : '') + '"><strong>' + esc(h.event) + '</strong> &middot; ' + esc(h.center || '-') + '<div class="t">' + fmt(h.time) + '</div></li>'; }).join('')
-      : '<li class="empty" style="padding-left:0;color:var(--muted)">No check-ins yet.</li>';
+  function when(t) {
+    var d = parse(t); if (!d) return '-';
+    var now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+    var tm = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    if (d.toDateString() === now.toDateString()) return 'today, ' + tm;
+    if (d.toDateString() === y.toDateString()) return 'yesterday, ' + tm;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' + tm;
   }
+  var initials = function (n) { return String(n || '?').split(' ').filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); };
+  var open = {};
+
+  function timeline(list) {
+    if (!list || !list.length) return '<p class="none">No check-ins yet.</p>';
+    return '<ul class="tl">' + list.map(function (h) {
+      return '<li class="' + (h.event === 'Checked out' ? 'out' : '') + '"><strong>' + esc(h.event) + '</strong> &middot; ' + esc(h.center || '-') + '<div class="t">' + esc(when(h.time)) + '</div></li>';
+    }).join('') + '</ul>';
+  }
+  function statusHTML(m, evac) {
+    if (m.accounted) return '<span class="pill safe"><i></i>Safe at ' + esc(m.center) + '</span><div class="pwhen">since ' + esc(when(m.since)) + '</div>';
+    if (evac) return '<span class="pill miss"><i></i>Not checked in yet</span>';
+    return '<span class="pill home"><i></i>Not at an evacuation center</span>';
+  }
+  function personHTML(m, key, self, evac) {
+    var meta = [m.age != null ? m.age + ' yrs' : null, m.sex || null].filter(Boolean).join(' &middot; ');
+    return '<div class="person' + (self ? ' self' : '') + (open[key] ? ' open' : '') + '" data-k="' + key + '">' +
+      '<button type="button" class="prow" aria-expanded="' + (!!open[key]) + '">' +
+      '<span class="av">' + esc(initials(m.name)) + '</span>' +
+      '<span class="pinfo"><span class="pname">' + esc(m.name) + '</span>' + (self ? '<span class="tag you">You</span>' : '') + (m.head ? '<span class="tag">Head of family</span>' : '') +
+      '<div class="pmeta">' + (meta || '&nbsp;') + '</div></span>' +
+      '<span class="pstat">' + statusHTML(m, evac) + '</span>' + chev + '</button>' +
+      '<div class="hist"><h3>Check-in history</h3>' + timeline(m.history) + '</div></div>';
+  }
+
+  $('family').addEventListener('click', function (e) {
+    var b = e.target.closest('.prow'); if (!b) return;
+    var p = b.parentNode, k = p.dataset.k;
+    open[k] = !open[k];
+    p.classList.toggle('open', open[k]);
+    b.setAttribute('aria-expanded', String(open[k]));
+  });
+
   async function load() {
     try {
       var r = await fetch('/resident/me', { headers: { Authorization: 'Resident ' + tok } });
@@ -150,35 +218,54 @@ body { background: linear-gradient(180deg, #EEF2FA 0, #F4F6FA 320px); }
       var d = await r.json();
       if (!r.ok) throw new Error(d.detail || 'Could not load your records.');
       $('loadError').hidden = true;
-      var p = d.profile, s = d.status;
+      var p = d.profile, s = d.status, ev = d.evacuation;
+      var first = p.full_name.split(' ')[0];
       $('who').textContent = p.full_name;
-      var h = $('hero');
-      if (s.accounted) { h.className = 'hero safe'; $('heroIco').innerHTML = '&#10003;'; $('heroTitle').textContent = 'You are checked in and accounted for'; $('heroSub').textContent = s.center + (s.center_address ? ', ' + s.center_address : '') + ' since ' + fmt(s.since); }
-      else if (d.evacuation) { h.className = 'hero out'; $('heroIco').innerHTML = '!'; $('heroTitle').textContent = 'You are not yet checked in'; $('heroSub').textContent = 'Go to the evacuation center and pass the entrance camera.'; }
-      else { h.className = 'hero idle'; $('heroIco').innerHTML = '&#8962;'; $('heroTitle').textContent = 'Hello, ' + p.full_name.split(' ')[0] + '!'; $('heroSub').textContent = 'There is no active evacuation in your barangay right now.'; }
-      var ev = d.evacuation;
-      $('evac').hidden = !ev;
-      if (ev) $('evac').innerHTML = '<strong>Evacuation in progress: ' + esc(ev.disaster_type) + '</strong><br>Started ' + fmt(ev.started_at) + (ev.center ? '. Go to <strong>' + esc(ev.center) + '</strong>' + (ev.center_address ? ', ' + esc(ev.center_address) : '') + '.' : '.');
-      var safe = d.family.filter(function (m) { return m.accounted; }).length;
-      $('family').innerHTML = (d.family.length ? '<div class="famsum"><div><b>' + d.family.length + '</b><span>Family members</span></div><div><b style="color:#15803D">' + safe + '</b><span>Accounted</span></div><div><b style="color:#B91C1C">' + (d.family.length - safe) + '</b><span>Unaccounted</span></div></div>' : '') +
-        (d.family.map(function (m) {
-          return '<div class="member"><div class="row"><div class="who"><span class="av2">' + esc((m.name || '?').charAt(0)) + '</span><div><span class="nm">' + esc(m.name) + '</span>' + (m.head ? ' <span class="chip">Head of family</span>' : '') +
-            '<div class="meta">' + (m.age != null ? m.age + ' yrs' : '') + (m.sex ? ' &middot; ' + esc(m.sex) : '') + (m.accounted ? ' &middot; at ' + esc(m.center) + ' since ' + fmt(m.since) : '') + '</div></div>' +
-            '</div><span class="chip ' + (m.accounted ? 'ok">Accounted' : 'no">Unaccounted') + '</span></div>' +
-            '<details><summary>Show history</summary><ul class="tl" style="margin-top:10px">' + timeline(m.history) + '</ul></details></div>';
-        }).join('') || '<p class="empty">No other family members are registered with you.</p>');
-      $('hist').innerHTML = timeline(d.history);
-      var bd = p.birthdate ? new Date(p.birthdate + 'T00:00:00').toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '-';
-      var rows = [['Full name', esc(p.full_name)], ['Birthday', bd + (p.age != null ? ' (' + p.age + ' yrs)' : '')], ['Sex', esc(p.sex || '-')], ['Civil status', esc(p.civil_status || '-')],
-        ['Barangay', esc(p.barangay || '-')], ['Address', esc(p.address || '-')], ['Mobile number', esc(p.contact_number || '-')],
-        ['Family role', p.head_of_family ? 'Head of family' : 'Member'],
-        ['Special needs', p.special_needs.length ? p.special_needs.map(function (x) { return '<span class="chip">' + esc(x) + '</span>'; }).join('') : 'None'],
-        ['Face ID', p.face_registered ? '<span class="chip ok">Registered</span>' : '<span class="chip no">Not registered</span>']];
-      var ini = p.full_name.split(' ').filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
-      $('prof').innerHTML = '<span class="av">' + esc(ini) + '</span><div><strong>' + esc(p.full_name) + '</strong><span>' + esc(p.barangay || '') + ' &middot; ' + (p.head_of_family ? 'Head of family' : 'Family member') + '</span></div>';
-      $('info').innerHTML = rows.filter(function (r) { return ['Full name', 'Barangay', 'Family role'].indexOf(r[0]) === -1; }).map(function (r) { return '<div' + (r[0] === 'Address' || r[0] === 'Special needs' ? ' class="full"' : '') + '><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>'; }).join('');
+
+      var me = { name: p.full_name, age: p.age, sex: p.sex, head: p.head_of_family, accounted: s.accounted, center: s.center, since: s.since, history: d.history };
+      var all = [me].concat(d.family || []);
+      var safe = all.filter(function (m) { return m.accounted; }).length;
+
+      // Banner: the one thing a resident needs to know first.
+      var now = new Date();
+      $('today').innerHTML = 'Today<b>' + now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + '</b>' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      var b = $('banner'), go = $('bGo');
+      go.hidden = true;
+      if (ev && !s.accounted) {
+        b.className = 'banner alert'; $('bIco').innerHTML = ICON.alert;
+        $('bTitle').textContent = 'Evacuation ongoing: ' + ev.disaster_type;
+        $('bText').textContent = 'Started ' + when(ev.started_at) + '. You are not checked in yet.';
+        if (ev.center) { go.hidden = false; go.textContent = 'Go to ' + ev.center + (ev.center_address ? ', ' + ev.center_address : ''); }
+      } else if (s.accounted) {
+        b.className = 'banner safe'; $('bIco').innerHTML = ICON.check;
+        $('bTitle').textContent = 'You are safe at ' + s.center;
+        $('bText').textContent = 'Checked in ' + when(s.since) + (all.length > 1 ? '. ' + safe + ' of ' + all.length + ' in your family are safe.' : '.');
+      } else {
+        b.className = 'banner idle'; $('bIco').innerHTML = ICON.home;
+        $('bTitle').textContent = 'Hello, ' + first + '!';
+        $('bText').textContent = 'There is no evacuation in ' + (p.barangay || 'your barangay') + ' right now.';
+      }
+
+      // Family: everyone, you first.
+      $('count').innerHTML = ev || safe ? '<b>' + safe + '</b> of ' + all.length + ' safe at a center' : all.length + (all.length === 1 ? ' person' : ' people');
+      $('meterWrap').hidden = !(ev || safe);
+      $('meter').style.width = Math.round(safe / all.length * 100) + '%';
+      $('family').innerHTML = all.map(function (m, i) { return personHTML(m, i === 0 ? 'me' : 'm' + i, i === 0, !!ev); }).join('');
+
+      // My information
+      var bd = p.birthdate ? new Date(p.birthdate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '-';
+      var rows = [
+        ['Barangay', esc(p.barangay || '-')], ['Family role', p.head_of_family ? 'Head of family' : 'Family member'],
+        ['Birthday', esc(bd)], ['Sex', esc(p.sex || '-')],
+        ['Civil status', esc(p.civil_status || '-')], ['Mobile number', esc(p.contact_number || '-')],
+        ['Address', esc(p.address || '-'), 1],
+        ['Special needs', (p.special_needs || []).length ? p.special_needs.map(function (x) { return '<span class="chip">' + esc(x) + '</span>'; }).join('') : 'None'],
+        ['Face ID', p.face_registered ? '<span class="chip ok">Registered</span>' : '<span class="chip no">Not registered yet</span>']
+      ];
+      $('info').innerHTML = rows.map(function (r) { return '<div' + (r[2] ? ' class="full"' : '') + '><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>'; }).join('');
+
       $('trk').hidden = !d.tracker;
-      if (d.tracker) $('trkInfo').innerHTML = '<dt>Tracker ID</dt><dd>' + esc(d.tracker.device_id) + '</dd><dt>Battery</dt><dd>' + (d.tracker.battery != null ? d.tracker.battery + '%' : '-') + '</dd><dt>Last signal</dt><dd>' + fmt(d.tracker.last_signal) + '</dd>';
+      if (d.tracker) $('trkInfo').innerHTML = '<div><dt>Tracker ID</dt><dd>' + esc(d.tracker.device_id) + '</dd></div><div><dt>Battery</dt><dd>' + (d.tracker.battery != null ? d.tracker.battery + '%' : '-') + '</dd></div><div class="full"><dt>Last signal</dt><dd>' + esc(when(d.tracker.last_signal)) + '</dd></div>';
     } catch (e) { $('loadError').textContent = e.message; $('loadError').hidden = false; }
   }
   load();
