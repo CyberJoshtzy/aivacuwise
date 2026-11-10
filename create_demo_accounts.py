@@ -1,6 +1,6 @@
 """Creates demo accounts for testing and the thesis defense.
 City Hall:  admin@bilislikas.local / BilisAdmin2026  (System Administrator, active)
-Resident:   Last name Demo, birthday January 15 1990, mobile 09170000001
+Resident:   Juan Demo, mobile 09170000001
             (with two family members so the family section has data)
 Safe to run again: existing demo records are updated, not duplicated."""
 

@@ -1,7 +1,7 @@
 """Ai-Vacuwise: resident / evacuee portal (read-only, own family only).
 
 Residents do not sign up. They were pre-registered by their barangay, so they sign in with
-  last name + birthday + mobile number given at pre-registration
+  first name + last name + mobile number given at pre-registration
 (a child without a mobile number can use the head of family's number).
 
 - POST /resident/login   returns a resident token (12 hours), separate from staff tokens
@@ -36,7 +36,7 @@ class ResidentLogin(BaseModel):
     first_name: str = ""
     middle_name: str = ""
     last_name: str
-    birthdate: str  # YYYY-MM-DD
+    birthdate: str = ""  # optional, YYYY-MM-DD; the sign-in page no longer asks for it
     mobile_number: str
 
 
@@ -97,10 +97,12 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
     first = " ".join((p.first_name or "").split()).lower()
     middle = " ".join((p.middle_name or "").split()).lower()
     mobile = _digits(p.mobile_number)
-    try:
-        bday = datetime.strptime(p.birthdate.strip(), "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=422, detail="Choose your complete birthday.")  # noqa: B904
+    bday = None
+    if (p.birthdate or "").strip():
+        try:
+            bday = datetime.strptime(p.birthdate.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Choose your complete birthday.")  # noqa: B904
     if not first or not last or not re.fullmatch(r"09\d{9}", mobile):
         raise HTTPException(
             status_code=422,
@@ -108,8 +110,8 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
         )
     E = models.Evacuee
     match = None
-    for e in db.query(E).filter(E.birthdate.isnot(None)).all():
-        if e.birthdate.date() != bday:
+    for e in db.query(E).order_by(E.id).all():
+        if bday is not None and (e.birthdate is None or e.birthdate.date() != bday):
             continue
         words = (e.full_name or "").lower().split()
         if not words or " ".join(words[-len(last.split()) :]) != last:
@@ -135,7 +137,7 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
         _fails[ip].append(now)
         raise HTTPException(
             status_code=401,
-            detail="No pre-registered resident matches these details. Check your name, birthday and mobile number, or ask your barangay office.",
+            detail="No pre-registered resident matches these details. Check your name and mobile number, or ask your barangay office.",
         )
     _fails.pop(ip, None)
     return {
