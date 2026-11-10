@@ -146,13 +146,13 @@
           <button type="button" class="role-card brgy" data-role="brgy">
             <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M10 21v-6h4v6"/></svg></span>
             <span class="txt"><strong>I am a Barangay Official</strong>
-            <span class="d">Captain, kagawad, secretary or BDRRMC staff of one barangay</span></span>
+            <span class="d">Barangay captain, kagawad, secretary or disaster response staff</span></span>
             <span class="go">Continue &rarr;</span>
           </button>
           <button type="button" class="role-card city" data-role="city">
             <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M4 21V9h16v12"/><path d="M2 9l10-6 10 6"/><path d="M8 13v4M12 13v4M16 13v4"/></svg></span>
             <span class="txt"><strong>I work at City Hall</strong>
-            <span class="d">Mayor's office, CDRRMO, CSWDO, CHO or MIS, watching all barangays</span></span>
+            <span class="d">Staff of the Mayor's office, disaster office, social welfare, health office or IT office</span></span>
             <span class="go">Continue &rarr;</span>
           </button>
           <button type="button" class="role-card res" data-role="res">
@@ -243,9 +243,9 @@
 (function () {
   var pick = document.getElementById('rolePick'), next = document.getElementById('roleNext');
   var R = {
-    brgy: { title: 'Barangay Official', sub: 'Captain, kagawad, secretary or BDRRMC staff', inn: 'signin.html', up: 'register.html', upSub: 'Register my barangay' },
-    res: { title: 'Resident / Evacuee', sub: 'Pre-registered by your barangay', inn: 'resident-signin.html', up: '', upSub: '' },
-    city: { title: 'City Hall Administrator', sub: 'Mayor, CDRRMO, CSWDO, CHO or MIS personnel', inn: 'admin-signin.html', up: 'admin-register.html', upSub: 'Request City Hall access' }
+    brgy: { title: 'Barangay Official', sub: 'Barangay captain, kagawad, secretary or disaster response staff', inn: 'signin.html', up: 'register.html', upSub: 'Register my barangay' },
+    res: { title: 'Resident', sub: 'Pre-registered by your barangay', inn: 'resident-signin.html', up: '', upSub: '' },
+    city: { title: 'City Hall Staff', sub: 'Mayor\'s office, disaster office, social welfare, health office or IT office', inn: 'admin-signin.html', up: 'admin-register.html', upSub: 'Request City Hall access' }
   };
   pick.querySelectorAll('.role-card').forEach(function (c) {
     c.addEventListener('click', function () {
