@@ -21,7 +21,7 @@ html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
 .hd .big .k { font-size: 20px; font-weight: 700; color: #C3CCE4; }
 .hd .big .v { font-size: 58px; font-weight: 800; line-height: 1; }
 .hd .big .v small { font-size: 30px; color: #C3CCE4; }
-.hd .clock { padding-left: 28px; border-left: 2px solid rgba(255,255,255,.2); text-align: right; }
+.hd .clock { text-align: right; }
 .hd .clock .v { color: #F7941D; }
 .body { flex: 1; display: flex; gap: 24px; padding: 24px 40px 20px; min-height: 0; }
 .cam { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -62,7 +62,6 @@ html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
       <h1 id="cName">Evacuation center</h1>
       <span class="state off" id="state"><i></i><span id="stateTxt">No evacuation running</span></span>
     </div>
-    <div class="big"><div class="k">Accounted</div><div class="v" id="acc">0 <small>/ 0</small></div></div>
     <div class="big clock"><div class="k" id="date"></div><div class="v" id="clock"></div></div>
   </div>
   <div class="body">
@@ -114,7 +113,6 @@ html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
       const on = d.incident && d.incident.active;
       $('state').className = 'state' + (on ? '' : ' off');
       $('stateTxt').textContent = on ? 'EVACUATION ACTIVE · ' + String(d.incident.disaster_type || '').toUpperCase() : 'No evacuation running';
-      $('acc').innerHTML = d.safe_total + ' <small>/ ' + d.expected_total + '</small>';
     } catch (e) { /* keep showing the last data; the next refresh tries again */ }
   }
 
