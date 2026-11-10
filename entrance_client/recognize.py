@@ -142,9 +142,11 @@ class Stream:
             return
         self.last = now
         h, w = frame.shape[:2]
-        if w > 960:
-            frame = cv2.resize(frame, (960, int(h * 960 / w)))
-        ok, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        sw = int(getattr(config, "STREAM_WIDTH", 960))
+        if w > sw:
+            frame = cv2.resize(frame, (sw, int(h * sw / w)))
+        q = int(getattr(config, "STREAM_QUALITY", 80))
+        ok, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), q])
         if ok:
             with self.cond:
                 self.jpeg = buf.tobytes()
@@ -183,12 +185,24 @@ def main():
     device = find_camera(config.CAMERA_INDEX)
     cam = cv2.VideoCapture(device, cv2.CAP_V4L2)
     cam.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # always use the newest frame (avoids the multi-second lag)
+    # Picture size from the webcam. MJPG lets USB webcams send large pictures at full speed.
+    cam_w = int(getattr(config, "CAMERA_WIDTH", 0) or 0)
+    cam_h = int(getattr(config, "CAMERA_HEIGHT", 0) or 0)
+    if cam_w and cam_h:
+        cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+        cam.set(cv2.CAP_PROP_FRAME_WIDTH, cam_w)
+        cam.set(cv2.CAP_PROP_FRAME_HEIGHT, cam_h)
+    if getattr(config, "CAMERA_FPS", 0):
+        cam.set(cv2.CAP_PROP_FPS, int(config.CAMERA_FPS))
     if not cam.isOpened():
         sys.exit(
             "Cannot open camera %s. Check the USB webcam cable, and close any other program "
             "using it (for example a browser tab)." % device
         )
-    print("Entrance camera: %s" % device)
+    print(
+        "Entrance camera: %s at %dx%d"
+        % (device, int(cam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    )
     stream = None
     port = getattr(config, "STREAM_PORT", 8081)
     if port:
