@@ -42,36 +42,33 @@ body { background: #F4F6FA; font-size: 17px; }
 .meter { height: 10px; border-radius: 99px; background: #E9EDF5; overflow: hidden; margin: -4px 0 18px; }
 .meter span { display: block; height: 100%; background: #15803D; border-radius: 99px; }
 
-/* Family members */
-.person { border: 1px solid #E3E8F2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
-.person:last-child { margin-bottom: 0; }
-.person.self { border-color: #C7D2EE; background: #F7F9FE; }
-.prow { display: flex; align-items: center; gap: 14px; padding: 16px 18px; width: 100%; background: none; border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
-.prow:hover { background: #F2F5FC; }
-.av { width: 48px; height: 48px; border-radius: 50%; background: #E6EBF7; color: var(--navy); display: grid; place-items: center; font-size: 17px; font-weight: 800; flex-shrink: 0; }
-.self .av { background: var(--navy); color: #FFFFFF; }
-.pinfo { flex: 1; min-width: 0; }
-.pname { font-size: 19px; font-weight: 800; color: var(--navy); }
-.tag { display: inline-block; margin-left: 6px; padding: 2px 10px; border-radius: 99px; font-size: 14px; font-weight: 700; background: #E6EBF7; color: var(--navy); vertical-align: 2px; }
+/* Family members: one card per person */
+.fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+.fcard { display: flex; flex-direction: column; border: 1px solid #E3E8F2; border-radius: 16px; overflow: hidden; background: #FFFFFF; text-align: center; cursor: pointer; font: inherit; color: inherit; padding: 0; transition: box-shadow .15s, transform .15s; }
+.fcard:hover, .fcard:focus-visible { box-shadow: 0 8px 22px rgba(20,44,110,.14); transform: translateY(-2px); outline: none; }
+.fcard.self { border: 2px solid var(--navy); }
+.ftop { padding: 22px 16px 16px; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.fav { width: 84px; height: 84px; border-radius: 50%; background: #E6EBF7; color: var(--navy); display: grid; place-items: center; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.self .fav { background: var(--navy); color: #FFFFFF; }
+.fname { font-size: 19px; font-weight: 800; color: var(--navy); line-height: 1.25; }
+.fmeta { font-size: 16px; color: var(--muted); }
+.ftags { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; min-height: 26px; margin-top: 4px; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 14px; font-weight: 700; background: #E6EBF7; color: var(--navy); }
 .tag.you { background: var(--navy); color: #FFFFFF; }
-.pmeta { font-size: 16px; color: var(--muted); margin-top: 2px; }
-.pstat { text-align: right; flex-shrink: 0; max-width: 46%; }
-.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 99px; font-size: 16px; font-weight: 800; }
-.pill i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
-.pill.safe { background: #E8F7EE; color: #15803D; }
-.pill.miss { background: #FDECEC; color: #B91C1C; }
-.pill.home { background: #EEF1F6; color: #475569; }
-.pwhen { font-size: 15px; color: var(--muted); margin-top: 4px; }
-.chev { width: 22px; height: 22px; color: #94A3B8; flex-shrink: 0; transition: transform .15s; }
-.person.open .chev { transform: rotate(90deg); }
-.hist { display: none; padding: 4px 18px 16px 80px; }
-.person.open .hist { display: block; }
-.hist h3 { font-size: 15px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 10px; }
+.fstat { padding: 12px 14px 14px; font-size: 15px; line-height: 1.35; min-height: 96px; display: flex; flex-direction: column; justify-content: center; }
+.fstat b { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.fstat svg { width: 18px; height: 18px; }
+.fstat.safe { background: #15803D; color: #FFFFFF; }
+.fstat.miss { background: #B91C1C; color: #FFFFFF; }
+.fstat.home { background: #EEF1F6; color: #475569; }
+.fstat .where { font-weight: 700; margin-top: 2px; }
+.fstat .fsince { opacity: .92; }
+.fhint { margin-top: 14px; font-size: 15px; color: var(--muted); text-align: center; }
 .tl { list-style: none; margin: 0; padding: 0; }
-.tl li { position: relative; padding: 0 0 14px 24px; font-size: 16px; }
-.tl li::before { content: ''; position: absolute; left: 3px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: #15803D; }
+.tl li { position: relative; padding: 0 0 16px 26px; font-size: 17px; }
+.tl li::before { content: ''; position: absolute; left: 3px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: #15803D; }
 .tl li.out::before { background: #B45309; }
-.tl li::after { content: ''; position: absolute; left: 8px; top: 20px; bottom: 0; width: 2px; background: #E3E8F2; }
+.tl li::after { content: ''; position: absolute; left: 8px; top: 21px; bottom: 0; width: 2px; background: #E3E8F2; }
 .tl li:last-child { padding-bottom: 0; }
 .tl li:last-child::after { display: none; }
 .tl .t { font-size: 15px; color: var(--muted); }
@@ -92,17 +89,15 @@ body { background: #F4F6FA; font-size: 17px; }
 .steps li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; background: #FFF4E5; color: #B45309; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; font-size: 15px; }
 @media (max-width: 860px) {
   .cols { grid-template-columns: 1fr; }
-  .prow { flex-wrap: wrap; position: relative; padding-right: 44px; }
-  .chev { position: absolute; right: 14px; top: 28px; }
-  .pstat { max-width: none; text-align: left; width: 100%; padding-left: 62px; }
+  .fgrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .fav { width: 64px; height: 64px; font-size: 22px; }
   #who { display: none; }
   .brand img { height: 44px; }
   .banner { padding: 22px; }
   .banner h1 { font-size: 24px; }
-  .hist { padding-left: 20px; }
   .banner .today { text-align: left; }
 }
-@media print { .me .btn, .chev { display: none; } .hist { display: block; } }
+@media print { .me .btn, .fhint { display: none; } }
 </style>
 </head>
 <body>
@@ -168,7 +163,8 @@ body { background: #F4F6FA; font-size: 17px; }
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>'
   };
-  var chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  var SVG_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+  var SVG_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   var parse = function (t) { return t ? new Date(/Z|[+-]\d\d:?\d\d$/.test(t) ? t : t + 'Z') : null; };
   function when(t) {
     var d = parse(t); if (!d) return '-';
@@ -179,7 +175,7 @@ body { background: #F4F6FA; font-size: 17px; }
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' + tm;
   }
   var initials = function (n) { return String(n || '?').split(' ').filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); };
-  var open = {};
+  var people = [];
 
   function timeline(list) {
     if (!list || !list.length) return '<p class="none">No check-ins yet.</p>';
@@ -188,27 +184,23 @@ body { background: #F4F6FA; font-size: 17px; }
     }).join('') + '</ul>';
   }
   function statusHTML(m, evac) {
-    if (m.accounted) return '<span class="pill safe"><i></i>Safe at ' + esc(m.center) + '</span><div class="pwhen">since ' + esc(when(m.since)) + '</div>';
-    if (evac) return '<span class="pill miss"><i></i>Not checked in yet</span>';
-    return '<span class="pill home"><i></i>Not at an evacuation center</span>';
+    if (m.accounted) return '<div class="fstat safe"><b>' + SVG_OK + 'Safe</b><div class="where">' + esc(m.center) + '</div><div class="fsince">since ' + esc(when(m.since)) + '</div></div>';
+    if (evac) return '<div class="fstat miss"><b>' + SVG_NO + 'Not yet safe</b><div class="where">Not checked in</div></div>';
+    return '<div class="fstat home"><b>At home</b><div class="where">Not at an evacuation center</div></div>';
   }
-  function personHTML(m, key, self, evac) {
+  function cardHTML(m, i, evac) {
     var meta = [m.age != null ? m.age + ' yrs' : null, m.sex || null].filter(Boolean).join(' &middot; ');
-    return '<div class="person' + (self ? ' self' : '') + (open[key] ? ' open' : '') + '" data-k="' + key + '">' +
-      '<button type="button" class="prow" aria-expanded="' + (!!open[key]) + '">' +
-      '<span class="av">' + esc(initials(m.name)) + '</span>' +
-      '<span class="pinfo"><span class="pname">' + esc(m.name) + '</span>' + (self ? '<span class="tag you">You</span>' : '') + (m.head ? '<span class="tag">Head of family</span>' : '') +
-      '<div class="pmeta">' + (meta || '&nbsp;') + '</div></span>' +
-      '<span class="pstat">' + statusHTML(m, evac) + '</span>' + chev + '</button>' +
-      '<div class="hist"><h3>Check-in history</h3>' + timeline(m.history) + '</div></div>';
+    return '<button type="button" class="fcard' + (i === 0 ? ' self' : '') + '" data-i="' + i + '" aria-label="' + esc(m.name) + ', see check-in history">' +
+      '<div class="ftop"><div class="fav">' + esc(initials(m.name)) + '</div><div class="fname">' + esc(m.name) + '</div><div class="fmeta">' + (meta || '&nbsp;') + '</div>' +
+      '<div class="ftags">' + (i === 0 ? '<span class="tag you">You</span>' : '') + (m.head ? '<span class="tag">Head of family</span>' : '') + '</div></div>' +
+      statusHTML(m, evac) + '</button>';
   }
-
   $('family').addEventListener('click', function (e) {
-    var b = e.target.closest('.prow'); if (!b) return;
-    var p = b.parentNode, k = p.dataset.k;
-    open[k] = !open[k];
-    p.classList.toggle('open', open[k]);
-    b.setAttribute('aria-expanded', String(open[k]));
+    var c = e.target.closest('.fcard'); if (!c) return;
+    var m = people[Number(c.dataset.i)]; if (!m) return;
+    BL.modal('<div class="dialog-head"><div><h2>' + esc(m.name) + '</h2><div style="font-size:16px;color:var(--muted)">Check-in history</div></div>' +
+      '<button type="button" class="x-btn" data-close aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5368" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button></div>' +
+      '<div class="dialog-body">' + timeline(m.history) + '</div><div class="dialog-foot"><span></span><button type="button" class="btn btn-ghost" data-close>Close</button></div>', 520);
   });
 
   async function load() {
@@ -250,7 +242,8 @@ body { background: #F4F6FA; font-size: 17px; }
       $('count').innerHTML = ev || safe ? '<b>' + safe + '</b> of ' + all.length + ' safe at a center' : all.length + (all.length === 1 ? ' person' : ' people');
       $('meterWrap').hidden = !(ev || safe);
       $('meter').style.width = Math.round(safe / all.length * 100) + '%';
-      $('family').innerHTML = all.map(function (m, i) { return personHTML(m, i === 0 ? 'me' : 'm' + i, i === 0, !!ev); }).join('');
+      people = all;
+      $('family').innerHTML = '<div class="fgrid">' + all.map(function (m, i) { return cardHTML(m, i, !!ev); }).join('') + '</div><p class="fhint">Tap a person to see their check-in history.</p>';
 
       // My information
       var bd = p.birthdate ? new Date(p.birthdate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '-';
