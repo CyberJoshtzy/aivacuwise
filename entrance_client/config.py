@@ -36,3 +36,16 @@ SHOW_PREVIEW = True
 # Port where the live picture (with face boxes and names) is shared for the TV Mode page.
 # 0 turns it off.
 STREAM_PORT = 8081
+
+# ---- Picture quality ----
+# Size of the picture taken from the webcam. The UGREEN 2K webcam supports 1280x720 and
+# 1920x1080. Larger = sharper and recognizes faces from farther away, but uses more CPU.
+# Set both to 0 to use the webcam's default (640x480).
+CAMERA_WIDTH = 0  # laptop: keep the webcam default
+CAMERA_HEIGHT = 0
+CAMERA_FPS = 0
+
+# Width of the live picture sent to TV Mode, and its JPEG quality (1 to 100).
+# Higher = sharper on the TV, but more network traffic.
+STREAM_WIDTH = 1280
+STREAM_QUALITY = 85
