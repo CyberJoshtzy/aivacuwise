@@ -433,7 +433,73 @@ const BL = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addHotlineButton); else addHotlineButton();
 
-  return { openApp, showHotlines, nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle };
+  /* Time bar: tells the reader what day it is, whether an evacuation is running,
+     and when the last one happened, so live numbers are never mistaken for an old day. */
+  function longDate(d) {
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  function sameDay(a, b) { return a.toDateString() === b.toDateString(); }
+  function dayWord(d) {
+    const now = new Date();
+    const y = new Date(now); y.setDate(now.getDate() - 1);
+    if (sameDay(d, now)) return 'today';
+    if (sameDay(d, y)) return 'yesterday';
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  }
+  function when(iso) {
+    const d = parseT(iso);
+    return dayWord(d) + ' at ' + time(d);
+  }
+  function timeBar(anchor, opts = {}) {
+    if (!anchor) return { refresh() {} };
+    const box = document.createElement('section');
+    box.className = 'timebar';
+    box.setAttribute('aria-live', 'polite');
+    anchor.insertAdjacentElement('afterend', box);
+    let incidents = [], names = {};
+    const city = opts.me && opts.me.role === 'city_admin';
+    const histLink = '<a href="history.html">See past evacuations</a>';
+    function draw() {
+      const now = new Date();
+      const active = incidents.filter((i) => i.active);
+      const past = incidents.filter((i) => !i.active && i.ended_at)
+        .sort((a, b) => parseT(b.ended_at) - parseT(a.ended_at));
+      const where = (i) => (city && names[i.barangay_id] ? ' in ' + esc(names[i.barangay_id]) : '');
+      let status;
+      if (active.length) {
+        const rows = active.slice(0, 3).map((i) => '<li><strong>' + esc(i.disaster_type) + '</strong>' + where(i) +
+          ', started ' + when(i.started_at) + ' (' + ago(i.started_at) + ')</li>').join('');
+        status = '<div class="tb-state on"><span class="tb-dot"></span>Evacuation in progress</div>' +
+          '<ul class="tb-list">' + rows + (active.length > 3 ? '<li>and ' + (active.length - 3) + ' more</li>' : '') + '</ul>';
+      } else if (past.length) {
+        const l = past[0];
+        status = '<div class="tb-state off">No evacuation is running right now</div>' +
+          '<div class="tb-last">Last evacuation: <strong>' + esc(l.disaster_type) + '</strong>' + where(l) +
+          ', ' + when(l.started_at) + ' to ' + when(l.ended_at) + '. ' + histLink + '</div>';
+      } else {
+        status = '<div class="tb-state off">No evacuation is running right now</div>' +
+          '<div class="tb-last">No evacuation has been recorded yet.</div>';
+      }
+      box.className = 'timebar' + (active.length ? ' is-on' : '');
+      box.innerHTML =
+        '<div class="tb-clock"><span class="tb-label">Showing the situation as of</span>' +
+        '<strong>' + longDate(now) + '</strong><span class="tb-time">' + time(now) + '</span></div>' +
+        '<div class="tb-status">' + status + (opts.note ? '<div class="tb-note">' + opts.note + '</div>' : '') + '</div>';
+    }
+    async function refresh() {
+      try { incidents = (await api('/incidents')) || []; } catch (e) { incidents = []; }
+      if (city && !Object.keys(names).length) {
+        try { ((await api('/barangays')) || []).forEach((b) => { names[b.id] = b.name; }); } catch (e) {}
+      }
+      draw();
+    }
+    draw(); refresh();
+    setInterval(draw, 30000);
+    setInterval(refresh, 60000);
+    return { refresh, activeCount: () => incidents.filter((i) => i.active).length };
+  }
+
+  return { openApp, showHotlines, nextPage, parseT, ago, modal, confirmBox, api, login, logout, requireAuth, acceptPrivacy, homeFor, cachedMe, token, renderSidebar, toast, connectLive, esc, age, time, dateTime, tone, TONE_HEX, eyeToggle, timeBar, when, dayWord };
 })();
 
 /* live-badge-hidden: the green Live badges are hidden on every page */

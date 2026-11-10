@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Evacuation Centers · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=55">
+<link rel="stylesheet" href="app.css?v=56">
 <style>
 .ccard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .ccard h2 { font-size: 17px; font-weight: 800; }
@@ -56,7 +56,7 @@
     <div id="empty" class="empty" hidden>No evacuation centers yet. New centers are added by the City Hall IT Administrator.</div>
   </main>
 </div>
-<script src="app.js?v=54"></script>
+<script src="app.js?v=55"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -110,6 +110,7 @@
   try { brgys = await BL.api('/barangays') || []; } catch (e) { brgys = []; }
   brgys.forEach((b) => { brgyNames[b.id] = b.name; });
   BL.renderSidebar(me, 'centers.html', brgyNames[me.barangay_id]);
+  const tbar = BL.timeBar(document.querySelector('.page-head'), { me, note: 'Counts below are live. They show who is inside each center right now, with the time each person arrived.' });
   if (city) {
     $('bFilter').hidden = false;
     $('bFilter').innerHTML = '<option value="">All barangays</option>' + brgys.map((b) => '<option value="' + b.id + '">' + BL.esc(b.name) + '</option>').join('');
@@ -118,7 +119,9 @@
 
   async function load() {
     try {
-      const [list, summary] = await Promise.all([BL.api('/evacuation_centers'), BL.api('/dashboard/summary')]);
+      const [list, summary, act] = await Promise.all([BL.api('/evacuation_centers'), BL.api('/dashboard/summary'), BL.api('/incidents?active=true').catch(() => [])]);
+      activeB = new Set((act || []).filter((i) => i.active).map((i) => i.barangay_id));
+      tbar.refresh();
       live = {};
       (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => { live[c.id] = c; }));
       centers = (list || []).filter((c) => city || c.barangay_id === me.barangay_id);
@@ -130,6 +133,11 @@
     }
   }
 
+  let activeB = new Set();
+  function lastArrival(c) {
+    const ps = live[c.id] ? (live[c.id].evacuees || []) : [];
+    return ps.map((p) => p.since).filter(Boolean).sort().pop() || null;
+  }
   function occOf(c) { return live[c.id] ? (live[c.id].occupancy || 0) : 0; }
 
   function render() {
@@ -148,11 +156,14 @@
       const p = c.capacity ? occ / c.capacity : 0;
       const t = BL.tone(p);
       const note = p >= 0.95 ? 'Full or almost full. Direct new arrivals to another center.' : p >= 0.8 ? 'Almost full.' : (c.capacity - occ) + ' spaces left.';
+      const la = lastArrival(c);
+      const when = '<div style="font-size:15px;margin-top:4px;color:var(--muted)">' + (la ? 'Last arrival: <strong style="color:var(--navy)">' + BL.when(la) + '</strong> (' + BL.ago(la) + ')' : 'No one checked in.') + '</div>' +
+        (occ && !activeB.has(c.barangay_id) ? '<div class="stale-note">No evacuation is running for this barangay, but ' + occ + (occ === 1 ? ' person is' : ' people are') + ' still checked in here.</div>' : '');
       return '<article class="ccard">' +
         '<div><h2>' + BL.esc(c.name) + '</h2><div class="addr">' + BL.esc(c.address || 'No address') + (city ? ' &#183; ' + BL.esc(brgyNames[c.barangay_id] || 'Barangay #' + c.barangay_id) : '') + '</div></div>' +
         '<div><div class="occ"><span class="n">' + occ + '<small> / ' + c.capacity + '</small></span><strong class="tone-' + t + '">' + Math.round(p * 100) + '%</strong></div>' +
         '<div class="bar" style="margin-top:6px"><span style="width:' + Math.min(100, Math.round(p * 100)) + '%;background:' + BL.TONE_HEX[t] + '"></span></div>' +
-        '<div style="font-size:15px;font-weight:600;margin-top:6px;color:' + (p >= 0.8 ? 'var(--orange-text)' : 'var(--muted)') + '">' + note + '</div></div>' +
+        '<div style="font-size:15px;font-weight:600;margin-top:6px;color:' + (p >= 0.8 ? 'var(--orange-text)' : 'var(--muted)') + '">' + note + '</div>' + when + '</div>' +
         '<div class="actions">' +
         '<button type="button" class="btn btn-primary btn-sm" data-act="view" data-id="' + c.id + '">View Details</button>' +
         (city && !itAdmin ? '' : pendingFor(c.id) ? '<span class="chip" style="background:#FFF7ED;color:#B45309;align-self:center">Change waiting for approval</span>' :
@@ -180,8 +191,8 @@
     BL.modal(
       '<div class="dialog-head"><div><h2>' + BL.esc(c.name) + '</h2><div style="font-size:15px;color:var(--muted)">' + BL.esc(c.address || '') + ' &#183; ' + occ + ' of ' + c.capacity + ' evacuees</div></div>' + xBtn + '</div>' +
       '<div class="dialog-body"><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Evacuees inside now</h3>' +
-      (people.length ? '<div class="table-wrap"><table class="data"><thead><tr><th scope="col">Name</th><th scope="col">Identified by</th></tr></thead><tbody>' +
-        people.map((p) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(p.full_name) + '</strong></td><td>' + (p.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>') + '</td></tr>').join('') +
+      (people.length ? '<div class="table-wrap"><table class="data"><thead><tr><th scope="col">Name</th><th scope="col">Arrived</th><th scope="col">Identified by</th></tr></thead><tbody>' +
+        people.slice().sort((a, b) => String(b.since || '').localeCompare(String(a.since || ''))).map((p) => '<tr><td><strong style="color:var(--navy)">' + BL.esc(p.full_name) + '</strong></td><td>' + (p.since ? BL.when(p.since) + '<span class="since">' + BL.ago(p.since) + '</span>' : '-') + '</td><td>' + (p.identification_method === 'facial_recognition' ? '<span class="chip green">Face ID</span>' : '<span class="chip navy">Manual</span>') + '</td></tr>').join('') +
         '</tbody></table></div>' : '<div class="empty">Nobody is checked in at this center right now.</div>') +
       '</div><div class="dialog-foot"><span></span><div style="display:flex;gap:10px"><button type="button" class="btn btn-ghost" data-close>Close</button></div></div>', 720);
   }

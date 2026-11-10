@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Resident List · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=55">
+<link rel="stylesheet" href="app.css?v=56">
 <style>
 .bpick { display: flex; flex-direction: column; gap: 12px; }
 .bpick .bsearch { max-width: 360px; }
@@ -98,7 +98,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
     </section>
   </main>
 </div>
-<script src="app.js?v=54"></script>
+<script src="app.js?v=55"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -116,6 +116,8 @@ table.data tbody tr:hover td { background: #F6F8FD; }
     (centers || []).forEach((c) => { centerNames[c.id] = c.name; });
   } catch (e) { /* names fall back to ids */ }
   BL.renderSidebar(me, 'evacuees.html', brgyNames[me.barangay_id]);
+  const tbar = BL.timeBar(document.querySelector('.page-head'), { me, note: 'The Status column shows where each resident is right now, and since when.' });
+  let since = {};
   $('brgyCol').hidden = !city;
 
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -169,10 +171,11 @@ table.data tbody tr:hover td { background: #F6F8FD; }
       const [evacuees, summary, det] = await Promise.all([BL.api('/evacuees'), BL.api('/dashboard/summary'), BL.api('/evacuee_details').catch(() => [])]);
       extra = {}; (det || []).forEach((d) => { extra[d.id] = d; });
       try { trackerOf = {}; (await BL.api('/trackers') || []).forEach((t) => { if (t.assigned_evacuee_id) trackerOf[t.assigned_evacuee_id] = t.device_id; }); } catch (e) {}
-      where = {};
-      (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => (c.evacuees || []).forEach((ev) => { where[ev.id] = c.name; })));
+      where = {}; since = {};
+      tbar.refresh();
+      (summary.barangays || []).forEach((b) => (b.centers || []).forEach((c) => (c.evacuees || []).forEach((ev) => { where[ev.id] = c.name; since[ev.id] = ev.since; })));
       if (!city) {  // residents checked in at another barangay's center are accounted for
-        try { ((await BL.api('/cross/status')) || {}).away.forEach((x) => { where[x.evacuee_id] = x.center_name + (x.center_barangay ? ' (' + x.center_barangay + ')' : ''); }); } catch (e) {}
+        try { ((await BL.api('/cross/status')) || {}).away.forEach((x) => { where[x.evacuee_id] = x.center_name + (x.center_barangay ? ' (' + x.center_barangay + ')' : ''); since[x.evacuee_id] = x.checked_in_at; }); } catch (e) {}
       }
       listAll = evacuees || [];
       list = listAll.filter((e) => city || e.registered_barangay_id === me.barangay_id);
@@ -199,7 +202,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
     $('rows').innerHTML = shown.map((e) => {
       const a = BL.age(e.birthdate);
       const face = '';
-      const status = where[e.id] ? '<span class="st in" title="' + BL.esc(where[e.id]) + '"><i></i>' + BL.esc(where[e.id]) + '</span>' : '<span class="st out"><i></i>Not checked in</span>';
+      const status = where[e.id] ? '<span class="st in" title="' + BL.esc(where[e.id]) + '"><i></i>' + BL.esc(where[e.id]) + '</span>' + (since[e.id] ? '<span class="since">since ' + BL.when(since[e.id]) + '</span>' : '') : '<span class="st out"><i></i>Not checked in</span>';
       const head = e.household_id ? listAll.find((x) => x.household_id === e.household_id && x.is_head_of_family) : null;
       const hh = e.household_id ? '<div class="fm">' + BL.esc(head ? head.full_name : 'Family #' + e.household_id) + '</div><div class="sub">' + (e.is_head_of_family ? 'Head of family' : 'Member') + '</div>' : '<span style="color:var(--muted)">None</span>';
       return '<tr>' +
@@ -236,7 +239,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
   async function view(ev) {
     const a = BL.age(ev.birthdate);
     const m = BL.modal(
-      '<div class="dialog-head"><div><h2>' + BL.esc(ev.full_name) + '</h2><div style="font-size:15px;color:var(--muted)">' + (where[ev.id] ? 'At ' + BL.esc(where[ev.id]) + ' now' : 'Not at an evacuation center') + '</div></div>' + xBtn + '</div>' +
+      '<div class="dialog-head"><div><h2>' + BL.esc(ev.full_name) + '</h2><div style="font-size:15px;color:var(--muted)">' + (where[ev.id] ? 'At ' + BL.esc(where[ev.id]) + (since[ev.id] ? ' since ' + BL.when(since[ev.id]) : ' now') : 'Not at an evacuation center') + '</div></div>' + xBtn + '</div>' +
       '<div class="dialog-body" style="display:flex;flex-direction:column;gap:18px">' +
       '<div style="display:flex;gap:16px;align-items:center"><div id="vPhoto" style="width:96px;height:96px;border-radius:50%;background:var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);text-align:center;flex-shrink:0">No photo</div><div style="font-size:15px;color:var(--muted)">Photo shown on the Entrance Display. Registrations made before photos were saved show initials instead.</div></div>' +
       '<div class="facts">' +
@@ -264,7 +267,7 @@ table.data tbody tr:hover td { background: #F6F8FD; }
       const labels = { check_in: ['Checked in at', '#15803D'], check_out: ['Left', '#1D4ED8'] };
       m.el.querySelector('#hist').innerHTML = (hist || []).length ? hist.map((h) => {
         const l = labels[h.event_type] || [h.event_type, '#4A5368'];
-        return '<li><span class="dot" style="background:' + l[1] + '"></span><span style="flex-grow:1"><strong>' + l[0] + '</strong> ' + BL.esc(centerNames[h.evacuation_center_id] || 'center #' + h.evacuation_center_id) + '</span><span style="color:var(--muted);white-space:nowrap">' + (h.timestamp ? BL.dateTime(h.timestamp) : '') + '</span></li>';
+        return '<li><span class="dot" style="background:' + l[1] + '"></span><span style="flex-grow:1"><strong>' + l[0] + '</strong> ' + BL.esc(centerNames[h.evacuation_center_id] || 'center #' + h.evacuation_center_id) + '</span><span style="color:var(--muted);white-space:nowrap">' + (h.timestamp ? BL.when(h.timestamp) : '') + '</span></li>';
       }).join('') : '<li class="empty" style="display:block;width:100%">No check-ins yet. This evacuee has not been to an evacuation center.</li>';
     } catch (e) {
       m.el.querySelector('#hist').innerHTML = '<li class="form-error" style="display:block;width:100%">' + BL.esc(e.message) + '</li>';
