@@ -42,13 +42,6 @@ html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
 .arr li { display: flex; align-items: center; gap: 14px; padding: 12px 8px; border-bottom: 1px solid #EEF1F6; font-size: 26px; font-weight: 800; color: #142C6E; }
 .arr li .av { width: 52px; height: 52px; border-radius: 50%; background: #E6EBF7; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #142C6E; flex-shrink: 0; }
 .arr li .t { margin-left: auto; font-size: 20px; font-weight: 700; color: #3F4859; }
-.arr li { cursor: default; }
-.arr li:hover { background: #F2F6FF; }
-.tip { position: fixed; z-index: 50; pointer-events: none; background: #142C6E; color: #fff; border-radius: 14px; padding: 14px 18px; box-shadow: 0 12px 30px rgba(0,0,0,.35); min-width: 260px; }
-.tip .tn { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
-.tip .tl { font-size: 15px; font-weight: 600; color: #C9D3EE; }
-.tip .tv { font-size: 34px; font-weight: 800; color: #F7941D; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
-.tip .td { font-size: 16px; font-weight: 600; color: #E6EBF7; margin-top: 2px; }
 .arr li.new { animation: newrow 3s ease-out; }
 .arr .none { padding: 28px; text-align: center; font-size: 22px; color: #3F4859; }
 .nums { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
@@ -77,19 +70,6 @@ html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
       <div class="cambar" id="camBar"><span class="dot"></span><span id="camTxt">Entrance webcam</span><span class="hint">Green box = recognized and checked in · Red box = not registered</span></div>
       <div class="view" id="view"><div class="msg">Looking for the entrance webcam...</div></div>
     </section>
-    <aside class="side">
-      <div class="card arr">
-        <div class="ch green"><span>Just arrived</span><span id="arrN">0</span></div>
-        <ul id="arrList"></ul>
-      </div>
-      <div class="card">
-        <div class="ch orange"><span>Still not here</span><span id="waitN">0</span></div>
-        <div class="nums">
-          <div><div class="k">Priority not here</div><div class="v amber" id="prio">0</div></div>
-          <div><div class="k">Spaces left</div><div class="v" id="spaces">0</div></div>
-        </div>
-      </div>
-    </aside>
   </div>
   <div class="foot">Photos and names shown with consent under the Data Privacy Act of 2012 (RA 10173).</div>
 </div>
@@ -125,34 +105,7 @@ html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
   tick(); setInterval(tick, 10000);
 
   const initials = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-  let seen = null;
-  // Hover a name in "Just arrived" to see the exact check-in time with seconds
-  // (used to measure detection and recognition speed for the thesis).
-  let arrivals = {}, hoverId = null, mx = 0, my = 0;
-  const tip = document.createElement('div');
-  tip.className = 'tip'; tip.hidden = true; tip.setAttribute('role', 'tooltip');
-  document.body.appendChild(tip);
-  const exact = (iso) => BL.parseT(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
-  const fullDate = (iso) => BL.parseT(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  function showTip() {
-    const a = hoverId != null ? arrivals[hoverId] : null;
-    if (!a || !a.time) { tip.hidden = true; return; }
-    tip.innerHTML = '<div class="tn">' + BL.esc(a.name) + '</div><div class="tl">Checked in at</div>' +
-      '<div class="tv">' + exact(a.time) + '</div><div class="td">' + fullDate(a.time) + '</div>';
-    tip.hidden = false;
-    const w = tip.offsetWidth, h = tip.offsetHeight;
-    const li = document.querySelector('#arrList li[data-id="' + hoverId + '"]');
-    const r = li ? li.getBoundingClientRect() : { left: mx, top: my, height: 0 };
-    tip.style.left = Math.max(8, r.left - w - 14) + 'px';
-    tip.style.top = Math.max(8, Math.min(innerHeight - h - 8, r.top + r.height / 2 - h / 2)) + 'px';
-  }
-  document.addEventListener('mousemove', (e) => {
-    mx = e.clientX; my = e.clientY;
-    const li = e.target.closest && e.target.closest('#arrList li[data-id]');
-    hoverId = li ? Number(li.dataset.id) : null;
-    showTip();
-  });
-  document.addEventListener('mouseleave', () => { hoverId = null; showTip(); });
+
   async function loadData() {
     try {
       const d = await BL.api('/display/' + centerId);
@@ -162,18 +115,6 @@ html, body { height: 100%; margin: 0; background: #0B1A45; overflow: hidden; }
       $('state').className = 'state' + (on ? '' : ' off');
       $('stateTxt').textContent = on ? 'EVACUATION ACTIVE · ' + String(d.incident.disaster_type || '').toUpperCase() : 'No evacuation running';
       $('acc').innerHTML = d.safe_total + ' <small>/ ' + d.expected_total + '</small>';
-      $('waitN').textContent = d.waiting.length;
-      $('prio').textContent = d.waiting.filter((w) => w.tags.length).length;
-      const c = centers.find((x) => x.id === centerId);
-      $('spaces').textContent = c ? Math.max(0, c.capacity - (c.occupancy != null ? c.occupancy : d.arrived.length)) : '-';
-      $('arrN').textContent = d.arrived.length;
-      const ids = d.arrived.map((a) => a.id);
-      $('arrList').innerHTML = d.arrived.slice(0, 8).map((a) =>
-        '<li data-id="' + a.id + '" class="' + (seen && !seen.has(a.id) ? 'new' : '') + '"><span class="av">' + BL.esc(initials(a.name)) + '</span>' + BL.esc(a.name) +
-        '<span class="t">' + BL.esc(BL.time(a.time)) + '</span></li>').join('') || '<li class="none">Arrivals appear here as the webcam recognizes them.</li>';
-      seen = new Set(ids);
-      arrivals = {}; d.arrived.forEach((a) => { arrivals[a.id] = a; });
-      showTip();
     } catch (e) { /* keep showing the last data; the next refresh tries again */ }
   }
 
