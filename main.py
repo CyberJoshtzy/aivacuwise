@@ -1962,3 +1962,8 @@ app.include_router(cross_barangay.router)
 import camera_status
 
 app.include_router(camera_status.router)
+
+# ---- Ai-Vacuwise: recognition speed measurements from the entrance camera (Chapter 4) ----
+import recognition_timing
+
+app.include_router(recognition_timing.router)

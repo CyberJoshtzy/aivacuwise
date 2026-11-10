@@ -224,6 +224,42 @@ def main():
     last_action = {}  # evacuee id -> time of last check-in/transfer
     scale = config.FRAME_SCALE
     last_beat = 0.0  # last "camera is running" report to the server
+    # Speed measurement (thesis Chapter 4): when did the current run of frames with a face begin?
+    face_since = None  # Pi time of the first frame in the current run of frames with a face
+    last_face = 0.0  # Pi time of the newest frame with a face
+    FACE_GAP = 1.0  # a run ends after this many seconds without any face
+
+    def report_timing(eid, action, resp, t_rec, t_saved, frame_ms, dist):
+        rec_id = None
+        try:
+            rec_id = resp.json().get("id")
+        except ValueError:
+            pass
+        try:
+            api.call(
+                "POST",
+                "/recognition/timings",
+                json={
+                    "evacuee_id": eid,
+                    "center_id": config.EVACUATION_CENTER_ID,
+                    "action": action,
+                    "record_id": rec_id if isinstance(rec_id, int) else None,
+                    "face_seen_at": face_since,
+                    "recognized_at": t_rec,
+                    "saved_at": t_saved,
+                    "frame_ms": frame_ms,
+                    "distance": dist,
+                    "width": real_w,
+                    "height": real_h,
+                    "frame_scale": scale,
+                },
+            )
+        except requests.RequestException:
+            pass  # a missed measurement never stops recognition
+        print(
+            "  timing: recognized %.2f s after the face appeared, saved %.2f s later (frame %.0f ms)"
+            % (t_rec - (face_since or t_rec), t_saved - t_rec, frame_ms)
+        )
 
     try:
         while True:
@@ -261,10 +297,19 @@ def main():
             if not ok:
                 time.sleep(0.05)
                 continue
+            t_cap = time.time()
             small = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
             rgb = np.ascontiguousarray(small[:, :, ::-1])
             locs = face_recognition.face_locations(rgb, model="hog")
             encs = face_recognition.face_encodings(rgb, known_face_locations=locs)
+            t_done = time.time()
+            frame_ms = (t_done - t_cap) * 1000
+            if locs:
+                if face_since is None or t_cap - last_face > FACE_GAP:
+                    face_since = t_cap
+                last_face = t_cap
+            elif face_since is not None and t_cap - last_face > FACE_GAP:
+                face_since = None
 
             for (top, right, bottom, left), enc in zip(locs, encs):  # noqa: B905
                 label, color = "Not registered", (0, 0, 220)
@@ -295,10 +340,12 @@ def main():
                                     },
                                 )
                                 if r.status_code in (200, 201):
+                                    t_saved = time.time()
                                     print(
                                         "TRANSFERRED %s from center %s (match %.3f)"
                                         % (name, here, dist[i])
                                     )
+                                    report_timing(eid, "transfer", r, t_done, t_saved, frame_ms, float(dist[i]))
                                     where[eid] = config.EVACUATION_CENTER_ID
                                 else:
                                     print("Transfer failed for %s: %s" % (name, r.text[:120]))
@@ -313,7 +360,9 @@ def main():
                                     },
                                 )
                                 if r.status_code in (200, 201):
+                                    t_saved = time.time()
                                     print("CHECKED IN %s (match %.3f)" % (name, dist[i]))
+                                    report_timing(eid, "check_in", r, t_done, t_saved, frame_ms, float(dist[i]))
                                     where[eid] = config.EVACUATION_CENTER_ID
                                 else:
                                     print("Check-in failed for %s: %s" % (name, r.text[:120]))

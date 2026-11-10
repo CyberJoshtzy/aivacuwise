@@ -44,6 +44,7 @@ table.data td { vertical-align: middle; }
   <main class="main">
     <div class="page-head">
       <div><h1>Evacuation History</h1><p>Every finished evacuation. Click View to see everything that happened during it.</p></div>
+      <button type="button" class="btn btn-ghost" id="dlSpeed" title="One row per automatic check-in by the entrance camera, for Excel">Download recognition times (Excel)</button>
     </div>
     <div id="err" class="form-error" role="alert" hidden></div>
     <div class="sumrow">
@@ -148,6 +149,19 @@ table.data td { vertical-align: middle; }
   await load();
   BL.connectLive(() => load(), null);
 })();
+
+// Recognition speed measurements from the entrance camera, as a CSV file Excel can open.
+document.getElementById('dlSpeed').addEventListener('click', async function () {
+  const b = this; b.disabled = true; b.textContent = 'Preparing file...';
+  try {
+    const r = await fetch('/recognition/timings.csv', { headers: { Authorization: 'Bearer ' + BL.token() } });
+    if (!r.ok) throw new Error('Could not download the file.');
+    const url = URL.createObjectURL(await r.blob());
+    const a = document.createElement('a'); a.href = url; a.download = 'recognition_times.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (e) { BL.toast(e.message); }
+  finally { b.disabled = false; b.textContent = 'Download recognition times (Excel)'; }
+});
 </script>
 </body>
 </html>
