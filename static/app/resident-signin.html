@@ -19,7 +19,6 @@
 .signin form { width: min(460px, 100%); display: flex; flex-direction: column; gap: 18px; animation: pop .35s ease-out; }
 .signin h1 { font-size: 30px; font-weight: 800; }
 .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 15px; font-weight: 600; text-decoration: none; }
-.bday { display: grid; grid-template-columns: 1.4fr 1fr 1.1fr; gap: 10px; }
 .help { padding: 14px 16px; background: var(--tint); border-radius: 10px; font-size: 15px; line-height: 1.5; }
 .btn-res { background: #198754; color: #FFFFFF; border-color: #198754; }
 @media (max-width: 900px) { .signin { flex-direction: column; } .signin aside { width: 100%; padding: 28px 24px; } .signin aside .points, .signin aside .foot { display: none; } }
@@ -72,13 +71,6 @@
         <div class="field-group"><label for="middle">Middle name <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="middle" class="input" autocomplete="additional-name" placeholder="e.g. Santos"></div>
         <div class="field-group"><label for="last">Last name</label><input id="last" class="input" autocomplete="family-name" placeholder="e.g. Dela Cruz"></div>
       </div>
-      <div class="field-group"><label>Birthday</label>
-        <div class="bday">
-          <select id="bm" class="input" aria-label="Month"><option value="">Month</option></select>
-          <select id="bd" class="input" aria-label="Day"><option value="">Day</option></select>
-          <select id="by" class="input" aria-label="Year"><option value="">Year</option></select>
-        </div>
-      </div>
       <div class="field-group"><label for="mobile">Mobile number</label><input id="mobile" class="input" inputmode="tel" placeholder="0917 123 4567">
         <div style="font-size:15px;color:var(--muted)">Children without a phone can use the head of family's number.</div></div>
       <button class="btn btn-res btn-lg" type="submit" id="submit">Sign In</button>
@@ -90,24 +82,18 @@
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var M = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  M.forEach(function (m, i) { $('bm').add(new Option(m, i + 1)); });
-  for (var d = 1; d <= 31; d++) $('bd').add(new Option(d, d));
-  for (var y = new Date().getFullYear(); y >= 1900; y--) $('by').add(new Option(y, y));
   var err = $('error');
   function fail(m) { err.textContent = m; err.hidden = false; }
   $('form').addEventListener('submit', async function (e) {
     e.preventDefault(); err.hidden = true;
-    var last = $('last').value.trim(), m = $('bm').value, d = $('bd').value, y = $('by').value, mob = $('mobile').value.trim();
+    var last = $('last').value.trim(), mob = $('mobile').value.trim();
     if (!$('first').value.trim()) return fail('Enter your first name.');
     if (!last) return fail('Enter your last name.');
-    if (!m || !d || !y) return fail('Choose your complete birthday.');
     if (!mob) return fail('Enter your mobile number.');
-    var pad = function (n) { return String(n).padStart(2, '0'); };
     var b = $('submit'); b.disabled = true; b.textContent = 'Signing in...';
     try {
       var r = await fetch('/resident/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: $('first').value.trim(), middle_name: $('middle').value.trim(), last_name: last, birthdate: y + '-' + pad(m) + '-' + pad(d), mobile_number: mob }) });
+        body: JSON.stringify({ first_name: $('first').value.trim(), middle_name: $('middle').value.trim(), last_name: last, mobile_number: mob }) });
       var data = await r.json().catch(function () { return {}; });
       if (!r.ok) throw new Error(Array.isArray(data.detail) ? data.detail.map(function (x) { return x.msg; }).join(', ') : (data.detail || 'Something went wrong.'));
       try { sessionStorage.setItem('bl_resident', data.token); } catch (x) { window.name = 'blr:' + data.token; }
