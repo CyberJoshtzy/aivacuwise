@@ -66,6 +66,9 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
 #info .when .wl { font-size: 16px; font-weight: 700; color: #C9D3EE; }
 #info .when .wv { font-size: 40px; font-weight: 800; color: #F7941D; line-height: 1.1; font-variant-numeric: tabular-nums; }
 #info .when .wd { font-size: 17px; font-weight: 600; color: #E6EBF7; }
+#info .when .spd { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.2); }
+#info .when .spd span { display: block; font-size: 14px; font-weight: 700; color: #C9D3EE; }
+#info .when .spd b { font-size: 22px; font-weight: 800; color: #FFFFFF; font-variant-numeric: tabular-nums; }
 </style>
   <link rel="icon" type="image/png" href="/static/favicon.png?v=2">
 </head>
@@ -156,6 +159,7 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
     }));
   }
 
+  let speed = {};
   let data = null, page = 0, seen = null, people = {}, details = {}, pinned = null, hovered = null;
   async function loadPeople() {
     try {
@@ -182,6 +186,13 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
   // Exact check-in time with seconds, used to measure recognition speed (thesis Chapter 4).
   const exact = (iso) => BL.parseT(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   const fullDate = (iso) => BL.parseT(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  // Recognition speed measured by the entrance camera (only when it belongs to this check-in).
+  function speedHTML(id, a) {
+    const t = speed[String(id)];
+    if (!t || !t.created_at || Math.abs(BL.parseT(t.created_at) - BL.parseT(a.time)) > 120000) return '';
+    const f = (x) => (x == null ? '-' : x.toFixed(2) + ' s');
+    return '<div class="spd"><div><span>Recognized in</span><b>' + f(t.recognition_s) + '</b></div><div><span>Saved</span><b>' + f(t.save_s) + '</b></div><div><span>Total</span><b>' + f(t.total_s) + '</b></div></div>';
+  }
   function showInfo(id, el) {
     const box = $('info');
     const w = data.waiting.find((x) => x.id === id), a = data.arrived.find((x) => x.id === id);
@@ -193,7 +204,7 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
     const status = a ? '<span class="st" style="background:#DCFCE7;color:#15803D">Accounted at ' + BL.esc(data.center.name) + '</span>' : '<span class="st" style="background:#FDECEC;color:#B91C1C">Unaccounted</span>';
     box.innerHTML = '<button type="button" class="x" aria-label="Close" id="infoX">&#215;</button>' +
       '<div class="top"><div class="face">' + faceHTML(p) + '</div><div style="min-width:0"><h3>' + BL.esc(e.full_name || p.name) + '</h3>' + status + '</div></div>' +
-      (a && a.time ? '<div class="when"><div class="wl">Checked in at</div><div class="wv">' + exact(a.time) + '</div><div class="wd">' + fullDate(a.time) + '</div></div>' : '') +
+      (a && a.time ? '<div class="when"><div class="wl">Checked in at</div><div class="wv">' + exact(a.time) + '</div><div class="wd">' + fullDate(a.time) + '</div>' + speedHTML(id, a) + '</div>' : '') +
       '<dl><dt>Age</dt><dd>' + BL.esc(ageText(e.birthdate)) + '</dd><dt>Sex</dt><dd>' + BL.esc(e.sex || '-') + '</dd>' +
       '<dt>Barangay</dt><dd>' + BL.esc(d.home_barangay || data.barangay || '-') + '</dd><dt>Family</dt><dd>' + BL.esc(fam) + '</dd>' +
       (guard ? '<dt>Parent or guardian</dt><dd>' + BL.esc(guard) + '</dd>' : '') +
@@ -235,6 +246,7 @@ html, body { height: 100%; margin: 0; background: #0E1F4F; overflow: hidden; }
   async function load() {
     try {
       const d = await BL.api('/display/' + centerId);
+      try { speed = (await BL.api('/recognition/timings/latest?center_id=' + centerId)) || {}; } catch (e) { speed = {}; }
       await loadPeople();
       await loadPhotos(d.waiting.concat(d.arrived));
       const fresh = new Set();
