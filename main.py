@@ -141,6 +141,26 @@ def _get_current_evacuees_at_center(db: Session, center_id: int):
     return db.query(models.Evacuee).filter(models.Evacuee.id.in_(evacuee_ids)).all()
 
 
+def _arrival_times_at_center(db: Session, center_id: int):
+    """When each evacuee currently inside this center checked in (their latest record)."""
+    latest_sub = (
+        db.query(
+            models.CheckinRecord.evacuee_id.label("evacuee_id"),
+            func.max(models.CheckinRecord.id).label("latest_id"),
+        )
+        .group_by(models.CheckinRecord.evacuee_id)
+        .subquery()
+    )
+    rows = (
+        db.query(models.CheckinRecord)
+        .join(latest_sub, models.CheckinRecord.id == latest_sub.c.latest_id)
+        .filter(models.CheckinRecord.evacuation_center_id == center_id)
+        .filter(models.CheckinRecord.event_type == "check_in")
+        .all()
+    )
+    return {r.evacuee_id: r.timestamp for r in rows}
+
+
 @app.get("/evacuation_centers/{center_id}/evacuees")
 def evacuees_at_center(center_id: int, db: Session = Depends(get_db)):
     return _get_current_evacuees_at_center(db, center_id)
@@ -363,6 +383,7 @@ def dashboard_summary(
         center_list = []
         for center in centers:
             evacuees = _get_current_evacuees_at_center(db, center.id)
+            arrived = _arrival_times_at_center(db, center.id)
             center_list.append(
                 {
                     "id": center.id,
@@ -374,6 +395,7 @@ def dashboard_summary(
                             "id": e.id,
                             "full_name": e.full_name,
                             "identification_method": e.identification_method,
+                            "since": arrived[e.id].isoformat() if arrived.get(e.id) else None,
                         }
                         for e in evacuees
                     ],

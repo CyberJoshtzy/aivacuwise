@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GPS Trackers · Ai-Vacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
-<link rel="stylesheet" href="app.css?v=55">
+<link rel="stylesheet" href="app.css?v=56">
 <style>
 .tlayout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 16px; align-items: start; }
 .people { list-style: none; margin: 0; padding: 0; max-height: 620px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
@@ -57,7 +57,7 @@
     </div>
   </main>
 </div>
-<script src="app.js?v=54"></script>
+<script src="app.js?v=55"></script>
 <script>
 (async () => {
   const me = await BL.requireAuth();
@@ -65,6 +65,7 @@
   let brgyNames = {};
   try { (await BL.api('/barangays') || []).forEach((b) => { brgyNames[b.id] = b.name; }); } catch (e) {}
   BL.renderSidebar(me, 'trackers.html', brgyNames[me.barangay_id]);
+  const tbar = BL.timeBar(document.querySelector('.page-head'), { me, note: 'Each dot is the last place a tracker reported. Check the time next to each name: an old signal may no longer be where the person is.' });
 
   let list = [], people = {}, details = {}, selected = null;
   const FRESH_MIN = 15;
@@ -73,6 +74,7 @@
     try {
       const [ov, ev, det] = await Promise.all([BL.api('/trackers/overview'), BL.api('/evacuees'), BL.api('/evacuee_details').catch(() => [])]);
       list = ov || [];
+      tbar.refresh();
       people = {}; (ev || []).forEach((e) => { people[e.id] = e; });
       details = {}; (det || []).forEach((d) => { details[d.id] = d; });
       $('loadError').hidden = true;
@@ -102,7 +104,7 @@
     $('countNote').textContent = missing + ' of ' + list.length + ' evacuee(s) with a tracker are not yet at an evacuation center. Seniors and PWD are listed first.';
     $('people').innerHTML = shown.length ? shown.map((t) =>
       '<li><button type="button" data-ev="' + t.evacuee_id + '" aria-pressed="' + (selected === t.evacuee_id) + '"><span class="sig" style="background:' + (t.center ? '#15803D' : '#B91C1C') + '"></span>' +
-      '<span style="min-width:0"><span class="nm">' + BL.esc(t.full_name) + '</span> ' + (t.center ? '<span class="chip green">Accounted</span>' : '<span class="chip" style="background:#FDECEC;color:#B91C1C">Unaccounted</span>') + prioChips(t.evacuee_id) + '<br><span class="meta">Tracker ' + BL.esc(t.device_id) + ' &#183; ' + (t.timestamp ? 'last seen ' + BL.ago(t.timestamp) : 'no signal yet') + '</span></span></button></li>').join('')
+      '<span style="min-width:0"><span class="nm">' + BL.esc(t.full_name) + '</span> ' + (t.center ? '<span class="chip green">Accounted</span>' : '<span class="chip" style="background:#FDECEC;color:#B91C1C">Unaccounted</span>') + prioChips(t.evacuee_id) + '<br><span class="meta">Tracker ' + BL.esc(t.device_id) + ' &#183; ' + (t.timestamp ? 'last signal ' + BL.when(t.timestamp) + ' (' + BL.ago(t.timestamp) + ')' + (minsAgo(t.timestamp) > 1440 ? ' <strong style="color:#B45309">Old location</strong>' : '') : 'no signal yet') + '</span></span></button></li>').join('')
       : '<li class="empty" style="display:block">' + (list.length ? 'No evacuee matches your search.' : 'No trackers are given to residents yet. Enter a tracker ID when you register a resident.') + '</li>';
   }
 
@@ -164,7 +166,7 @@
     $('dInfo').innerHTML =
       cell('Status', t.center ? '<span style="color:var(--green)">Accounted at ' + BL.esc(t.center) + '</span>' : '<span style="color:var(--red)">Unaccounted</span>') +
       cell('Last known location', t.latitude != null ? t.latitude.toFixed(6) + ', ' + t.longitude.toFixed(6) : 'No signal yet') +
-      cell('Last signal', t.timestamp ? BL.dateTime(t.timestamp) + ' (' + BL.ago(t.timestamp) + ')' : '-') +
+      cell('Last signal', t.timestamp ? BL.when(t.timestamp) + ' (' + BL.ago(t.timestamp) + ')' : '-') +
       cell('Tracker', BL.esc(t.device_id) + (t.battery != null ? ' &#183; battery ' + t.battery + '%' : '')) +
       cell('Age and sex', (a === null ? '-' : a + ' yrs') + ', ' + BL.esc(e.sex || '-')) +
       cell('Barangay', BL.esc(d.home_barangay || brgyNames[e.registered_barangay_id] || '-')) +
