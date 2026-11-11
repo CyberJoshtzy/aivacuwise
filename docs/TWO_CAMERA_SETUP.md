@@ -1,4 +1,4 @@
-# Ai-Vacuwise Two-Camera Setup (Raspberry Pi 5)
+# AiVacuwise Two-Camera Setup (Raspberry Pi 5)
 
 One Raspberry Pi 5 runs both cameras. The laptop server stays the center of the system.
 
@@ -48,9 +48,9 @@ for example `192.168.100.50`. Write it down; the next steps call it `PI_IP`.
 ## Step 3: Copy the camera programs from the laptop (on the laptop)
 
 ```
-cd ~/ai-vacuwise && git pull
-ssh PI_USER@PI_IP "mkdir -p ~/ai-vacuwise-pi"
-scp -r entrance_client pi_camera PI_USER@PI_IP:~/ai-vacuwise-pi/
+cd ~/aivacuwise && git pull
+ssh PI_USER@PI_IP "mkdir -p ~/aivacuwise-pi"
+scp -r entrance_client pi_camera PI_USER@PI_IP:~/aivacuwise-pi/
 ```
 
 Replace `PI_USER` with the Pi's username and `PI_IP` with its address.
@@ -58,7 +58,7 @@ Replace `PI_USER` with the Pi's username and `PI_IP` with its address.
 ## Step 4: Run the setup (on the Pi)
 
 ```
-cd ~/ai-vacuwise-pi && bash pi_camera/setup_pi5.sh
+cd ~/aivacuwise-pi && bash pi_camera/setup_pi5.sh
 ```
 
 It installs the camera and face recognition packages, sets the entrance camera to the USB
@@ -78,16 +78,16 @@ Because the camera is on the Pi, pre-registration no longer has to be done on th
 
 ## Step 6: Entrance camera (starts by itself)
 
-The setup installs `ai-vacuwise-entrance-camera`, a background service that starts the USB
+The setup installs `aivacuwise-entrance-camera`, a background service that starts the USB
 webcam recognizer whenever the Pi turns on. It reports to the laptop every 15 seconds, so the
 Live Evacuation page and the Entrance Display show **Camera on** or **Camera off**.
 
-- Watch it: `sudo journalctl -u ai-vacuwise-entrance-camera -f`
+- Watch it: `sudo journalctl -u aivacuwise-entrance-camera -f`
 - Set the center it guards: `EVACUATION_CENTER_ID` in `entrance_client/config.py` on the Pi,
-  then `sudo systemctl restart ai-vacuwise-entrance-camera`.
-- To see the camera window for testing: `sudo systemctl stop ai-vacuwise-entrance-camera`,
-  then `cd ~/ai-vacuwise-pi/entrance_client && python3 recognize.py` (press `q` to stop),
-  then `sudo systemctl start ai-vacuwise-entrance-camera`.
+  then `sudo systemctl restart aivacuwise-entrance-camera`.
+- To see the camera window for testing: `sudo systemctl stop aivacuwise-entrance-camera`,
+  then `cd ~/aivacuwise-pi/entrance_client && python3 recognize.py` (press `q` to stop),
+  then `sudo systemctl start aivacuwise-entrance-camera`.
 - Only re-install the services (no package downloads): `bash pi_camera/install_services.sh`
 - TV Mode (`tv.html`, the "Open TV Mode" button on Live Evacuation) shows the live webcam picture
   with green boxes and names for recognized evacuees. The Pi shares it on port 8081
@@ -99,8 +99,8 @@ Live Evacuation page and the Entrance Display show **Camera on** or **Camera off
 | Problem | Fix |
 |---|---|
 | `No Camera Module found` | Turn the Pi off, reseat both ends of the ribbon cable (contacts facing the right way, latches closed), check that it is the Pi 5 cable, start again. `rpicam-hello --list-cameras` should list `imx708`. |
-| Page says it cannot reach the Pi camera | Check the address and port 8080, run `sudo systemctl status ai-vacuwise-prereg-camera` on the Pi, and make sure the Pi and laptop are on the same network. |
-| Picture is upside down | Set `ROTATE_180 = True` at the top of `pi_camera/prereg_camera.py`, then `sudo systemctl restart ai-vacuwise-prereg-camera`. |
+| Page says it cannot reach the Pi camera | Check the address and port 8080, run `sudo systemctl status aivacuwise-prereg-camera` on the Pi, and make sure the Pi and laptop are on the same network. |
+| Picture is upside down | Set `ROTATE_180 = True` at the top of `pi_camera/prereg_camera.py`, then `sudo systemctl restart aivacuwise-prereg-camera`. |
 | `No USB webcam found` | Plug the webcam into another USB port and check `v4l2-ctl --list-devices`. |
 | Entrance recognition is slow | Keep `FRAME_SCALE = 0.25`. If faces far from the camera are missed and speed is fine, try `0.35`. |
 | Low-voltage warning | Use the official 5V 5A Pi 5 power supply. |

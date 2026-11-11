@@ -1,12 +1,12 @@
-# Ai-Vacuwise: Rules for Claude
+# AiVacuwise: Rules for Claude
 
 Read this file before making any change in this repository.
 
 ## What this project is
 
-Ai-Vacuwise is an undergraduate Computer Engineering thesis prototype: a quick, smart evacuation tracking and management system for multi-barangay disaster response.
+AiVacuwise is an undergraduate Computer Engineering thesis prototype: a quick, smart evacuation tracking and management system for multi-barangay disaster response.
 
-- **Laptop server** (Ubuntu 24.04 LTS, i5-7200U, 8 GB RAM): runs PostgreSQL 16 and Redis 7 in Docker, and this FastAPI backend as a systemd service (`bilislikas.service`, port 8000).
+- **Laptop server** (Ubuntu 24.04 LTS, i5-7200U, 8 GB RAM): runs PostgreSQL 16 and Redis 7 in Docker, and this FastAPI backend as a systemd service (`aivacuwise.service`, port 8000).
 - **Raspberry Pi edge device** (`pi_client/`, separate from this repo's backend): does facial recognition with `face_recognition` (dlib) and calls this API (`GET /evacuees/enrolled_faces`, `POST /checkin`). BLE tracker scanning will also run there.
 - **Frontend**: plain HTML/CSS/JS in `static/app/`, plus `static/kiosk.html` and `static/dashboard.html`. No build tools, no CDN. Fonts are stored locally.
 - The system **must keep working with no internet**. Cloud services (Railway, Aiven, ngrok) are optional and must never be required for a core flow.
@@ -18,8 +18,8 @@ source venv/bin/activate          # always, before pip or pytest
 pytest -q                         # all tests must pass before every commit
 ruff check .                      # lint (includes security rules)
 ruff format .                     # format
-sudo systemctl restart bilislikas # after changing any .py file
-journalctl -u bilislikas -f       # server logs
+sudo systemctl restart aivacuwise # after changing any .py file
+journalctl -u aivacuwise -f       # server logs
 ```
 
 HTML, CSS, and JS edits do not need a server restart. After changing `app.js` or `app.css`, bump the `?v=` query string on their `<link>`/`<script>` tags so Firefox does not serve a cached copy.

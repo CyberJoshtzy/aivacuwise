@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: delete an evacuation center together with its past records (after confirmation).
+"""AiVacuwise: delete an evacuation center together with its past records (after confirmation).
 
 - GET    /evacuation_centers/{id}/usage   evacuees inside now and number of check-in records
 - DELETE /evacuation_centers/{id}/force   removes the center and its check-in history

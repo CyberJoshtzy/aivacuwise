@@ -4,7 +4,7 @@
 - GET /districts and PUT /barangays/{id}/district (City Admin only)
 - Barangays now report their district; registration can include it.
 
-Run from ~/ai-vacuwise with the venv active:  python3 patch_sync_phase4.py   (no migration needed)
+Run from ~/aivacuwise with the venv active:  python3 patch_sync_phase4.py   (no migration needed)
 Safe to run twice.
 """
 import re
@@ -12,8 +12,8 @@ import shutil
 import subprocess
 import sys
 
-P3 = '# ---- Ai-Vacuwise: cloud sync phase 3 (push, pull, notify) ----'
-MARK = '# ---- Ai-Vacuwise: cloud sync phase 4 (status and districts) ----'
+P3 = '# ---- AiVacuwise: cloud sync phase 3 (push, pull, notify) ----'
+MARK = '# ---- AiVacuwise: cloud sync phase 4 (status and districts) ----'
 
 main_src, schemas_src = open('main.py').read(), open('schemas.py').read()
 new_main, new_schemas = main_src, schemas_src

@@ -1,4 +1,4 @@
-# Ai-Vacuwise backend test suite
+# AiVacuwise backend test suite
 
 Covers check-in, walk-in registration, transfers (including the occupancy
 accuracy fix), authentication, and the two facial recognition endpoints the
@@ -14,11 +14,11 @@ gets its own empty database that is created and thrown away automatically.
 ## Setup (run once)
 
 1. Copy `conftest.py`, `pytest.ini`, `requirements-test.txt`, and the
-   `tests/` folder into `~/ai-vacuwise`, alongside `main.py`.
+   `tests/` folder into `~/aivacuwise`, alongside `main.py`.
 2. In a terminal:
 
 ```
-cd ~/ai-vacuwise
+cd ~/aivacuwise
 source venv/bin/activate
 pip install -r requirements-test.txt
 ```
@@ -26,7 +26,7 @@ pip install -r requirements-test.txt
 ## Running the tests
 
 ```
-cd ~/ai-vacuwise
+cd ~/aivacuwise
 source venv/bin/activate
 pytest -v
 ```

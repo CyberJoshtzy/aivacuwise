@@ -9,7 +9,7 @@ Optional safeguard: put REGISTRATION_CODE=something in .env and restart the serv
 people given that code by the City DRRMO can register. Without it, registration is open to anyone
 on the local network.
 
-Run from ~/ai-vacuwise with the venv active:
+Run from ~/aivacuwise with the venv active:
   python3 patch_batch6.py
   python3 migrate_batch6.py
 Safe to run twice.
@@ -19,8 +19,8 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- Ai-Vacuwise: barangay self-registration (batch 6) ----'
-BATCH5 = '# ---- Ai-Vacuwise: evacuee photos and entrance display (batch 5) ----'
+MARK = '# ---- AiVacuwise: barangay self-registration (batch 6) ----'
+BATCH5 = '# ---- AiVacuwise: evacuee photos and entrance display (batch 5) ----'
 
 models_src = open('models.py').read()
 main_src = open('main.py').read()

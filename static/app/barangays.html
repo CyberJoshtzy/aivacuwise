@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Barangays · Ai-Vacuwise</title>
+<title>Barangays · AiVacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=57">
 <style>
@@ -67,7 +67,7 @@ tr.clickable:hover td { background: #F6F8FD; }
       $('loadError').hidden = true;
       const mine = list.find((b) => b.id === me.barangay_id);
       if (!document.getElementById('signout')) BL.renderSidebar(me, 'barangays.html', mine ? mine.name : null);
-      if (me.role !== 'city_admin') { document.querySelector('.page-head h1').textContent = 'Barangay Profile'; document.title = 'Barangay Profile · Ai-Vacuwise'; }
+      if (me.role !== 'city_admin') { document.querySelector('.page-head h1').textContent = 'Barangay Profile'; document.title = 'Barangay Profile · AiVacuwise'; }
       render();
     } catch (e) { if (!document.getElementById('signout')) BL.renderSidebar(me, 'barangays.html'); $('loadError').textContent = e.message; $('loadError').hidden = false; }
   }
@@ -77,7 +77,7 @@ tr.clickable:hover td { background: #F6F8FD; }
     const shown = list.filter((b) => !q || b.name.toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     const total = list.reduce((s, b) => s + b.residents, 0);
-    $('count').textContent = list.length + (list.length === 1 ? ' barangay' : ' barangays') + ' registered in Ai-Vacuwise, with ' + total + ' residents in total.';
+    $('count').textContent = list.length + (list.length === 1 ? ' barangay' : ' barangays') + ' registered in AiVacuwise, with ' + total + ' residents in total.';
     $('rows').innerHTML = shown.map((b) =>
       '<tr class="clickable" data-id="' + b.id + '" tabindex="0">' +
       '<td><strong style="color:var(--navy);font-size:15px">' + BL.esc(b.name) + '</strong>' + (b.address ? '<div style="font-size:15px;color:var(--muted)">' + BL.esc(b.address) + '</div>' : '') + '</td>' +

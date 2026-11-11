@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Register a Resident · Ai-Vacuwise</title>
+<title>Register a Resident · AiVacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=57">
 <style>
@@ -227,7 +227,7 @@
   // ---------- camera source: Raspberry Pi Camera Module 3 (default) or this computer's webcam ----------
   const webcamAllowed = !!(window.isSecureContext && navigator.mediaDevices);
   // The page finds the Raspberry Pi camera by itself: by name first, then by its last known address.
-  const PI_CAMERA_ADDRESSES = ['http://ai-vacuwise-pi.local:8080', 'http://192.168.100.41:8080'];
+  const PI_CAMERA_ADDRESSES = ['http://aivacuwise-pi.local:8080', 'http://192.168.100.41:8080'];
   let camSrc = 'pi', piFound = '';
   try { camSrc = localStorage.getItem('bl_cam_src') || 'pi'; } catch (e) {}
   $('camSrc').value = camSrc;

@@ -1,4 +1,4 @@
-/* Ai-Vacuwise shared frontend logic.
+/* AiVacuwise shared frontend logic.
    Talks to the FastAPI backend on the same host (served from /static/app/). */
 const BL = (() => {
   const TOKEN = 'bl_token';
@@ -50,7 +50,7 @@ const BL = (() => {
     try { u = new URL(a.getAttribute('href'), location.href); } catch (err) { return null; }
     return u.origin === location.origin && /\/static\/app\//.test(u.pathname) ? { a, u } : null;
   };
-  // Links to other Ai-Vacuwise pages that open in a new tab use the hand-over, so the new tab opens
+  // Links to other AiVacuwise pages that open in a new tab use the hand-over, so the new tab opens
   // signed in. This also covers Ctrl+click, middle-click and right-click "Open in new tab".
   document.addEventListener('click', (e) => {
     const l = appLink(e.target);
@@ -78,7 +78,7 @@ const BL = (() => {
     try {
       res = await fetch(path, { method: opts.method || 'GET', headers, body: opts.body });
     } catch (e) {
-      throw new Error('Cannot reach the Ai-Vacuwise server. Check that the laptop server is running.');
+      throw new Error('Cannot reach the AiVacuwise server. Check that the laptop server is running.');
     }
     if (res.status === 401 && !opts.allow401) {
       logout();
@@ -214,7 +214,7 @@ const BL = (() => {
       return '<a href="' + href + '"' + cur + ' data-href="' + href + '">' + svg(ic) + label + '</a>';
     }).join('');
     el.innerHTML =
-      '<div class="logo-tile"><img src="/static/logo.png?v=2" alt="Ai-Vacuwise"></div>' +
+      '<div class="logo-tile"><img src="/static/logo.png?v=3" alt="AiVacuwise"></div>' +
       '<nav class="nav" aria-label="Main">' + items + '</nav>' +
       '<div class="sync-badge" id="syncBadge" role="status" hidden><span class="sdot"></span><span><strong id="syncTitle"></strong><span id="syncSub"></span></span></div>' +
       '<nav class="nav signout" aria-label="Account"><a href="#" id="signout">' + svg('out') + 'Sign Out</a></nav>';

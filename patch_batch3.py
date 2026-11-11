@@ -1,6 +1,6 @@
 """Batch 3 backend: evacuation incidents (start/end with a disaster type) and barangay edit/delete.
 
-Run from ~/ai-vacuwise with the venv active:  python3 patch_batch3.py
+Run from ~/aivacuwise with the venv active:  python3 patch_batch3.py
 Then create the new table in PostgreSQL:        python3 create_new_tables.py
 Safe to run twice.
 """
@@ -10,8 +10,8 @@ import subprocess
 import sys
 
 D = '_' * 2
-MARK = '# ---- Ai-Vacuwise: incidents and barangay edit/delete (batch 3) ----'
-BATCH2 = '# ---- Ai-Vacuwise: edit and delete endpoints (batch 2) ----'
+MARK = '# ---- AiVacuwise: incidents and barangay edit/delete (batch 3) ----'
+BATCH2 = '# ---- AiVacuwise: edit and delete endpoints (batch 2) ----'
 
 models_src = open('models.py').read()
 main_src = open('main.py').read()

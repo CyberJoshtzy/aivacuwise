@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ai-Vacuwise</title>
+<title>AiVacuwise</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
 <link rel="stylesheet" href="app.css?v=57">
 <style>
@@ -125,7 +125,7 @@
 <div id="splash" role="status" aria-live="polite" hidden>
   <div class="logo-wrap">
     <span class="ring"></span><span class="ring r2"></span><span class="ring r3"></span>
-    <div class="tile"><img src="/static/logo.png?v=2" alt="Ai-Vacuwise"><span class="shine" aria-hidden="true"></span></div>
+    <div class="tile"><img src="/static/logo.png?v=3" alt="AiVacuwise"><span class="shine" aria-hidden="true"></span></div>
   </div>
   <div class="load">
     <div class="track"><div class="fill" id="splashFill"></div></div>
@@ -135,8 +135,8 @@
 </div>
 <div class="home">
 <main class="home-main">
-  <section class="home-logo" aria-label="Ai-Vacuwise logo">
-    <img src="/static/logo.png?v=2" alt="Ai-Vacuwise">
+  <section class="home-logo" aria-label="AiVacuwise logo">
+    <img src="/static/logo.png?v=3" alt="AiVacuwise">
   </section>
   <section class="home-copy">
 
@@ -173,7 +173,7 @@
   </section>
 </main>
 <footer class="home-foot">
-  <span>Ai-Vacuwise: Quick Smart Evacuation Tracking and Management System</span>
+  <span>AiVacuwise: Quick Smart Evacuation Tracking and Management System</span>
   <span>Personal data is protected under the Data Privacy Act of 2012 (RA 10173).</span>
 </footer>
 </div>
@@ -202,7 +202,7 @@
         if (!r.ok) throw new Error('bad status');
       } catch (e) {
         el.classList.add('error');
-        step('100%', 'Cannot reach the Ai-Vacuwise server. Check that the server laptop is on and connected.');
+        step('100%', 'Cannot reach the AiVacuwise server. Check that the server laptop is on and connected.');
         return;
       }
       await new Promise((r) => setTimeout(r, Math.max(0, minTime - (Date.now() - t0))));

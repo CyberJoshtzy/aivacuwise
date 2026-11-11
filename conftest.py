@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for the Ai-Vacuwise backend test suite.
+"""Shared pytest fixtures for the AiVacuwise backend test suite.
 
 Design decisions:
 

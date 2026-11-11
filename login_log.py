@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: sign-in history of every account.
+"""AiVacuwise: sign-in history of every account.
 
 - Table login_logs (created on startup): time, user, email typed, result, IP address, device.
 - record(...) is called by /login in main.py for every attempt (success, wrong password, blocked).

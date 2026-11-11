@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: quality safeguards based on the ISO/IEC 25010 Software Quality Model.
+"""AiVacuwise: quality safeguards based on the ISO/IEC 25010 Software Quality Model.
 
 Installed from main.py with:  import iso_quality; iso_quality.install(app)
 

@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: entrance camera status.
+"""AiVacuwise: entrance camera status.
 
 The entrance camera program on the Raspberry Pi (entrance_client/recognize.py) calls
 POST /camera/heartbeat every 15 seconds while it runs. The Live Evacuation page and the

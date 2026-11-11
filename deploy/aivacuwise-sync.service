@@ -1,0 +1,14 @@
+[Unit]
+Description=AiVacuwise cloud sync agent
+After=network-online.target aivacuwise.service
+Wants=network-online.target
+
+[Service]
+User=ian
+WorkingDirectory=/home/ian/aivacuwise
+ExecStart=/home/ian/aivacuwise/venv/bin/python sync_agent.py server-a
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

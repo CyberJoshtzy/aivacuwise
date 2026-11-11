@@ -4,15 +4,15 @@
   records this server still has to send, and the hub keeps a sync_log of every change it received.
 - main.py: POST /sync/push, GET /sync/pull (used on the hub), POST /sync/notify (refreshes open pages).
 
-Run from ~/ai-vacuwise with the venv active:  python3 patch_sync_phase3.py
+Run from ~/aivacuwise with the venv active:  python3 patch_sync_phase3.py
 Safe to run twice.
 """
 import shutil
 import subprocess
 import sys
 
-P1 = '# ---- Ai-Vacuwise: cloud sync phase 1 (sync-ready records) ----'
-MARK = '# ---- Ai-Vacuwise: cloud sync phase 3 (push, pull, notify) ----'
+P1 = '# ---- AiVacuwise: cloud sync phase 1 (sync-ready records) ----'
+MARK = '# ---- AiVacuwise: cloud sync phase 3 (push, pull, notify) ----'
 D = '_' * 2
 
 models_src, main_src = open('models.py').read(), open('main.py').read()

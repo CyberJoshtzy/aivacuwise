@@ -1,6 +1,6 @@
 """Adds Edit and Delete endpoints for evacuees and evacuation centers to main.py.
 
-Run from ~/ai-vacuwise with the venv active:  python3 patch_edit_delete.py
+Run from ~/aivacuwise with the venv active:  python3 patch_edit_delete.py
 Safe to run twice: it skips itself if the endpoints are already there.
 """
 import re
@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- Ai-Vacuwise: edit and delete endpoints (batch 2) ----'
+MARK = '# ---- AiVacuwise: edit and delete endpoints (batch 2) ----'
 
 src = open('main.py').read()
 if MARK in src:

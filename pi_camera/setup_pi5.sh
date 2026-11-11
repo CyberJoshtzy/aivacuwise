@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# One-time setup of the Raspberry Pi 5 for Ai-Vacuwise's two cameras.
+# One-time setup of the Raspberry Pi 5 for AiVacuwise's two cameras.
 #   Camera Module 3 (ribbon cable) -> pre-registration camera service (port 8080, starts at boot)
 #   USB webcam                     -> entrance recognizer (entrance_client/recognize.py)
 #
 # Run ON THE PI, from the folder that was copied from the laptop:
-#     cd ~/ai-vacuwise-pi && bash pi_camera/setup_pi5.sh
+#     cd ~/aivacuwise-pi && bash pi_camera/setup_pi5.sh
 # Safe to run again.
 
 set -e
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ME="$(id -un)"
-echo "== Ai-Vacuwise Raspberry Pi 5 camera setup (folder: $DIR, user: $ME) =="
+echo "== AiVacuwise Raspberry Pi 5 camera setup (folder: $DIR, user: $ME) =="
 
 # sudo password typed visibly (hidden password prompts do not work reliably on this setup)
 read -r -p "Pi password for sudo (it will show on screen): " PW
@@ -58,4 +58,4 @@ IP="$(hostname -I | awk '{print $1}')"
 echo
 echo "Done. This Pi's address: $IP"
 echo "  Pre-Registration page -> Camera: Raspberry Pi camera, address: http://$IP:8080"
-echo "  Entrance camera       -> runs by itself (service ai-vacuwise-entrance-camera)"
+echo "  Entrance camera       -> runs by itself (service aivacuwise-entrance-camera)"

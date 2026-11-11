@@ -6,7 +6,7 @@ Adds:
   GET  /evacuee_details          civil status, special needs, emergency contact for each evacuee
   and lets PUT /evacuees/{id} also update civil_status, special_needs, emergency_contact.
 
-Run from ~/ai-vacuwise with the venv active:
+Run from ~/aivacuwise with the venv active:
   python3 patch_batch4.py
   python3 migrate_batch4.py
 Safe to run twice.
@@ -16,8 +16,8 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- Ai-Vacuwise: pre-registration with webcam photos (batch 4) ----'
-BATCH2 = '# ---- Ai-Vacuwise: edit and delete endpoints (batch 2) ----'
+MARK = '# ---- AiVacuwise: pre-registration with webcam photos (batch 4) ----'
+BATCH2 = '# ---- AiVacuwise: edit and delete endpoints (batch 2) ----'
 
 models_src = open('models.py').read()
 main_src = open('main.py').read()

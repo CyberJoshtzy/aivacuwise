@@ -1,5 +1,5 @@
 # Fixed project name so the database volumes (bilislikas20_postgres_data,
-# bilislikas20_redis_data) are kept even though the folder is now ~/ai-vacuwise.
+# bilislikas20_redis_data) are kept even though the folder is now ~/aivacuwise.
 name: bilislikas20
 
 services:

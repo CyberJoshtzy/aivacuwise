@@ -1,6 +1,6 @@
 """Cloud sync, Phase 1: make the database sync-ready (no sync happens yet).
 
-Run from ~/ai-vacuwise with the venv active:  python3 patch_sync_phase1.py
+Run from ~/aivacuwise with the venv active:  python3 patch_sync_phase1.py
 Then (with the service STOPPED):              python3 migrate_sync_phase1.py
 Safe to run twice.
 """
@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 
-MARK = '# ---- Ai-Vacuwise: cloud sync phase 1 (sync-ready records) ----'
+MARK = '# ---- AiVacuwise: cloud sync phase 1 (sync-ready records) ----'
 D = '_' * 2  # double underscore, written this way so pasting never corrupts it
 
 files = {f: open(f).read() for f in ['models.py', 'database.py', 'schemas.py', 'main.py']}

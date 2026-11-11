@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: barangay profile (address, chairman, centers, residents).
+"""AiVacuwise: barangay profile (address, chairman, centers, residents).
 
 - Adds barangays.address and barangays.zone (startup ALTER).
 - GET /barangay_info               City Admin: every barangay. Official: own barangay only.

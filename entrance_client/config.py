@@ -1,4 +1,4 @@
-"""Settings for the Ai-Vacuwise entrance camera client (laptop or Raspberry Pi)."""
+"""Settings for the AiVacuwise entrance camera client (laptop or Raspberry Pi)."""
 
 # Where the FastAPI backend runs. On the server laptop itself, use 127.0.0.1.
 # On the Raspberry Pi, use the laptop's static IP: "http://192.168.100.200:8000"
