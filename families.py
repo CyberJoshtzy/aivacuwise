@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: family details for pre-registration.
+"""AiVacuwise: family details for pre-registration.
 
 - Adds three columns to existing databases (local server and cloud hub) on startup:
   evacuees.guardian_evacuee_id, evacuees.home_barangay, households.member_count.

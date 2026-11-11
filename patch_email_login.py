@@ -1,4 +1,4 @@
-"""Lets users sign in with email or username. Run from ~/ai-vacuwise:  python3 patch_email_login.py"""
+"""Lets users sign in with email or username. Run from ~/aivacuwise:  python3 patch_email_login.py"""
 import re, shutil, subprocess, sys
 
 FILES = ['models.py', 'schemas.py', 'main.py', 'auth.py']

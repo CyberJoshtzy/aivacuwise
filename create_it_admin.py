@@ -1,6 +1,6 @@
 """Creates (or resets) the City Hall IT Administrator account.
 
-Run on the laptop server:   cd ~/ai-vacuwise && venv/bin/python create_it_admin.py
+Run on the laptop server:   cd ~/aivacuwise && venv/bin/python create_it_admin.py
 The password is printed only in the terminal. Write it down and do not paste it in chats or screenshots.
 """
 

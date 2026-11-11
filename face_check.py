@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: live face check for the Pre-Registration camera.
+"""AiVacuwise: live face check for the Pre-Registration camera.
 
 POST /faces/check  {image: small JPEG data URL, angle: left|front|right}
 Returns {ok, code, message, box:[x,y,w,h] (0-1), yaw}. The page turns the oval green only when ok is true.

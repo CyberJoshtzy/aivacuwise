@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: how fast the entrance camera recognizes and checks in each evacuee.
+"""AiVacuwise: how fast the entrance camera recognizes and checks in each evacuee.
 
 The entrance camera program on the Raspberry Pi (entrance_client/recognize.py) measures,
 for every automatic check-in or transfer, three moments on the Pi's own clock:

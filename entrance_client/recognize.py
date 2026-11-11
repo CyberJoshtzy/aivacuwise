@@ -1,10 +1,10 @@
-"""Ai-Vacuwise entrance camera: recognizes registered evacuees walking past and checks them in.
+"""AiVacuwise entrance camera: recognizes registered evacuees walking past and checks them in.
 
 Same approach as the Raspberry Pi's recognize.py: face_recognition (dlib), 0.6 tolerance,
 cooldown per person, enrolled faces reloaded every minute. If a recognized person is already
 checked in at a different center, a transfer is recorded instead of a plain check-in.
 
-Run:  ~/ai-vacuwise/venv/bin/python recognize.py      Stop: press q in the window, or Ctrl+C.
+Run:  ~/aivacuwise/venv/bin/python recognize.py      Stop: press q in the window, or Ctrl+C.
 """
 
 import json
@@ -18,7 +18,7 @@ import face_recognition
 import numpy as np
 import requests
 
-# The background service (ai-vacuwise-entrance-camera) has no screen, so it runs without the preview window.
+# The background service (aivacuwise-entrance-camera) has no screen, so it runs without the preview window.
 if os.environ.get("AIVACUWISE_HEADLESS") == "1":
     config.SHOW_PREVIEW = False
 
@@ -386,7 +386,7 @@ def main():
                 stream.push(frame)
 
             if config.SHOW_PREVIEW:
-                cv2.imshow("Ai-Vacuwise entrance camera (press q to stop)", frame)
+                cv2.imshow("AiVacuwise entrance camera (press q to stop)", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
     except KeyboardInterrupt:

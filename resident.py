@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: resident / evacuee portal (read-only, own family only).
+"""AiVacuwise: resident / evacuee portal (read-only, own family only).
 
 Residents do not sign up. They were pre-registered by their barangay, so they sign in with
   first name + last name + mobile number given at pre-registration

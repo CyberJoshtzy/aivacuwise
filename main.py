@@ -19,7 +19,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"status": "Ai-Vacuwise backend is running"}
+    return {"status": "AiVacuwise backend is running"}
 
 
 @app.post("/barangays", response_model=schemas.BarangayOut)
@@ -628,7 +628,7 @@ def enrolled_faces(db: Session = Depends(get_db), current_user=Depends(auth.get_
     return result
 
 
-# ---- Ai-Vacuwise: edit and delete endpoints (batch 2) ----
+# ---- AiVacuwise: edit and delete endpoints (batch 2) ----
 from datetime import date as _BLDate
 
 from fastapi import Depends as _BLDepends
@@ -865,7 +865,7 @@ async def bl_delete_center(
     return {"deleted": center_id}
 
 
-# ---- Ai-Vacuwise: incidents and barangay edit/delete (batch 3) ----
+# ---- AiVacuwise: incidents and barangay edit/delete (batch 3) ----
 from datetime import datetime as _BL3dt
 
 from sqlalchemy import func as _BL3func
@@ -1140,7 +1140,7 @@ async def bl_delete_barangay(
     return {"deleted": barangay_id}
 
 
-# ---- Ai-Vacuwise: pre-registration with webcam photos (batch 4) ----
+# ---- AiVacuwise: pre-registration with webcam photos (batch 4) ----
 class BLFaceImages(_BLBaseModel):
     images: list
     angles: list | None = None
@@ -1312,7 +1312,7 @@ def bl_evacuee_details(db: _BLSession = _BLDepends(get_db), user=_BLDepends(auth
     ]
 
 
-# ---- Ai-Vacuwise: evacuee photos and entrance display (batch 5) ----
+# ---- AiVacuwise: evacuee photos and entrance display (batch 5) ----
 import os as _bl_os
 
 from fastapi.responses import FileResponse as _BLFileResponse
@@ -1513,7 +1513,7 @@ def bl_display(
     }
 
 
-# ---- Ai-Vacuwise: barangay self-registration (batch 6) ----
+# ---- AiVacuwise: barangay self-registration (batch 6) ----
 import re as _bl_re
 
 BL_DESIGNATIONS = ["Barangay Chairman", "Barangay Kagawad", "SK Chairman", "Barangay Secretary"]
@@ -1670,7 +1670,7 @@ async def bl_register(payload: BLRegister, db: _BLSession = _BLDepends(get_db)):
     }
 
 
-# ---- Ai-Vacuwise: cloud sync phase 1 (sync-ready records) ----
+# ---- AiVacuwise: cloud sync phase 1 (sync-ready records) ----
 @app.get("/sync/status")
 def sync_status(db: Session = Depends(get_db), current_user=Depends(auth.get_current_user)):
     counts = {}
@@ -1688,7 +1688,7 @@ def sync_status(db: Session = Depends(get_db), current_user=Depends(auth.get_cur
     }
 
 
-# ---- Ai-Vacuwise: cloud sync phase 3 (push, pull, notify) ----
+# ---- AiVacuwise: cloud sync phase 3 (push, pull, notify) ----
 import os as _sync_os
 
 from fastapi import Header as _SyncHeader
@@ -1795,7 +1795,7 @@ async def sync_notify(x_sync_key: str = _SyncHeader(None), db: Session = Depends
     return {"ok": True}
 
 
-# ---- Ai-Vacuwise: cloud sync phase 4 (status and districts) ----
+# ---- AiVacuwise: cloud sync phase 4 (status and districts) ----
 MANILA_DISTRICTS = [
     "Binondo",
     "Ermita",
@@ -1885,12 +1885,12 @@ def sync_info(db: Session = Depends(get_db), current_user=Depends(auth.get_curre
     }
 
 
-# ---- Ai-Vacuwise: families, infants, home barangay ----
+# ---- AiVacuwise: families, infants, home barangay ----
 import families
 
 app.include_router(families.router)
 
-# ---- Ai-Vacuwise: forgot password ----
+# ---- AiVacuwise: forgot password ----
 import password_reset
 
 app.include_router(password_reset.router)
@@ -1953,17 +1953,17 @@ import iso_quality
 
 iso_quality.install(app)
 
-# ---- Ai-Vacuwise: cross-barangay evacuee tracking ----
+# ---- AiVacuwise: cross-barangay evacuee tracking ----
 import cross_barangay
 
 app.include_router(cross_barangay.router)
 
-# ---- Ai-Vacuwise: entrance camera status (heartbeat from the Raspberry Pi) ----
+# ---- AiVacuwise: entrance camera status (heartbeat from the Raspberry Pi) ----
 import camera_status
 
 app.include_router(camera_status.router)
 
-# ---- Ai-Vacuwise: recognition speed measurements from the entrance camera (Chapter 4) ----
+# ---- AiVacuwise: recognition speed measurements from the entrance camera (Chapter 4) ----
 import recognition_timing
 
 app.include_router(recognition_timing.router)

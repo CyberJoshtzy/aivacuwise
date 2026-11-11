@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: relief goods and medicine distribution log.
+"""AiVacuwise: relief goods and medicine distribution log.
 
 Barangay officials record what was given (food, water, medicine, hygiene, other);
 the City Admin sees every barangay's totals on City Overview (synced through the cloud hub).

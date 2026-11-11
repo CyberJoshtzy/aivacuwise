@@ -1,9 +1,9 @@
 """Cloud sync, Phase 1 migration: adds uuid / updated_at / origin to the existing tables,
 fills them in for records that already exist, and creates sync_tombstones and sync_state.
 
-STOP THE SERVICE FIRST:  sudo systemctl stop bilislikas
+STOP THE SERVICE FIRST:  sudo systemctl stop aivacuwise
 Then:                    python3 migrate_sync_phase1.py
-Then:                    sudo systemctl start bilislikas
+Then:                    sudo systemctl start aivacuwise
 Safe to run twice.
 """
 

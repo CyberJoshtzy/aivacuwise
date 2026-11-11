@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: approvals handled by the City Hall IT Administrator (System Administrator account).
+"""AiVacuwise: approvals handled by the City Hall IT Administrator (System Administrator account).
 
 1. Barangay official sign-up starts as "pending". The barangay and evacuation centers typed in the sign-up
    form are remembered here; if the request is rejected, anything that sign-up created is removed again.

@@ -1,4 +1,4 @@
-"""Ai-Vacuwise pre-registration camera service (Raspberry Pi 5 + Camera Module 3).
+"""AiVacuwise pre-registration camera service (Raspberry Pi 5 + Camera Module 3).
 
 Shares the Camera Module 3 with the Pre-Registration page on the laptop server, so the
 barangay official can capture the left, front and right photos from any browser on the
@@ -10,8 +10,8 @@ Endpoints (port 8080 by default, CORS open so the laptop page can read the image
     GET /photo.jpg       newest frame as JPEG, full size (used when a photo is captured)
     GET /health          {"ok": true, "camera": "...", "size": [w, h]}
 
-Run on the Pi:   python3 ~/ai-vacuwise-pi/pi_camera/prereg_camera.py
-Stop:            Ctrl+C   (or: sudo systemctl stop ai-vacuwise-prereg-camera)
+Run on the Pi:   python3 ~/aivacuwise-pi/pi_camera/prereg_camera.py
+Stop:            Ctrl+C   (or: sudo systemctl stop aivacuwise-prereg-camera)
 Needs:           python3-picamera2 (preinstalled on Raspberry Pi OS), opencv-python
 """
 

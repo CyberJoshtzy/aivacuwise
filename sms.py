@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: GSM SMS Alert Sender.
+"""AiVacuwise: GSM SMS Alert Sender.
 
 The laptop server keeps a queue of text messages. An ESP32 with a GSM module (A7670 / SIM7600 / SIM800L)
 asks the server for the next message over the local Wi-Fi, sends it as a normal SMS through its SIM card,
@@ -165,12 +165,12 @@ def _build(db, kind, oid):
             seen.add(p)
             if kind == "start":
                 body = (
-                    "Ai-Vacuwise - {b}: May {d} evacuation. Lumikas na po sa {w}. "
+                    "AiVacuwise - {b}: May {d} evacuation. Lumikas na po sa {w}. "
                     "Dalhin ang ID, gamot, tubig at GPS tracker. Humarap sa camera pagpasok."
                 ).format(b=brgy.name if brgy else "Barangay", d=i.disaster_type, w=where)
             else:
                 body = (
-                    "Ai-Vacuwise - {b}: Tapos na po ang evacuation. Ligtas nang umuwi. "
+                    "AiVacuwise - {b}: Tapos na po ang evacuation. Ligtas nang umuwi. "
                     "Mag-ingat po sa pag-uwi."
                 ).format(b=brgy.name if brgy else "Barangay")
             _queue(db, p, body, "evacuation_" + kind, i.barangay_id)
@@ -192,7 +192,7 @@ def _build(db, kind, oid):
             )
             if head and normalize(head.contact_number):
                 to = head.contact_number
-        body = "Ai-Vacuwise: Si {n} ay nakarating na sa {c}, {t}. Ligtas po siya.".format(
+        body = "AiVacuwise: Si {n} ay nakarating na sa {c}, {t}. Ligtas po siya.".format(
             n=e.full_name,
             c=center.name if center else "evacuation center",
             t=_local(c.timestamp or datetime.utcnow()),
@@ -305,7 +305,7 @@ def sms_test(p: TestIn, user=Depends(auth.get_current_user), db: Session = Depen
     if not _queue(
         db,
         p.phone,
-        "Ai-Vacuwise: Test message. Gumagana ang SMS alert sender.",
+        "AiVacuwise: Test message. Gumagana ang SMS alert sender.",
         "test",
         user.barangay_id,
     ):
@@ -414,7 +414,7 @@ def sms_resend(p: ResendIn, user=Depends(auth.get_current_user), db: Session = D
     body = " ".join((p.message or "").split())[:300]
     if not body:
         body = (
-            "PAALALA - Ai-Vacuwise, {b}: Patuloy po ang {d} evacuation. Kung hindi pa kayo nakalilikas, "
+            "PAALALA - AiVacuwise, {b}: Patuloy po ang {d} evacuation. Kung hindi pa kayo nakalilikas, "
             "pumunta na po sa {w}. Humarap sa camera pagpasok."
         ).format(
             b=brgy.name if brgy else "Barangay",

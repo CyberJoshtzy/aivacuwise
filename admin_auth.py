@@ -1,4 +1,4 @@
-"""Ai-Vacuwise: City Hall administrator accounts.
+"""AiVacuwise: City Hall administrator accounts.
 
 - Adds position, office, employee_id, account_status and is_superuser to users (startup ALTER).
 - Existing city_admin accounts made before this change become System Administrators (superusers).

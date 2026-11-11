@@ -1,4 +1,4 @@
-# Ai-Vacuwise sync simulation: a second barangay database (Server B) and the cloud hub database.
+# AiVacuwise sync simulation: a second barangay database (Server B) and the cloud hub database.
 # Uses the same database name, user and password as .env. Reachable from this laptop only.
 services:
   postgres_b:

@@ -1,4 +1,4 @@
-"""Ai-Vacuwise sync agent: runs beside one barangay server and keeps it in sync with the cloud hub.
+"""AiVacuwise sync agent: runs beside one barangay server and keeps it in sync with the cloud hub.
 
 Every SYNC_INTERVAL seconds, when the hub is reachable:
   1. push: send records created or changed here (and deletions) to the hub
