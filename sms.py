@@ -48,7 +48,7 @@ class SmsMessage(Base):
     body = Column(String, nullable=False)
     kind = Column(
         String, nullable=False, default="manual"
-    )  # evacuation_start, checkin, evacuation_end, test
+    )  # evacuation_start, checkin, evacuation_end, test, otp
     barangay_id = Column(Integer, nullable=True, index=True)
     status = Column(
         String, nullable=False, default="queued", index=True
@@ -269,7 +269,7 @@ def sms_log(limit: int = 100, user=Depends(auth.get_current_user), db: Session =
         {
             "id": m.id,
             "phone": m.phone[:-4] + "****",
-            "body": m.body,
+            "body": re.sub(r"\d{6}", "******", m.body) if m.kind == "otp" else m.body,
             "kind": m.kind,
             "status": m.status,
             "attempts": m.attempts,

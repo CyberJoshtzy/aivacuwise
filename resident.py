@@ -1,10 +1,15 @@
 """AiVacuwise: resident / evacuee portal (read-only, own family only).
 
 Residents do not sign up. They were pre-registered by their barangay, so they sign in with
-  first name + last name + mobile number given at pre-registration
-(a child without a mobile number can use the head of family's number).
+the mobile number given at pre-registration (a child without a mobile number can use the
+head of family's number). Older clients may still send first and last name; when given,
+they narrow the match.
 
-- POST /resident/login   returns a resident token (12 hours), separate from staff tokens
+- POST /resident/login       checks the mobile number and texts a 6-digit code (OTP) through the
+                             SMS queue (ESP32 + GSM module); returns a challenge id, not a token
+- POST /resident/verify-otp  {challenge, code} returns a resident token (12 hours), separate
+                             from staff tokens. Codes last 5 minutes, 5 tries, resend after 60 s.
+                             RESIDENT_OTP_DEBUG=1 in .env also returns the code (testing only).
 - GET  /resident/me      own profile, current status, own history, family members and their logs,
                          active evacuation in the barangay, assigned GPS tracker
 Residents never see other families, other barangays, or any staff dashboard data (RA 10173).
@@ -15,6 +20,7 @@ import hashlib
 import hmac
 import os
 import re
+import secrets
 import time
 from datetime import datetime
 
@@ -30,12 +36,18 @@ TOKEN_HOURS = 12
 MAX_FAILS = 5
 FAIL_WINDOW = 600
 _fails = {}
+OTP_SECONDS = 300
+OTP_RESEND_SECONDS = 60
+OTP_MAX_TRIES = 5
+OTP_DEBUG = (os.getenv("RESIDENT_OTP_DEBUG") or "").strip() in ("1", "true", "yes")
+_otps = {}  # challenge -> {eid, mobile, hash, exp, tries}; kept in memory, cleared on restart
+_otp_sent = {}  # mobile -> time the last code was sent
 
 
 class ResidentLogin(BaseModel):
     first_name: str = ""
     middle_name: str = ""
-    last_name: str
+    last_name: str = ""
     birthdate: str = ""  # optional, YYYY-MM-DD; the sign-in page no longer asks for it
     mobile_number: str
 
@@ -83,6 +95,27 @@ def _age(b):
     return t.year - b.year - ((t.month, t.day) < (b.month, b.day))
 
 
+def _match_by_mobile(db, mobile, bday=None):
+    """Resident whose own number matches; otherwise the head of the family that uses it.
+
+    A family often shares the head's number, so the head is the one signed in and the
+    resident page already shows every family member.
+    """
+    E = models.Evacuee
+    people = [
+        e
+        for e in db.query(E).order_by(E.id).all()
+        if bday is None or (e.birthdate is not None and e.birthdate.date() == bday)
+    ]
+    own = [e for e in people if _digits(e.contact_number) == mobile]
+    heads = [e for e in own if e.is_head_of_family]
+    if heads:
+        return heads[0]
+    if own:
+        return own[0]
+    return None
+
+
 @router.post("/resident/login")
 def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get_db)):
     ip = request.client.host if request.client else "?"
@@ -103,11 +136,21 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
             bday = datetime.strptime(p.birthdate.strip(), "%Y-%m-%d").date()
         except ValueError:
             raise HTTPException(status_code=422, detail="Choose your complete birthday.")  # noqa: B904
-    if not first or not last or not re.fullmatch(r"09\d{9}", mobile):
+    if not re.fullmatch(r"09\d{9}", mobile):
         raise HTTPException(
             status_code=422,
-            detail="Enter your first name, last name and a valid mobile number, such as 0917 123 4567.",
+            detail="Enter a valid mobile number, such as 0917 123 4567.",
         )
+    if not first and not last:
+        match = _match_by_mobile(db, mobile, bday)
+        if not match:
+            _fails[ip].append(now)
+            raise HTTPException(
+                status_code=401,
+                detail="No pre-registered resident matches this mobile number. Check the number, or ask your barangay office.",
+            )
+        _fails.pop(ip, None)
+        return _send_otp(db, match, mobile)
     E = models.Evacuee
     match = None
     for e in db.query(E).order_by(E.id).all():
@@ -140,9 +183,89 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
             detail="No pre-registered resident matches these details. Check your name and mobile number, or ask your barangay office.",
         )
     _fails.pop(ip, None)
+    return _send_otp(db, match, mobile)
+
+
+# ---------- one-time code (OTP) sent by SMS ----------
+def _mask(mobile):
+    return mobile[:4] + " *** " + mobile[-4:]
+
+
+def _send_otp(db, match, mobile):
+    now = time.time()
+    last = _otp_sent.get(mobile)
+    if last and now - last < OTP_RESEND_SECONDS:
+        wait = int(OTP_RESEND_SECONDS - (now - last)) + 1
+        raise HTTPException(
+            status_code=429, detail="Please wait %d seconds before asking for a new code." % wait
+        )
+    code = "%06d" % secrets.randbelow(1000000)
+    challenge = secrets.token_urlsafe(16)
+    for k in [k for k, v in _otps.items() if v["mobile"] == mobile or v["exp"] < now]:
+        _otps.pop(k, None)
+    _otps[challenge] = {
+        "eid": match.id,
+        "mobile": mobile,
+        "hash": hashlib.sha256(code.encode()).hexdigest(),
+        "exp": now + OTP_SECONDS,
+        "tries": 0,
+    }
+    _otp_sent[mobile] = now
+    import sms
+
+    sms._queue(
+        db,
+        mobile,
+        "AiVacuwise: Your sign-in code is %s. It expires in %d minutes. Do not share this code."
+        % (code, OTP_SECONDS // 60),
+        "otp",
+        match.registered_barangay_id,
+    )
+    db.commit()
+    out = {
+        "otp_required": True,
+        "challenge": challenge,
+        "sent_to": _mask(mobile),
+        "expires_in_seconds": OTP_SECONDS,
+        "resend_after_seconds": OTP_RESEND_SECONDS,
+    }
+    if OTP_DEBUG:
+        out["dev_code"] = code  # testing only: RESIDENT_OTP_DEBUG=1 in .env
+    return out
+
+
+class OtpVerify(BaseModel):
+    challenge: str
+    code: str
+
+
+@router.post("/resident/verify-otp")
+def resident_verify_otp(p: OtpVerify, db: Session = Depends(get_db)):
+    rec = _otps.get(p.challenge)
+    if not rec or rec["exp"] < time.time():
+        _otps.pop(p.challenge, None)
+        raise HTTPException(
+            status_code=410, detail="This code has expired. Ask for a new code."
+        )
+    code = re.sub(r"\D", "", p.code or "")
+    if not hmac.compare_digest(hashlib.sha256(code.encode()).hexdigest(), rec["hash"]):
+        rec["tries"] += 1
+        if rec["tries"] >= OTP_MAX_TRIES:
+            _otps.pop(p.challenge, None)
+            raise HTTPException(
+                status_code=429, detail="Too many wrong codes. Ask for a new code."
+            )
+        raise HTTPException(
+            status_code=401,
+            detail="Wrong code. %d tries left." % (OTP_MAX_TRIES - rec["tries"]),
+        )
+    _otps.pop(p.challenge, None)
+    e = db.get(models.Evacuee, rec["eid"])
+    if not e:
+        raise HTTPException(status_code=401, detail="Please sign in again.")
     return {
-        "token": _make_token(match.id),
-        "full_name": match.full_name,
+        "token": _make_token(e.id),
+        "full_name": e.full_name,
         "expires_in_hours": TOKEN_HOURS,
     }
 
