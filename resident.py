@@ -1,8 +1,9 @@
 """AiVacuwise: resident / evacuee portal (read-only, own family only).
 
 Residents do not sign up. They were pre-registered by their barangay, so they sign in with
-  first name + last name + mobile number given at pre-registration
-(a child without a mobile number can use the head of family's number).
+the mobile number given at pre-registration (a child without a mobile number can use the
+head of family's number). Older clients may still send first and last name; when given,
+they narrow the match.
 
 - POST /resident/login   returns a resident token (12 hours), separate from staff tokens
 - GET  /resident/me      own profile, current status, own history, family members and their logs,
@@ -35,7 +36,7 @@ _fails = {}
 class ResidentLogin(BaseModel):
     first_name: str = ""
     middle_name: str = ""
-    last_name: str
+    last_name: str = ""
     birthdate: str = ""  # optional, YYYY-MM-DD; the sign-in page no longer asks for it
     mobile_number: str
 
@@ -83,6 +84,27 @@ def _age(b):
     return t.year - b.year - ((t.month, t.day) < (b.month, b.day))
 
 
+def _match_by_mobile(db, mobile, bday=None):
+    """Resident whose own number matches; otherwise the head of the family that uses it.
+
+    A family often shares the head's number, so the head is the one signed in and the
+    resident page already shows every family member.
+    """
+    E = models.Evacuee
+    people = [
+        e
+        for e in db.query(E).order_by(E.id).all()
+        if bday is None or (e.birthdate is not None and e.birthdate.date() == bday)
+    ]
+    own = [e for e in people if _digits(e.contact_number) == mobile]
+    heads = [e for e in own if e.is_head_of_family]
+    if heads:
+        return heads[0]
+    if own:
+        return own[0]
+    return None
+
+
 @router.post("/resident/login")
 def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get_db)):
     ip = request.client.host if request.client else "?"
@@ -103,11 +125,25 @@ def resident_login(p: ResidentLogin, request: Request, db: Session = Depends(get
             bday = datetime.strptime(p.birthdate.strip(), "%Y-%m-%d").date()
         except ValueError:
             raise HTTPException(status_code=422, detail="Choose your complete birthday.")  # noqa: B904
-    if not first or not last or not re.fullmatch(r"09\d{9}", mobile):
+    if not re.fullmatch(r"09\d{9}", mobile):
         raise HTTPException(
             status_code=422,
-            detail="Enter your first name, last name and a valid mobile number, such as 0917 123 4567.",
+            detail="Enter a valid mobile number, such as 0917 123 4567.",
         )
+    if not first and not last:
+        match = _match_by_mobile(db, mobile, bday)
+        if not match:
+            _fails[ip].append(now)
+            raise HTTPException(
+                status_code=401,
+                detail="No pre-registered resident matches this mobile number. Check the number, or ask your barangay office.",
+            )
+        _fails.pop(ip, None)
+        return {
+            "token": _make_token(match.id),
+            "full_name": match.full_name,
+            "expires_in_hours": TOKEN_HOURS,
+        }
     E = models.Evacuee
     match = None
     for e in db.query(E).order_by(E.id).all():

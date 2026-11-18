@@ -63,14 +63,9 @@
       <a class="back" href="index.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Back to home</a>
       <div>
         <h1>Resident sign in</h1>
-        <p style="color:var(--muted);margin-top:8px">Use the details you gave during pre-registration at your barangay.</p>
+        <p style="color:var(--muted);margin-top:8px">Use the mobile number you gave during pre-registration at your barangay.</p>
       </div>
       <div id="error" class="form-error" role="alert" hidden></div>
-      <div class="field-group"><label for="first">First name</label><input id="first" class="input" autocomplete="given-name" placeholder="e.g. Juan"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="field-group"><label for="middle">Middle name <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="middle" class="input" autocomplete="additional-name" placeholder="e.g. Santos"></div>
-        <div class="field-group"><label for="last">Last name</label><input id="last" class="input" autocomplete="family-name" placeholder="e.g. Dela Cruz"></div>
-      </div>
       <div class="field-group"><label for="mobile">Mobile number</label><input id="mobile" class="input" inputmode="tel" placeholder="0917 123 4567">
         <div style="font-size:15px;color:var(--muted)">Children without a phone can use the head of family's number.</div></div>
       <button class="btn btn-res btn-lg" type="submit" id="submit">Sign In</button>
@@ -86,21 +81,19 @@
   function fail(m) { err.textContent = m; err.hidden = false; }
   $('form').addEventListener('submit', async function (e) {
     e.preventDefault(); err.hidden = true;
-    var last = $('last').value.trim(), mob = $('mobile').value.trim();
-    if (!$('first').value.trim()) return fail('Enter your first name.');
-    if (!last) return fail('Enter your last name.');
+    var mob = $('mobile').value.trim();
     if (!mob) return fail('Enter your mobile number.');
     var b = $('submit'); b.disabled = true; b.textContent = 'Signing in...';
     try {
       var r = await fetch('/resident/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: $('first').value.trim(), middle_name: $('middle').value.trim(), last_name: last, mobile_number: mob }) });
+        body: JSON.stringify({ mobile_number: mob }) });
       var data = await r.json().catch(function () { return {}; });
       if (!r.ok) throw new Error(Array.isArray(data.detail) ? data.detail.map(function (x) { return x.msg; }).join(', ') : (data.detail || 'Something went wrong.'));
       try { sessionStorage.setItem('bl_resident', data.token); } catch (x) { window.name = 'blr:' + data.token; }
       location.href = 'resident.html';
     } catch (ex) { fail(ex.message); } finally { b.disabled = false; b.textContent = 'Sign In'; }
   });
-  $('first').focus();
+  $('mobile').focus();
 })();
 </script>
 </body>
