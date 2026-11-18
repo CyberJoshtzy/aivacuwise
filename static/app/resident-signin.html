@@ -68,30 +68,89 @@
       <div id="error" class="form-error" role="alert" hidden></div>
       <div class="field-group"><label for="mobile">Mobile number</label><input id="mobile" class="input" inputmode="tel" placeholder="0917 123 4567">
         <div style="font-size:15px;color:var(--muted)">Children without a phone can use the head of family's number.</div></div>
-      <button class="btn btn-res btn-lg" type="submit" id="submit">Sign In</button>
+      <button class="btn btn-res btn-lg" type="submit" id="submit">Send Code</button>
       <p class="help">No account to create. Your barangay already registered you. If you cannot sign in, visit your barangay office to check your details.</p>
+    </form>
+    <form id="otpform" novalidate hidden>
+      <button class="back" type="button" id="change"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Change number</button>
+      <div>
+        <h1>Enter the code</h1>
+        <p style="color:var(--muted);margin-top:8px">We sent a 6-digit code by SMS to <b id="sentto" style="color:var(--text)"></b>. It expires in 5 minutes.</p>
+      </div>
+      <div id="error2" class="form-error" role="alert" hidden></div>
+      <div class="field-group"><label for="code">6-digit code</label><input id="code" class="input otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div>
+      <button class="btn btn-res btn-lg" type="submit" id="verify">Verify &amp; Sign In</button>
+      <p style="font-size:15px;color:var(--muted);text-align:center">Didn't get the code? <button type="button" id="resend" class="resend" disabled>Resend code</button></p>
+      <p class="help">The code comes from your barangay's AiVacuwise SMS sender. Never share this code with anyone.</p>
     </form>
   </main>
 </div>
+<style>
+.otp { font-size: 26px !important; letter-spacing: 12px; text-align: center; font-weight: 700; }
+.resend { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: #198754; cursor: pointer; text-decoration: underline; }
+.resend:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+button.back { cursor: pointer; font-family: inherit; }
+</style>
 <script src="app.js?v=56"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var err = $('error');
-  function fail(m) { err.textContent = m; err.hidden = false; }
+  var challenge = null, mobile = '', timer = null;
+  function fail(id, m) { var el = $(id); el.textContent = m; el.hidden = false; }
+  function detail(data) { return Array.isArray(data.detail) ? data.detail.map(function (x) { return x.msg; }).join(', ') : (data.detail || 'Something went wrong.'); }
+  async function post(url, body) {
+    var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    var data = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(detail(data));
+    return data;
+  }
+  function countdown(sec) {
+    var b = $('resend'); clearInterval(timer); b.disabled = true;
+    var left = sec;
+    b.textContent = 'Resend code in ' + left + 's';
+    timer = setInterval(function () {
+      left -= 1;
+      if (left <= 0) { clearInterval(timer); b.disabled = false; b.textContent = 'Resend code'; }
+      else b.textContent = 'Resend code in ' + left + 's';
+    }, 1000);
+  }
+  function showOtp(data) {
+    challenge = data.challenge;
+    $('sentto').textContent = data.sent_to;
+    $('form').hidden = true; $('otpform').hidden = false; $('error2').hidden = true;
+    $('code').value = data.dev_code || '';
+    countdown(data.resend_after_seconds || 60);
+    $('code').focus();
+  }
   $('form').addEventListener('submit', async function (e) {
-    e.preventDefault(); err.hidden = true;
-    var mob = $('mobile').value.trim();
-    if (!mob) return fail('Enter your mobile number.');
-    var b = $('submit'); b.disabled = true; b.textContent = 'Signing in...';
+    e.preventDefault(); $('error').hidden = true;
+    mobile = $('mobile').value.trim();
+    if (!mobile) return fail('error', 'Enter your mobile number.');
+    var b = $('submit'); b.disabled = true; b.textContent = 'Sending code...';
+    try { showOtp(await post('/resident/login', { mobile_number: mobile })); }
+    catch (ex) { fail('error', ex.message); }
+    finally { b.disabled = false; b.textContent = 'Send Code'; }
+  });
+  $('otpform').addEventListener('submit', async function (e) {
+    e.preventDefault(); $('error2').hidden = true;
+    var code = $('code').value.replace(/\D/g, '');
+    if (code.length !== 6) return fail('error2', 'Enter the 6-digit code from the SMS.');
+    var b = $('verify'); b.disabled = true; b.textContent = 'Checking...';
     try {
-      var r = await fetch('/resident/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile_number: mob }) });
-      var data = await r.json().catch(function () { return {}; });
-      if (!r.ok) throw new Error(Array.isArray(data.detail) ? data.detail.map(function (x) { return x.msg; }).join(', ') : (data.detail || 'Something went wrong.'));
+      var data = await post('/resident/verify-otp', { challenge: challenge, code: code });
       try { sessionStorage.setItem('bl_resident', data.token); } catch (x) { window.name = 'blr:' + data.token; }
       location.href = 'resident.html';
-    } catch (ex) { fail(ex.message); } finally { b.disabled = false; b.textContent = 'Sign In'; }
+    } catch (ex) { fail('error2', ex.message); b.disabled = false; b.textContent = 'Verify & Sign In'; }
+  });
+  $('code').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); });
+  $('resend').addEventListener('click', async function () {
+    $('error2').hidden = true;
+    try { showOtp(await post('/resident/login', { mobile_number: mobile })); }
+    catch (ex) { fail('error2', ex.message); }
+  });
+  $('change').addEventListener('click', function () {
+    clearInterval(timer); challenge = null;
+    $('otpform').hidden = true; $('form').hidden = false; $('mobile').focus();
   });
   $('mobile').focus();
 })();

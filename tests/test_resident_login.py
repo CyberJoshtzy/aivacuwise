@@ -1,4 +1,4 @@
-"""Resident sign in with the mobile number only (name fields were removed from the page)."""
+"""Resident sign in: mobile number, then a 6-digit code (OTP) sent by SMS."""
 
 import pytest
 
@@ -8,10 +8,13 @@ NO_AUTH = {"Authorization": ""}
 
 
 @pytest.fixture(autouse=True)
-def _clear_fail_counter():
-    resident._fails.clear()
+def _clean_state(monkeypatch):
+    for d in (resident._fails, resident._otps, resident._otp_sent):
+        d.clear()
+    monkeypatch.setattr(resident, "OTP_DEBUG", True)  # return the code so tests can use it
     yield
-    resident._fails.clear()
+    for d in (resident._fails, resident._otps, resident._otp_sent):
+        d.clear()
 
 
 def _family(client, staff_headers, barangay):
@@ -44,17 +47,65 @@ def _family(client, staff_headers, barangay):
     return h.json()
 
 
-def test_mobile_number_alone_signs_in_the_head_of_family(client, staff_headers, barangay):
+def _ask_code(client, body):
+    r = client.post("/resident/login", json=body, headers=NO_AUTH)
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["otp_required"] is True and "token" not in data
+    return data
+
+
+def test_mobile_then_code_signs_in_head_of_family(client, staff_headers, barangay):
     _family(client, staff_headers, barangay)
+    data = _ask_code(client, {"mobile_number": "0917 230 9422"})
+    assert data["sent_to"] == "0917 *** 9422"
     r = client.post(
-        "/resident/login", json={"mobile_number": "0917 230 9422"}, headers=NO_AUTH
+        "/resident/verify-otp",
+        json={"challenge": data["challenge"], "code": data["dev_code"]},
+        headers=NO_AUTH,
     )
     assert r.status_code == 200, r.text
     assert r.json()["full_name"] == "Lorna Santos"
-    me = client.get(
-        "/resident/me", headers={"Authorization": "Resident " + r.json()["token"]}
-    )
+    me = client.get("/resident/me", headers={"Authorization": "Resident " + r.json()["token"]})
     assert me.status_code == 200, me.text
+
+
+def test_code_is_queued_as_sms(client, staff_headers, barangay, db_session):
+    import sms
+
+    _family(client, staff_headers, barangay)
+    _ask_code(client, {"mobile_number": "09172309422"})
+    msg = db_session.query(sms.SmsMessage).filter_by(kind="otp").one()
+    assert msg.phone == "+639172309422" and "sign-in code" in msg.body
+
+
+def test_wrong_code_is_rejected_and_code_is_single_use(client, staff_headers, barangay):
+    _family(client, staff_headers, barangay)
+    data = _ask_code(client, {"mobile_number": "09172309422"})
+    wrong = "000000" if data["dev_code"] != "000000" else "111111"
+    r = client.post(
+        "/resident/verify-otp", json={"challenge": data["challenge"], "code": wrong}, headers=NO_AUTH
+    )
+    assert r.status_code == 401
+    ok = client.post(
+        "/resident/verify-otp",
+        json={"challenge": data["challenge"], "code": data["dev_code"]},
+        headers=NO_AUTH,
+    )
+    assert ok.status_code == 200
+    again = client.post(
+        "/resident/verify-otp",
+        json={"challenge": data["challenge"], "code": data["dev_code"]},
+        headers=NO_AUTH,
+    )
+    assert again.status_code == 410
+
+
+def test_resend_is_limited(client, staff_headers, barangay):
+    _family(client, staff_headers, barangay)
+    _ask_code(client, {"mobile_number": "09172309422"})
+    r = client.post("/resident/login", json={"mobile_number": "09172309422"}, headers=NO_AUTH)
+    assert r.status_code == 429
 
 
 def test_unknown_mobile_number_is_rejected(client, staff_headers, barangay):
@@ -70,9 +121,12 @@ def test_invalid_mobile_number_is_rejected(client):
 
 def test_name_and_mobile_still_work_for_older_clients(client, staff_headers, barangay):
     _family(client, staff_headers, barangay)
+    data = _ask_code(
+        client, {"first_name": "Mika", "last_name": "Santos", "mobile_number": "09172309422"}
+    )
     r = client.post(
-        "/resident/login",
-        json={"first_name": "Mika", "last_name": "Santos", "mobile_number": "09172309422"},
+        "/resident/verify-otp",
+        json={"challenge": data["challenge"], "code": data["dev_code"]},
         headers=NO_AUTH,
     )
     assert r.status_code == 200, r.text

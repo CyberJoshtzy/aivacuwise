@@ -73,7 +73,7 @@ PUBLIC_EXACT = {
 }
 PUBLIC_PREFIX = ("/static/", "/password/", "/resident/", "/sms/device/", "/sync/", "/ws")
 DEVICE_PATHS = {("POST", "/checkin"), ("POST", "/gps_pings"), ("POST", "/trackers")}
-NOT_LOGGED = ("/faces/check", "/gps_pings", "/login", "/sms/device/", "/sync/", "/resident/login")
+NOT_LOGGED = ("/faces/check", "/gps_pings", "/login", "/sms/device/", "/sync/", "/resident/login", "/resident/verify-otp")
 
 _meta = MetaData()
 activity = Table(
